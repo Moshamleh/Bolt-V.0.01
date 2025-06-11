@@ -32,10 +32,7 @@ import MechanicSupportPage from './pages/MechanicSupportPage';
 import MechanicChatPage from './pages/MechanicChatPage';
 import MechanicSettingsPage from './pages/MechanicSettingsPage';
 import MechanicProfilePage from './pages/MechanicProfilePage';
-<<<<<<< HEAD
 import BoltFixes from './components/BoltFixes';
-=======
->>>>>>> 261cd55a3f4ba1db30df60f77a435fb7f277d55c
 
 function App() {
   const navigate = useNavigate();
@@ -64,7 +61,7 @@ function App() {
 
       {/* Main app routes */}
       <Route element={<Layout />}>
-        <Route index element={<Navigate to="/vehicles\" replace />} />
+        <Route index element={<Navigate to="/vehicles" replace />} />
         <Route path="/vehicles" element={<VehicleManagementPage />} />
         <Route path="/vehicle-setup" element={<VehicleSetupPage />} />
         <Route path="/diagnostic" element={<DiagnosticPage />} />
@@ -75,11 +72,8 @@ function App() {
         <Route path="/clubs" element={<ClubListPage />} />
         <Route path="/clubs/create" element={<CreateClubPage />} />
         <Route path="/clubs/:id" element={<ClubDetailPage />} />
-<<<<<<< HEAD
         <Route path="/bolt-fixes" element={<BoltFixes />} />
-=======
-        
->>>>>>> 261cd55a3f4ba1db30df60f77a435fb7f277d55c
+
         {/* Marketplace Routes */}
         <Route path="/marketplace" element={<MarketplaceLayout />}>
           <Route index element={<MarketplacePage />} />
@@ -89,14 +83,14 @@ function App() {
           <Route path="saved" element={<SavedPartsPage />} />
           <Route path="seller-dashboard" element={<SellerDashboardPage />} />
         </Route>
-        
+
         <Route path="/sell-part" element={<ListPartPage />} />
         <Route path="/parts/:id" element={<PartDetailPage />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/help" element={<HelpFAQPage />} />
         <Route path="/ai-safety" element={<AIDisclaimerPage />} />
         <Route path="/kyc" element={<SellerKYC />} />
-        
+
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<AdminUserManagement />} />
