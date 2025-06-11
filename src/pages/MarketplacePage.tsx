@@ -1,0 +1,355 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Search, Filter, Plus, ChevronDown, ChevronUp, Loader2,
+  Menu, X, ShoppingBag, MessageSquare, Settings, Heart,
+  AlertCircle, Package
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Part, getParts, getOrCreatePartChat } from '../lib/supabase';
+import PartCard from '../components/PartCard';
+
+const MarketplacePage: React.FC = () => {
+  const navigate = useNavigate();
+  const [parts, setParts] = useState<Part[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMake, setSelectedMake] = useState<string>('');
+  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [selectedCondition, setSelectedCondition] = useState<'new' | 'used' | 'refurbished' | ''>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [priceRange, setPriceRange] = useState<{ min?: number; max?: number }>({});
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isMessagingLoading, setIsMessagingLoading] = useState<Record<string, boolean>>({});
+  const [showFilters, setShowFilters] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const loadParts = async () => {
+      try {
+        setLoading(true);
+        const filters = {
+          search: searchTerm || undefined,
+          make: selectedMake || undefined,
+          model: selectedModel || undefined,
+          condition: selectedCondition || undefined,
+          category: selectedCategory || undefined,
+          minPrice: priceRange.min,
+          maxPrice: priceRange.max,
+        };
+        const data = await getParts(filters);
+        setParts(data);
+      } catch (err) {
+        console.error('Failed to load parts:', err);
+        setError('Failed to load marketplace listings');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const debounceTimeout = setTimeout(loadParts, 300);
+    return () => clearTimeout(debounceTimeout);
+  }, [searchTerm, selectedMake, selectedModel, selectedCondition, selectedCategory, priceRange]);
+
+  const handleSellPart = () => {
+    navigate('/sell-part');
+  };
+
+  const handlePartClick = (partId: string) => {
+    navigate(`/parts/${partId}`);
+  };
+
+  const handleMessageSeller = async (e: React.MouseEvent, partId: string, sellerId: string) => {
+    e.stopPropagation();
+    if (!currentUserId) {
+      navigate('/login');
+      return;
+    }
+
+    setIsMessagingLoading(prev => ({ ...prev, [partId]: true }));
+    try {
+      const chatId = await getOrCreatePartChat(partId, sellerId);
+      navigate(`/marketplace/messages/${chatId}`);
+    } catch (err) {
+      console.error('Failed to create chat:', err);
+      setError('Failed to start chat');
+    } finally {
+      setIsMessagingLoading(prev => ({ ...prev, [partId]: false }));
+    }
+  };
+
+  const handleClearFilters = () => {
+    setSelectedMake('');
+    setSelectedModel('');
+    setSelectedCondition('');
+    setSelectedCategory('');
+    setPriceRange({});
+  };
+
+  const handleReportIssue = () => {
+    window.location.href = 'mailto:support@boltauto.com?subject=Marketplace Issue Report';
+  };
+
+  const LoadingSkeleton = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+        <div key={i} className="animate-pulse">
+          <div className="bg-gray-200 dark:bg-gray-700 rounded-t-lg h-48 w-full"></div>
+          <div className="bg-white dark:bg-gray-800 rounded-b-lg p-4">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+            <div className="mt-4 space-y-2">
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const EmptyState = () => {
+    const hasFilters = searchTerm || selectedMake || selectedModel || selectedCondition || selectedCategory || priceRange.min || priceRange.max;
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 text-center"
+      >
+        <div className="flex justify-center mb-4">
+          <Plus className="h-16 w-16 text-gray-400 dark:text-gray-500" />
+        </div>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          {hasFilters ? 'No parts match your search' : 'No parts listed yet'}
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          {hasFilters 
+            ? 'Try adjusting your filters or search terms'
+            : 'Be the first to list a part in the marketplace'}
+        </p>
+        {hasFilters ? (
+          <button
+            onClick={handleClearFilters}
+            className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            Clear Filters
+          </button>
+        ) : (
+          <button
+            onClick={handleSellPart}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            List a Part
+          </button>
+        )}
+      </motion.div>
+    );
+  };
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            {error}
+          </h2>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex justify-between items-center mb-8"
+        >
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Marketplace</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Find and sell car parts</p>
+          </div>
+
+          <motion.button
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            onClick={handleSellPart}
+            className="hidden md:flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            List a Part
+          </motion.button>
+        </motion.div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-6">
+          <div className="p-4">
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-5 w-5" />
+              <input
+                type="text"
+                placeholder="Search parts..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                <Filter className="h-5 w-5" />
+                <span>Filters</span>
+                {showFilters ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </button>
+
+              {showFilters && (
+                <button
+                  onClick={handleClearFilters}
+                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+
+            <AnimatePresence>
+              {showFilters && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <select
+                      value={selectedMake}
+                      onChange={(e) => setSelectedMake(e.target.value)}
+                      className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">All Makes</option>
+                      <option value="Toyota">Toyota</option>
+                      <option value="Honda">Honda</option>
+                      <option value="Ford">Ford</option>
+                      <option value="BMW">BMW</option>
+                    </select>
+
+                    <select
+                      value={selectedCondition}
+                      onChange={(e) => setSelectedCondition(e.target.value as any)}
+                      className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">All Conditions</option>
+                      <option value="new">New</option>
+                      <option value="used">Used</option>
+                      <option value="refurbished">Refurbished</option>
+                    </select>
+
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">All Categories</option>
+                      <option value="engine">Engine Parts</option>
+                      <option value="brakes">Brakes</option>
+                      <option value="suspension">Suspension</option>
+                      <option value="transmission">Transmission</option>
+                      <option value="electrical">Electrical</option>
+                      <option value="interior">Interior</option>
+                      <option value="exterior">Exterior</option>
+                    </select>
+
+                    <div className="relative">
+                      <input
+                        type="number"
+                        placeholder="Min Price"
+                        value={priceRange.min || ''}
+                        onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value ? Number(e.target.value) : undefined }))}
+                        className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        min="0"
+                      />
+                    </div>
+
+                    <div className="relative">
+                      <input
+                        type="number"
+                        placeholder="Max Price"
+                        value={priceRange.max || ''}
+                        onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value ? Number(e.target.value) : undefined }))}
+                        className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {loading ? (
+          <LoadingSkeleton />
+        ) : parts.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <AnimatePresence>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {parts.map((part, index) => (
+                <motion.div
+                  key={part.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <PartCard
+                    id={part.id}
+                    image={part.image_url}
+                    title={part.title}
+                    price={part.price}
+                    condition={part.condition}
+                    year={part.year}
+                    make={part.make}
+                    model={part.model}
+                    location={part.location}
+                    createdAt={part.created_at}
+                    onClick={() => handlePartClick(part.id)}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          </AnimatePresence>
+        )}
+      </div>
+
+      {/* Floating Action Button */}
+      <motion.button
+        initial={{ opacity: 0, scale: 0.8, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        onClick={handleSellPart}
+        className="md:hidden fixed bottom-6 right-6 flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300 z-50"
+      >
+        <Plus className="h-5 w-5" />
+        <span className="font-medium">Post a Part</span>
+      </motion.button>
+    </div>
+  );
+};
+
+export default MarketplacePage;
