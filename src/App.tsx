@@ -32,7 +32,10 @@ import MechanicSupportPage from './pages/MechanicSupportPage';
 import MechanicChatPage from './pages/MechanicChatPage';
 import MechanicSettingsPage from './pages/MechanicSettingsPage';
 import MechanicProfilePage from './pages/MechanicProfilePage';
+<<<<<<< HEAD
 import BoltFixes from './components/BoltFixes';
+=======
+>>>>>>> 261cd55a3f4ba1db30df60f77a435fb7f277d55c
 
 function App() {
   const navigate = useNavigate();
@@ -72,7 +75,11 @@ function App() {
         <Route path="/clubs" element={<ClubListPage />} />
         <Route path="/clubs/create" element={<CreateClubPage />} />
         <Route path="/clubs/:id" element={<ClubDetailPage />} />
+<<<<<<< HEAD
         <Route path="/bolt-fixes" element={<BoltFixes />} />
+=======
+        
+>>>>>>> 261cd55a3f4ba1db30df60f77a435fb7f277d55c
         {/* Marketplace Routes */}
         <Route path="/marketplace" element={<MarketplaceLayout />}>
           <Route index element={<MarketplacePage />} />
