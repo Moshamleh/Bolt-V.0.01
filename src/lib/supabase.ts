@@ -232,8 +232,23 @@ export async function signOut() {
 }
 
 export async function getCurrentUser() {
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    // If there's an error indicating an invalid or expired token, sign out
+    if (error && (error.message.includes('invalid JWT') || error.message.includes('token is expired'))) {
+      await supabase.auth.signOut();
+      return null;
+    }
+    
+    if (error) throw error;
+    return user;
+  } catch (error) {
+    // Handle any other authentication errors by signing out
+    console.error('Authentication error:', error);
+    await supabase.auth.signOut();
+    return null;
+  }
 }
 
 // Profile functions
