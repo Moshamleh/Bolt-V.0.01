@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { supabase } from '../lib/supabase';
+import { supabase, awardBadge } from '../lib/supabase';
 
 const CreateClubPage: React.FC = () => {
   const navigate = useNavigate();
@@ -73,7 +73,7 @@ const CreateClubPage: React.FC = () => {
 
       if (clubError) throw clubError;
 
-      // Auto-join the created club
+      // Auto-join the created club as admin
       await supabase
         .from('club_members')
         .insert({
@@ -81,6 +81,14 @@ const CreateClubPage: React.FC = () => {
           user_id: session.user.id,
           role: 'admin',
         });
+
+      // Award "Club Founder" badge
+      try {
+        await awardBadge(session.user.id, "Club Founder", "Founded a new club");
+      } catch (badgeError) {
+        console.error('Failed to award Club Founder badge:', badgeError);
+        // Don't fail the club creation if badge awarding fails
+      }
 
       navigate(`/clubs/${club.id}`);
     } catch (err: any) {
