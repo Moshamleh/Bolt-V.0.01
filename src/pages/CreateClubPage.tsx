@@ -95,13 +95,13 @@ const CreateClubPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
         <motion.button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           onClick={() => navigate('/clubs')}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-6"
+          className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6"
         >
           <ArrowLeft className="h-5 w-5 mr-2" />
           Back to Clubs
@@ -112,25 +112,25 @@ const CreateClubPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6"
         >
-          <h1 className="text-3xl font-bold text-gray-900">Create a Club</h1>
-          <p className="text-gray-600 mt-1">Start your own automotive community</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Create a Club</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Start your own automotive community</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6"
         >
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Cover Image */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Cover Image
               </label>
               <div
                 className={`relative border-2 border-dashed rounded-lg p-4 text-center ${
-                  imagePreview ? 'border-green-400' : 'border-gray-300'
+                  imagePreview ? 'border-green-400 dark:border-green-500' : 'border-gray-300 dark:border-gray-600'
                 }`}
               >
                 {imagePreview ? (
@@ -150,11 +150,11 @@ const CreateClubPage: React.FC = () => {
                   </div>
                 ) : (
                   <div className="cursor-pointer">
-                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                    <p className="mt-2 text-sm text-gray-500">
+                    <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                       Click to upload or drag and drop
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
                       PNG, JPG, GIF up to 5MB
                     </p>
                   </div>
@@ -171,7 +171,7 @@ const CreateClubPage: React.FC = () => {
 
             {/* Title */}
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Club Name
               </label>
               <input
@@ -181,14 +181,14 @@ const CreateClubPage: React.FC = () => {
                 required
                 value={formData.title}
                 onChange={handleInputChange}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="e.g., BMW M Performance Enthusiasts"
               />
             </div>
 
             {/* Description */}
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Description
               </label>
               <textarea
@@ -198,14 +198,14 @@ const CreateClubPage: React.FC = () => {
                 value={formData.description}
                 onChange={handleInputChange}
                 rows={4}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Describe what your club is about..."
               />
             </div>
 
             {/* Region */}
             <div>
-              <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="region" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Region
               </label>
               <select
@@ -214,7 +214,7 @@ const CreateClubPage: React.FC = () => {
                 required
                 value={formData.region}
                 onChange={handleInputChange}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Select a region</option>
                 <option value="North America">North America</option>
@@ -226,7 +226,7 @@ const CreateClubPage: React.FC = () => {
 
             {/* Topic */}
             <div>
-              <label htmlFor="topic" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="topic" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Primary Topic
               </label>
               <select
@@ -235,7 +235,7 @@ const CreateClubPage: React.FC = () => {
                 required
                 value={formData.topic}
                 onChange={handleInputChange}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Select a topic</option>
                 <option value="Performance">Performance</option>
@@ -247,7 +247,7 @@ const CreateClubPage: React.FC = () => {
             </div>
 
             {error && (
-              <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">
+              <div className="rounded-lg bg-red-50 dark:bg-red-900/50 p-4 text-sm text-red-700 dark:text-red-200">
                 {error}
               </div>
             )}
