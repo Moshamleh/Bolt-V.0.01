@@ -227,6 +227,16 @@ export interface UserBadge {
   badge?: Badge;
 }
 
+export interface UserEarnedBadge {
+  id: string;
+  name: string;
+  description?: string;
+  icon_url?: string;
+  rarity: 'common' | 'milestone' | 'rare' | 'exclusive';
+  awarded_at: string;
+  note?: string;
+}
+
 // Auth functions
 export async function signUp(email: string, password: string) {
   const { data, error } = await supabase.auth.signUp({
@@ -325,6 +335,62 @@ export async function awardBadge(userId: string, badgeName: string, note?: strin
   } catch (error) {
     console.error('Error in awardBadge function:', error);
     return null;
+  }
+}
+
+export async function getUserBadges(userId: string): Promise<UserEarnedBadge[]> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Ensure the user can only access their own badges (or admin can access any)
+    if (user.id !== userId) {
+      // Check if current user is admin
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.is_admin) {
+        throw new Error('Unauthorized: Cannot access other user\'s badges');
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('user_badges')
+      .select(`
+        id,
+        awarded_at,
+        note,
+        badge:badges(
+          id,
+          name,
+          description,
+          icon_url,
+          rarity
+        )
+      `)
+      .eq('user_id', userId)
+      .order('awarded_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Transform the data to flatten the badge information
+    const userBadges: UserEarnedBadge[] = data?.map(item => ({
+      id: item.id,
+      name: item.badge.name,
+      description: item.badge.description,
+      icon_url: item.badge.icon_url,
+      rarity: item.badge.rarity,
+      awarded_at: item.awarded_at,
+      note: item.note
+    })) || [];
+
+    return userBadges;
+  } catch (error) {
+    console.error('Error fetching user badges:', error);
+    throw error;
   }
 }
 
