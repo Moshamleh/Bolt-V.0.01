@@ -109,17 +109,6 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ profile, email, onProfi
         </div>
       </div>
 
-      {/* Avatar upload notice */}
-      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-amber-800 dark:text-amber-200">
-            <p className="font-medium mb-1">Avatar Upload Notice</p>
-            <p>Avatar uploads require additional storage configuration. If you encounter issues uploading your profile picture, please contact support for assistance.</p>
-          </div>
-        </div>
-      </div>
-
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
