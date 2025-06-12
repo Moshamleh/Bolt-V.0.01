@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Loader2, Mail, User, AlertCircle } from 'lucide-react';
+import { Camera, Loader2, Mail, User, AlertCircle, Award } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Profile, updateProfile, uploadAvatar } from '../lib/supabase';
@@ -20,6 +20,12 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ profile, email, onProfi
     bio: profile?.bio || '',
     location: profile?.location || ''
   });
+
+  // Mock badge data
+  const badges = [
+    { name: "Gear Up", icon_url: "/icons/gear.svg" },
+    { name: "Club Founder", icon_url: "/icons/club.svg" }
+  ];
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -183,6 +189,45 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ profile, email, onProfi
           </button>
         </div>
       </form>
+
+      {/* Achievements Section */}
+      <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg">
+            <Award className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Achievements</h2>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {badges.map((badge, index) => (
+            <motion.div
+              key={badge.name}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.1 }}
+              className="flex flex-col items-center p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow"
+            >
+              <div className="w-12 h-12 mb-3 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
+                <Award className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-sm font-medium text-gray-900 dark:text-white text-center">
+                {badge.name}
+              </span>
+            </motion.div>
+          ))}
+        </div>
+
+        {badges.length === 0 && (
+          <div className="text-center py-8">
+            <Award className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <p className="text-gray-500 dark:text-gray-400">No achievements yet</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+              Complete activities to earn badges
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Admin Section */}
       {profile?.is_admin && <AdminSection />}
