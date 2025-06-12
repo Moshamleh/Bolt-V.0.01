@@ -1,3 +1,17 @@
+/*
+  # Update supabase functions to support badge awarding callbacks
+
+  1. Changes
+    - Modify createVehicle to accept optional onEarned callback
+    - Modify sendDiagnosticPrompt to accept optional onEarned callback
+    - Modify createClub to accept optional onEarned callback
+    - Pass callbacks to awardBadge function when badges are earned
+
+  2. Security
+    - Maintain existing RLS policies
+    - Badge awarding is optional and won't fail main operations
+*/
+
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -510,7 +524,10 @@ export async function getUserVehicles(): Promise<Vehicle[]> {
   return data || [];
 }
 
-export async function createVehicle(vehicle: Omit<Vehicle, 'id' | 'created_at'>) {
+export async function createVehicle(
+  vehicle: Omit<Vehicle, 'id' | 'created_at'>, 
+  onEarned?: (badge: UserEarnedBadge) => void
+) {
   const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
 
@@ -529,7 +546,7 @@ export async function createVehicle(vehicle: Omit<Vehicle, 'id' | 'created_at'>)
   // Award "Gear Up" badge for first vehicle
   if (isFirstVehicle) {
     try {
-      await awardBadge(user.id, "Gear Up", "Added your first vehicle");
+      await awardBadge(user.id, "Gear Up", "Added your first vehicle", onEarned);
     } catch (badgeError) {
       console.error('Failed to award Gear Up badge:', badgeError);
       // Don't fail the vehicle creation if badge awarding fails
@@ -561,7 +578,11 @@ export async function deleteVehicle(vehicleId: string) {
 }
 
 // Diagnosis functions
-export async function sendDiagnosticPrompt(vehicleId: string, prompt: string): Promise<Diagnosis> {
+export async function sendDiagnosticPrompt(
+  vehicleId: string, 
+  prompt: string, 
+  onEarned?: (badge: UserEarnedBadge) => void
+): Promise<Diagnosis> {
   const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
 
@@ -588,7 +609,7 @@ export async function sendDiagnosticPrompt(vehicleId: string, prompt: string): P
   // Award "Checked In" badge for first diagnosis
   if (count === 1) {
     try {
-      await awardBadge(user.id, "Checked In", "Completed your first diagnostic");
+      await awardBadge(user.id, "Checked In", "Completed your first diagnostic", onEarned);
     } catch (badgeError) {
       console.error('Failed to award Checked In badge:', badgeError);
       // Don't fail the diagnosis creation if badge awarding fails
@@ -1007,7 +1028,13 @@ export async function getClubById(clubId: string): Promise<Club | null> {
   return data;
 }
 
-export async function createClub(club: Omit<Club, 'id' | 'created_at'>) {
+export async function createClub(
+  club: Omit<Club, 'id' | 'created_at'>, 
+  onEarned?: (badge: UserEarnedBadge) => void
+) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('User not authenticated');
+
   const { data, error } = await supabase
     .from('clubs')
     .insert([club])
@@ -1015,6 +1042,20 @@ export async function createClub(club: Omit<Club, 'id' | 'created_at'>) {
     .single();
 
   if (error) throw error;
+
+  // Auto-join the created club as admin
+  await supabase
+    .from('club_members')
+    .insert([{ user_id: user.id, club_id: data.id, role: 'admin' }]);
+
+  // Award "Club Founder" badge
+  try {
+    await awardBadge(user.id, "Club Founder", "Founded a new club", onEarned);
+  } catch (badgeError) {
+    console.error('Failed to award Club Founder badge:', badgeError);
+    // Don't fail the club creation if badge awarding fails
+  }
+
   return data;
 }
 
