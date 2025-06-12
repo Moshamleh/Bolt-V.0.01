@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase';
 
 const MechanicSupportPage: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'chat' | 'call'>('chat');
+  const [activeTab, setActiveTab] = useState<'findMobile' | 'callOrChat'>('findMobile');
   const [mechanics, setMechanics] = useState<Mechanic[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -136,34 +136,34 @@ const MechanicSupportPage: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-6">
           <div className="grid grid-cols-2 divide-x divide-gray-100 dark:divide-gray-700">
             <button
-              onClick={() => setActiveTab('chat')}
+              onClick={() => setActiveTab('findMobile')}
               className={`px-4 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'chat'
+                activeTab === 'findMobile'
                   ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               <MessageSquare className="h-5 w-5 inline-block mr-2" />
-              Chat with a Mechanic
+              Find Mobile Mechanic
             </button>
             <button
-              onClick={() => setActiveTab('call')}
+              onClick={() => setActiveTab('callOrChat')}
               className={`px-4 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'call'
+                activeTab === 'callOrChat'
                   ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               <Phone className="h-5 w-5 inline-block mr-2" />
-              Call a Mechanic
+              Call or Chat with Mechanic
             </button>
           </div>
         </div>
 
         <AnimatePresence mode="wait">
-          {activeTab === 'chat' ? (
+          {activeTab === 'findMobile' ? (
             <motion.div
-              key="chat"
+              key="findMobile"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -206,7 +206,7 @@ const MechanicSupportPage: React.FC = () => {
             </motion.div>
           ) : (
             <motion.div
-              key="call"
+              key="callOrChat"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
