@@ -59,13 +59,14 @@ const CreateClubPage: React.FC = () => {
         .from('club-covers')
         .getPublicUrl(filePath);
 
-      // Create club
+      // Create club with correct column mapping
       const { data: club, error: clubError } = await supabase
         .from('clubs')
         .insert({
-          ...formData,
-          cover_image_url: publicUrl,
-          created_by: session.user.id,
+          name: formData.title,
+          description: formData.description,
+          region: formData.region,
+          image_url: publicUrl,
         })
         .select()
         .single();
@@ -78,6 +79,7 @@ const CreateClubPage: React.FC = () => {
         .insert({
           club_id: club.id,
           user_id: session.user.id,
+          role: 'admin',
         });
 
       navigate(`/clubs/${club.id}`);
