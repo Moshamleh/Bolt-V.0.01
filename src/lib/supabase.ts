@@ -209,6 +209,24 @@ export interface KYCUser {
   location?: string;
 }
 
+export interface Badge {
+  id: string;
+  name: string;
+  description?: string;
+  icon_url?: string;
+  rarity: 'common' | 'milestone' | 'rare' | 'exclusive';
+  created_at: string;
+}
+
+export interface UserBadge {
+  id: string;
+  user_id: string;
+  badge_id: string;
+  awarded_at: string;
+  note?: string;
+  badge?: Badge;
+}
+
 // Auth functions
 export async function signUp(email: string, password: string) {
   const { data, error } = await supabase.auth.signUp({
@@ -247,6 +265,65 @@ export async function getCurrentUser() {
     // Handle any other authentication errors by signing out
     console.error('Authentication error:', error);
     await supabase.auth.signOut();
+    return null;
+  }
+}
+
+// Badge functions
+export async function awardBadge(userId: string, badgeName: string, note?: string): Promise<UserBadge | null> {
+  try {
+    // Look up the badge by name
+    const { data: badge, error: badgeError } = await supabase
+      .from('badges')
+      .select('*')
+      .eq('name', badgeName)
+      .single();
+
+    if (badgeError || !badge) {
+      console.error('Badge not found:', badgeName);
+      return null;
+    }
+
+    // Check if user already has this badge
+    const { data: existingBadge, error: checkError } = await supabase
+      .from('user_badges')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('badge_id', badge.id)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking existing badge:', checkError);
+      return null;
+    }
+
+    if (existingBadge) {
+      // User already has this badge
+      return null;
+    }
+
+    // Award the badge
+    const { data: awardedBadge, error: awardError } = await supabase
+      .from('user_badges')
+      .insert({
+        user_id: userId,
+        badge_id: badge.id,
+        note: note || null
+      })
+      .select(`
+        *,
+        badge:badges(*)
+      `)
+      .single();
+
+    if (awardError) {
+      console.error('Error awarding badge:', awardError);
+      return null;
+    }
+
+    return awardedBadge;
+  } catch (error) {
+    console.error('Error in awardBadge function:', error);
     return null;
   }
 }
@@ -349,6 +426,13 @@ export async function getUserVehicles(): Promise<Vehicle[]> {
 }
 
 export async function createVehicle(vehicle: Omit<Vehicle, 'id' | 'created_at'>) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('User not authenticated');
+
+  // Check if this is the user's first vehicle
+  const existingVehicles = await getUserVehicles();
+  const isFirstVehicle = existingVehicles.length === 0;
+
   const { data, error } = await supabase
     .from('vehicles')
     .insert([vehicle])
@@ -356,6 +440,17 @@ export async function createVehicle(vehicle: Omit<Vehicle, 'id' | 'created_at'>)
     .single();
 
   if (error) throw error;
+
+  // Award "Gear Up" badge for first vehicle
+  if (isFirstVehicle) {
+    try {
+      await awardBadge(user.id, "Gear Up", "Added your first vehicle");
+    } catch (badgeError) {
+      console.error('Failed to award Gear Up badge:', badgeError);
+      // Don't fail the vehicle creation if badge awarding fails
+    }
+  }
+
   return data;
 }
 
@@ -398,6 +493,22 @@ export async function sendDiagnosticPrompt(vehicleId: string, prompt: string): P
     .single();
 
   if (error) throw error;
+
+  // Check if this is the user's first diagnosis
+  const { count } = await supabase
+    .from('diagnoses')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id);
+
+  // Award "Checked In" badge for first diagnosis
+  if (count === 1) {
+    try {
+      await awardBadge(user.id, "Checked In", "Completed your first diagnostic");
+    } catch (badgeError) {
+      console.error('Failed to award Checked In badge:', badgeError);
+      // Don't fail the diagnosis creation if badge awarding fails
+    }
+  }
 
   // Call the edge function to process the diagnosis
   const { error: functionError } = await supabase.functions.invoke('diagnose', {
