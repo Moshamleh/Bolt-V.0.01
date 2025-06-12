@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Settings, User, Moon, Shield, HelpCircle, Loader2 } from 'lucide-react';
-import { Profile, getProfile } from '../lib/supabase';
+import { Settings, User, Moon, Shield, HelpCircle, Loader2, Award } from 'lucide-react';
+import { Profile, getProfile, getUserBadges, UserEarnedBadge, supabase } from '../lib/supabase';
 import ProfileSection from '../components/ProfileSection';
 import PreferencesSection from '../components/PreferencesSection';
 import SecurityLoginSection from '../components/SecurityLoginSection';
 import SupportFeedbackSection from '../components/SupportFeedbackSection';
+import BadgesPanel from '../components/BadgesPanel';
 
 const AccountPage = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userEmail, setUserEmail] = useState('');
+  const [badges, setBadges] = useState<UserEarnedBadge[]>([]);
   const [loading, setLoading] = useState(true);
+  const [badgesLoading, setBadgesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('profile');
 
@@ -28,6 +31,18 @@ const AccountPage = () => {
         setUserEmail(session.user.email || '');
         const profileData = await getProfile();
         setProfile(profileData);
+
+        // Load user badges
+        try {
+          setBadgesLoading(true);
+          const userBadges = await getUserBadges(session.user.id);
+          setBadges(userBadges);
+        } catch (badgeError) {
+          console.error('Failed to load badges:', badgeError);
+          // Don't set error state for badges, just log it
+        } finally {
+          setBadgesLoading(false);
+        }
       } catch (err) {
         console.error('Failed to load profile:', err);
         setError('Failed to load profile');
@@ -41,6 +56,7 @@ const AccountPage = () => {
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: <User className="h-5 w-5" /> },
+    { id: 'achievements', label: 'Achievements', icon: <Award className="h-5 w-5" /> },
     { id: 'preferences', label: 'Preferences', icon: <Moon className="h-5 w-5" /> },
     { id: 'security', label: 'Security', icon: <Shield className="h-5 w-5" /> },
     { id: 'support', label: 'Support', icon: <HelpCircle className="h-5 w-5" /> }
@@ -55,6 +71,20 @@ const AccountPage = () => {
             email={userEmail}
             onProfileUpdate={setProfile}
           />
+        );
+      case 'achievements':
+        return (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                Your Achievements
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                Badges you've earned by using Bolt Auto and participating in the community
+              </p>
+            </div>
+            <BadgesPanel badges={badges} loading={badgesLoading} />
+          </div>
         );
       case 'preferences':
         return <PreferencesSection />;
@@ -108,6 +138,11 @@ const AccountPage = () => {
                 >
                   {tab.icon}
                   {tab.label}
+                  {tab.id === 'achievements' && badges.length > 0 && (
+                    <span className="ml-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-xs rounded-full">
+                      {badges.length}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
