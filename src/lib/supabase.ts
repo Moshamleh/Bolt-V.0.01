@@ -306,17 +306,31 @@ export async function uploadAvatar(file: File): Promise<string> {
   const fileName = `${user.id}-${Math.random()}.${fileExt}`;
   const filePath = `avatars/${fileName}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from('avatars')
-    .upload(filePath, file);
+  try {
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file);
 
-  if (uploadError) throw uploadError;
+    if (uploadError) {
+      // Check if the error is due to missing bucket
+      if (uploadError.message.includes('Bucket not found')) {
+        throw new Error('Avatar storage is not configured. Please contact support to enable avatar uploads.');
+      }
+      throw uploadError;
+    }
 
-  const { data: { publicUrl } } = supabase.storage
-    .from('avatars')
-    .getPublicUrl(filePath);
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
 
-  return publicUrl;
+    return publicUrl;
+  } catch (error) {
+    // Re-throw with more user-friendly message for bucket not found
+    if (error instanceof Error && error.message.includes('Bucket not found')) {
+      throw new Error('Avatar storage is not configured. Please contact support to enable avatar uploads.');
+    }
+    throw error;
+  }
 }
 
 // Vehicle functions
