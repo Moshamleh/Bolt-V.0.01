@@ -280,7 +280,12 @@ export async function getCurrentUser() {
 }
 
 // Badge functions
-export async function awardBadge(userId: string, badgeName: string, note?: string): Promise<UserBadge | null> {
+export async function awardBadge(
+  userId: string, 
+  badgeName: string, 
+  note?: string,
+  onEarned?: (badge: UserEarnedBadge) => void
+): Promise<UserBadge | null> {
   try {
     // Look up the badge by name
     const { data: badge, error: badgeError } = await supabase
@@ -329,6 +334,20 @@ export async function awardBadge(userId: string, badgeName: string, note?: strin
     if (awardError) {
       console.error('Error awarding badge:', awardError);
       return null;
+    }
+
+    // If badge was successfully awarded and callback is provided, call it
+    if (awardedBadge && onEarned) {
+      const earnedBadge: UserEarnedBadge = {
+        id: awardedBadge.id,
+        name: awardedBadge.badge.name,
+        description: awardedBadge.badge.description,
+        icon_url: awardedBadge.badge.icon_url,
+        rarity: awardedBadge.badge.rarity,
+        awarded_at: awardedBadge.awarded_at,
+        note: awardedBadge.note
+      };
+      onEarned(earnedBadge);
     }
 
     return awardedBadge;
