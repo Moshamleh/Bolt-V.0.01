@@ -31,9 +31,9 @@ const SellerKYC: React.FC = () => {
     }
   };
 
-  const uploadFile = async (file: File, bucket: string, userId: string) => {
+  const uploadFile = async (file: File, bucket: string, userId: string, fileType: 'gov_id' | 'proof_address') => {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const fileName = `${fileType}_${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `${userId}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
@@ -62,22 +62,28 @@ const SellerKYC: React.FC = () => {
         throw new Error('Please upload both Government ID and Proof of Address.');
       }
 
+      if (!formData.fullName.trim()) {
+        throw new Error('Please enter your full name.');
+      }
+
       const userId = session.user.id;
 
       // Upload files
-      const governmentIdUrl = await uploadFile(governmentIdFile, 'kyc-documents', userId);
-      const proofOfAddressUrl = await uploadFile(proofOfAddressFile, 'kyc-documents', userId);
+      const [governmentIdUrl, proofOfAddressUrl] = await Promise.all([
+        uploadFile(governmentIdFile, 'kyc-documents', userId, 'gov_id'),
+        uploadFile(proofOfAddressFile, 'kyc-documents', userId, 'proof_address')
+      ]);
 
       // Insert data into kyc_requests table
       const { error: insertError } = await supabase
         .from('kyc_requests')
         .insert({
           user_id: userId,
-          full_name: formData.fullName,
-          business_name: formData.businessName || null,
-          government_id_url: governmentIdUrl,
+          full_name: formData.fullName.trim(),
+          business_name: formData.businessName.trim() || null,
+          gov_id_url: governmentIdUrl,
           proof_of_address_url: proofOfAddressUrl,
-          status: 'pending', // Default status
+          status: 'pending',
         });
 
       if (insertError) throw insertError;
@@ -85,11 +91,11 @@ const SellerKYC: React.FC = () => {
       // Update user's profile to reflect KYC submission
       await supabase
         .from('profiles')
-        .update({ kyc_verified: false, initial_setup_complete: true }) // Set to false initially, admin will verify
+        .update({ kyc_verified: false, initial_setup_complete: true })
         .eq('id', userId);
 
-      toast.success('Submitted for review. We will notify you once your KYC is verified.');
-      navigate('/marketplace'); // Redirect after submission
+      toast.success('KYC submitted successfully! We will review your documents and notify you once verified.');
+      navigate('/marketplace');
     } catch (err: any) {
       console.error('KYC submission failed:', err);
       setError(err.message || 'Failed to submit KYC request.');
@@ -138,7 +144,7 @@ const SellerKYC: React.FC = () => {
             {/* Full Name */}
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Full Name (as per ID)
+                Full Name (as per ID) *
               </label>
               <input
                 type="text"
@@ -171,24 +177,29 @@ const SellerKYC: React.FC = () => {
             {/* Government ID Upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Government ID (e.g., Driver's License, Passport)
+                Government ID (e.g., Driver's License, Passport) *
               </label>
               <div
-                className={`relative border-2 border-dashed rounded-lg p-4 text-center cursor-pointer ${
-                  governmentIdFile ? 'border-green-400 dark:border-green-500' : 'border-gray-300 dark:border-gray-600'
+                className={`relative border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+                  governmentIdFile 
+                    ? 'border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-900/20' 
+                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}
                 onClick={() => governmentIdInputRef.current?.click()}
               >
                 {governmentIdFile ? (
                   <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
                     <CheckCircle className="h-5 w-5" />
-                    <span>{governmentIdFile.name}</span>
+                    <span className="font-medium">{governmentIdFile.name}</span>
                   </div>
                 ) : (
                   <>
                     <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
                     <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                       Click to upload (Max 5MB)
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                      JPEG, PNG, or PDF
                     </p>
                   </>
                 )}
@@ -206,24 +217,29 @@ const SellerKYC: React.FC = () => {
             {/* Proof of Address Upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Proof of Address (e.g., Utility Bill, Bank Statement)
+                Proof of Address (e.g., Utility Bill, Bank Statement) *
               </label>
               <div
-                className={`relative border-2 border-dashed rounded-lg p-4 text-center cursor-pointer ${
-                  proofOfAddressFile ? 'border-green-400 dark:border-green-500' : 'border-gray-300 dark:border-gray-600'
+                className={`relative border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+                  proofOfAddressFile 
+                    ? 'border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-900/20' 
+                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}
                 onClick={() => proofOfAddressInputRef.current?.click()}
               >
                 {proofOfAddressFile ? (
                   <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
                     <CheckCircle className="h-5 w-5" />
-                    <span>{proofOfAddressFile.name}</span>
+                    <span className="font-medium">{proofOfAddressFile.name}</span>
                   </div>
                 ) : (
                   <>
                     <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
                     <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                       Click to upload (Max 5MB)
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                      JPEG, PNG, or PDF
                     </p>
                   </>
                 )}
@@ -254,7 +270,10 @@ const SellerKYC: React.FC = () => {
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isSubmitting ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Submitting...
+                  </div>
                 ) : (
                   'Submit for Review'
                 )}
