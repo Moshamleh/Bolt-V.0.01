@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Zap, Store, UsersRound, Settings, Wrench } from 'lucide-react';
+import { Zap, Store, UsersRound, Settings, Wrench, Loader2 } from 'lucide-react';
 import OnboardingTour from './OnboardingTour';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { supabase } from '../lib/supabase';
