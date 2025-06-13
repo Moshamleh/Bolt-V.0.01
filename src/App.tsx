@@ -87,7 +87,7 @@ function App() {
 
           {/* Main app routes */}
           <Route element={<Layout />}>
-            <Route index element={<Navigate to="/vehicles" replace />} />
+            <Route index element={<Navigate to="/diagnostic" replace />} />
             <Route path="/vehicles" element={<VehicleManagementPage />} />
             <Route path="/vehicle-setup" element={<VehicleSetupPage />} />
             <Route path="/vehicles/:vehicleId/add-service" element={<AddServiceRecordPage />} />
