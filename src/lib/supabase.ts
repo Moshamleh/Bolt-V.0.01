@@ -1,17 +1,3 @@
-/*
-  # Update supabase functions to support badge awarding callbacks
-
-  1. Changes
-    - Modify createVehicle to accept optional onEarned callback
-    - Modify sendDiagnosticPrompt to accept optional onEarned callback
-    - Modify createClub to accept optional onEarned callback
-    - Pass callbacks to awardBadge function when badges are earned
-
-  2. Security
-    - Maintain existing RLS policies
-    - Badge awarding is optional and won't fail main operations
-*/
-
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -249,6 +235,17 @@ export interface UserEarnedBadge {
   rarity: 'common' | 'milestone' | 'rare' | 'exclusive';
   awarded_at: string;
   note?: string;
+}
+
+// Pagination interface for consistent pagination responses
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }
 
 // Auth functions
@@ -1499,10 +1496,7 @@ export async function updatePreferences(preferences: {
   return data;
 }
 
-export async function getAllUserFeedback(page: number = 1, limit: number = 10): Promise<{
-  data: UserFeedback[];
-  total: number;
-}> {
+export async function getAllUserFeedback(page: number = 1, limit: number = 10): Promise<PaginatedResponse<UserFeedback>> {
   const offset = (page - 1) * limit;
 
   const [dataResult, countResult] = await Promise.all([
@@ -1519,16 +1513,21 @@ export async function getAllUserFeedback(page: number = 1, limit: number = 10): 
   if (dataResult.error) throw dataResult.error;
   if (countResult.error) throw countResult.error;
 
+  const total = countResult.count || 0;
+  const totalPages = Math.ceil(total / limit);
+
   return {
     data: dataResult.data || [],
-    total: countResult.count || 0
+    total,
+    page,
+    limit,
+    totalPages,
+    hasNextPage: page < totalPages,
+    hasPreviousPage: page > 1
   };
 }
 
-export async function getAllAiFeedback(page: number = 1, limit: number = 10): Promise<{
-  data: AiFeedbackLog[];
-  total: number;
-}> {
+export async function getAllAiFeedback(page: number = 1, limit: number = 10): Promise<PaginatedResponse<AiFeedbackLog>> {
   const offset = (page - 1) * limit;
 
   const [dataResult, countResult] = await Promise.all([
@@ -1554,6 +1553,9 @@ export async function getAllAiFeedback(page: number = 1, limit: number = 10): Pr
   if (dataResult.error) throw dataResult.error;
   if (countResult.error) throw countResult.error;
 
+  const total = countResult.count || 0;
+  const totalPages = Math.ceil(total / limit);
+
   return {
     data: dataResult.data?.map(log => ({
       ...log,
@@ -1568,7 +1570,12 @@ export async function getAllAiFeedback(page: number = 1, limit: number = 10): Pr
         vehicle: log.diagnosis.vehicle
       }
     })) || [],
-    total: countResult.count || 0
+    total,
+    page,
+    limit,
+    totalPages,
+    hasNextPage: page < totalPages,
+    hasPreviousPage: page > 1
   };
 }
 

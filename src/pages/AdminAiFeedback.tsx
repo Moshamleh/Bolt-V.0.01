@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { 
   ArrowLeft, ThumbsUp, ThumbsDown, User, 
-  Car, MessageSquare, Loader2 
+  Car, MessageSquare, Loader2, ChevronLeft, ChevronRight 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import useSWR from 'swr';
 import { useProfile } from '../hooks/useProfile';
-import { getAllAiFeedback, AiFeedbackLog } from '../lib/supabase';
+import { getAllAiFeedback, AiFeedbackLog, PaginatedResponse } from '../lib/supabase';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -17,9 +17,13 @@ const AdminAiFeedback: React.FC = () => {
   const { isAdmin, isLoading: profileLoading } = useProfile();
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: feedback, error } = useSWR(
+  const { data: paginatedData, error, isLoading } = useSWR<PaginatedResponse<AiFeedbackLog>>(
     ['ai-feedback', currentPage],
-    () => getAllAiFeedback(currentPage, ITEMS_PER_PAGE)
+    () => getAllAiFeedback(currentPage, ITEMS_PER_PAGE),
+    {
+      keepPreviousData: true, // Keep previous data while loading new page
+      revalidateOnFocus: false
+    }
   );
 
   if (profileLoading) {
@@ -33,6 +37,12 @@ const AdminAiFeedback: React.FC = () => {
   if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= (paginatedData?.totalPages || 1)) {
+      setCurrentPage(newPage);
+    }
+  };
 
   const LoadingSkeleton = () => (
     <div className="space-y-6">
@@ -54,6 +64,89 @@ const AdminAiFeedback: React.FC = () => {
       ))}
     </div>
   );
+
+  const PaginationControls = () => {
+    if (!paginatedData || paginatedData.totalPages <= 1) return null;
+
+    const { page, totalPages, hasPreviousPage, hasNextPage } = paginatedData;
+
+    // Generate page numbers to show
+    const getPageNumbers = () => {
+      const delta = 2; // Number of pages to show on each side of current page
+      const range = [];
+      const rangeWithDots = [];
+
+      for (let i = Math.max(2, page - delta); i <= Math.min(totalPages - 1, page + delta); i++) {
+        range.push(i);
+      }
+
+      if (page - delta > 2) {
+        rangeWithDots.push(1, '...');
+      } else {
+        rangeWithDots.push(1);
+      }
+
+      rangeWithDots.push(...range);
+
+      if (page + delta < totalPages - 1) {
+        rangeWithDots.push('...', totalPages);
+      } else if (totalPages > 1) {
+        rangeWithDots.push(totalPages);
+      }
+
+      return rangeWithDots;
+    };
+
+    return (
+      <div className="flex items-center justify-between mt-8 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handlePageChange(page - 1)}
+            disabled={!hasPreviousPage || isLoading}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </button>
+
+          <div className="flex items-center gap-1">
+            {getPageNumbers().map((pageNum, index) => (
+              <React.Fragment key={index}>
+                {pageNum === '...' ? (
+                  <span className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">...</span>
+                ) : (
+                  <button
+                    onClick={() => handlePageChange(pageNum as number)}
+                    disabled={isLoading}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      pageNum === page
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {pageNum}
+                  </button>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+
+          <button
+            onClick={() => handlePageChange(page + 1)}
+            disabled={!hasNextPage || isLoading}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          Showing {((page - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(page * ITEMS_PER_PAGE, paginatedData.total)} of {paginatedData.total} results
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
@@ -77,15 +170,20 @@ const AdminAiFeedback: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Monitor user feedback on AI diagnostic responses
           </p>
+          {paginatedData && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              Total feedback entries: {paginatedData.total}
+            </p>
+          )}
         </motion.div>
 
         {error ? (
           <div className="bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-200 p-4 rounded-lg">
             Failed to load feedback logs
           </div>
-        ) : !feedback ? (
+        ) : !paginatedData ? (
           <LoadingSkeleton />
-        ) : feedback.data.length === 0 ? (
+        ) : paginatedData.data.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 text-center">
             <MessageSquare className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -98,7 +196,7 @@ const AdminAiFeedback: React.FC = () => {
         ) : (
           <div className="space-y-6">
             <AnimatePresence mode="popLayout">
-              {feedback.data.map((log) => (
+              {paginatedData.data.map((log) => (
                 <motion.div
                   key={log.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -173,27 +271,7 @@ const AdminAiFeedback: React.FC = () => {
               ))}
             </AnimatePresence>
 
-            {feedback.total > ITEMS_PER_PAGE && (
-              <div className="flex justify-center gap-2 mt-8">
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Previous
-                </button>
-                <span className="px-4 py-2 text-gray-600 dark:text-gray-400">
-                  Page {currentPage} of {Math.ceil(feedback.total / ITEMS_PER_PAGE)}
-                </span>
-                <button
-                  onClick={() => setCurrentPage(p => p + 1)}
-                  disabled={currentPage >= Math.ceil(feedback.total / ITEMS_PER_PAGE)}
-                  className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next
-                </button>
-              </div>
-            )}
+            <PaginationControls />
           </div>
         )}
       </div>
