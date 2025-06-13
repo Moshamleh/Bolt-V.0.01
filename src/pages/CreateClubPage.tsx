@@ -3,12 +3,44 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase, awardBadge } from '../lib/supabase';
+import { useFormValidation, ValidationRules } from '../hooks/useFormValidation';
+import FormField from '../components/FormField';
+import Input from '../components/Input';
+import Textarea from '../components/Textarea';
+import Select from '../components/Select';
+import { formatFileSize, isValidFileType } from '../lib/utils';
+
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+const validationRules: ValidationRules = {
+  title: {
+    required: true,
+    minLength: 3,
+    maxLength: 100
+  },
+  description: {
+    required: true,
+    minLength: 20,
+    maxLength: 500
+  },
+  region: {
+    required: true
+  },
+  topic: {
+    required: true
+  }
+};
 
 const CreateClubPage: React.FC = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -16,33 +48,59 @@ const CreateClubPage: React.FC = () => {
     topic: '',
   });
 
+  const { errors, validateField, validateForm, clearError, setError: setFieldError } = useFormValidation(validationRules);
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Image size must be less than 5MB');
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    setImageError(null);
+    
+    if (!file) {
+      setImageFile(null);
+      setImagePreview(null);
+      return;
     }
+
+    // Validate file type
+    if (!isValidFileType(file, ALLOWED_IMAGE_TYPES)) {
+      setImageError('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+      return;
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      setImageError(`File size must be less than ${formatFileSize(MAX_FILE_SIZE)}`);
+      return;
+    }
+
+    setImageFile(file);
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Validate image
+    if (!imageFile) {
+      setImageError('Please select a cover image');
+      return;
+    }
+
+    // Validate form
+    if (!validateForm(formData)) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
-
-      const imageFile = (e.target as HTMLFormElement).image.files[0];
-      if (!imageFile) throw new Error('Please select a cover image');
 
       // Upload image
       const fileExt = imageFile.name.split('.').pop();
@@ -66,6 +124,7 @@ const CreateClubPage: React.FC = () => {
           name: formData.title,
           description: formData.description,
           region: formData.region,
+          topic: formData.topic,
           image_url: publicUrl,
         })
         .select()
@@ -102,6 +161,27 @@ const CreateClubPage: React.FC = () => {
   ) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+
+    // Clear error when user starts typing
+    if (errors[name]) {
+      clearError(name);
+    }
+
+    // Real-time validation for title and description
+    if (['title', 'description'].includes(name)) {
+      const error = validateField(name, value);
+      if (error) {
+        setFieldError(name, error);
+      }
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    const error = validateField(name, value);
+    if (error) {
+      setFieldError(name, error);
+    }
   };
 
   return (
@@ -134,13 +214,19 @@ const CreateClubPage: React.FC = () => {
         >
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Cover Image */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Cover Image
-              </label>
+            <FormField
+              label="Cover Image"
+              name="image"
+              error={imageError}
+              required
+            >
               <div
-                className={`relative border-2 border-dashed rounded-lg p-4 text-center ${
-                  imagePreview ? 'border-green-400 dark:border-green-500' : 'border-gray-300 dark:border-gray-600'
+                className={`relative border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                  imagePreview 
+                    ? 'border-green-400 dark:border-green-500' 
+                    : imageError 
+                    ? 'border-red-300 dark:border-red-500' 
+                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}
               >
                 {imagePreview ? (
@@ -152,109 +238,122 @@ const CreateClubPage: React.FC = () => {
                     />
                     <button
                       type="button"
-                      onClick={() => setImagePreview(null)}
+                      onClick={() => {
+                        setImagePreview(null);
+                        setImageFile(null);
+                        setImageError(null);
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = '';
+                        }
+                      }}
                       className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 transition-colors"
                     >
                       ×
                     </button>
                   </div>
                 ) : (
-                  <div className="cursor-pointer">
+                  <div
+                    className="cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
                     <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                       Click to upload or drag and drop
                     </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500">
-                      PNG, JPG, GIF up to 5MB
+                      PNG, JPG, GIF, WebP up to {formatFileSize(MAX_FILE_SIZE)}
                     </p>
                   </div>
                 )}
                 <input
+                  ref={fileInputRef}
                   type="file"
-                  name="image"
-                  accept="image/*"
+                  accept={ALLOWED_IMAGE_TYPES.join(',')}
                   onChange={handleImageChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  className="hidden"
                 />
               </div>
-            </div>
+            </FormField>
 
             {/* Title */}
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Club Name
-              </label>
-              <input
-                type="text"
-                id="title"
+            <FormField
+              label="Club Name"
+              name="title"
+              error={errors.title}
+              required
+            >
+              <Input
                 name="title"
-                required
                 value={formData.title}
                 onChange={handleInputChange}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onBlur={handleBlur}
+                error={!!errors.title}
                 placeholder="e.g., BMW M Performance Enthusiasts"
               />
-            </div>
+            </FormField>
 
             {/* Description */}
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Description
-              </label>
-              <textarea
-                id="description"
+            <FormField
+              label="Description"
+              name="description"
+              error={errors.description}
+              required
+            >
+              <Textarea
                 name="description"
-                required
                 value={formData.description}
                 onChange={handleInputChange}
+                onBlur={handleBlur}
+                error={!!errors.description}
                 rows={4}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Describe what your club is about..."
               />
-            </div>
+            </FormField>
 
             {/* Region */}
-            <div>
-              <label htmlFor="region" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Region
-              </label>
-              <select
-                id="region"
+            <FormField
+              label="Region"
+              name="region"
+              error={errors.region}
+              required
+            >
+              <Select
                 name="region"
-                required
                 value={formData.region}
                 onChange={handleInputChange}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onBlur={handleBlur}
+                error={!!errors.region}
+                placeholder="Select a region"
               >
-                <option value="">Select a region</option>
                 <option value="North America">North America</option>
                 <option value="Europe">Europe</option>
                 <option value="Asia">Asia</option>
                 <option value="Australia">Australia</option>
-              </select>
-            </div>
+              </Select>
+            </FormField>
 
             {/* Topic */}
-            <div>
-              <label htmlFor="topic" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Primary Topic
-              </label>
-              <select
-                id="topic"
+            <FormField
+              label="Primary Topic"
+              name="topic"
+              error={errors.topic}
+              required
+            >
+              <Select
                 name="topic"
-                required
                 value={formData.topic}
                 onChange={handleInputChange}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onBlur={handleBlur}
+                error={!!errors.topic}
+                placeholder="Select a topic"
               >
-                <option value="">Select a topic</option>
                 <option value="Performance">Performance</option>
                 <option value="Classic">Classic</option>
                 <option value="Restoration">Restoration</option>
                 <option value="Racing">Racing</option>
                 <option value="Off-Road">Off-Road</option>
-              </select>
-            </div>
+              </Select>
+            </FormField>
 
             {error && (
               <div className="rounded-lg bg-red-50 dark:bg-red-900/50 p-4 text-sm text-red-700 dark:text-red-200">

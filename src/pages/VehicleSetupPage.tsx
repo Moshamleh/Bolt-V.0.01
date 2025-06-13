@@ -4,6 +4,11 @@ import { Car, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import supabase from '../lib/supabase';
+import { useFormValidation, ValidationRules } from '../hooks/useFormValidation';
+import FormField from '../components/FormField';
+import Input from '../components/Input';
+import Textarea from '../components/Textarea';
+import Select from '../components/Select';
 
 const YEARS = Array.from({ length: 75 }, (_, i) => new Date().getFullYear() - i);
 const MAKES = [
@@ -23,6 +28,28 @@ const MODELS: Record<string, string[]> = {
   // Add more makes and models as needed
 };
 
+const standardVehicleRules: ValidationRules = {
+  make: {
+    required: true
+  },
+  model: {
+    required: true
+  },
+  year: {
+    required: true,
+    min: 1900,
+    max: new Date().getFullYear() + 1
+  }
+};
+
+const otherVehicleRules: ValidationRules = {
+  otherVehicleDescription: {
+    required: true,
+    minLength: 10,
+    maxLength: 500
+  }
+};
+
 const VehicleSetupPage: React.FC = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,8 +63,22 @@ const VehicleSetupPage: React.FC = () => {
     otherVehicleDescription: ''
   });
 
+  const currentRules = isOtherVehicle ? otherVehicleRules : standardVehicleRules;
+  const { errors, validateField, validateForm, clearError, setError } = useFormValidation(currentRules);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form based on current mode
+    const dataToValidate = isOtherVehicle 
+      ? { otherVehicleDescription: formData.otherVehicleDescription }
+      : { make: formData.make, model: formData.model, year: formData.year };
+    
+    if (!validateForm(dataToValidate)) {
+      toast.error('Please fix the errors below');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -78,25 +119,44 @@ const VehicleSetupPage: React.FC = () => {
       ...prev,
       [name]: value
     }));
+
+    // Clear error when user starts typing
+    if (errors[name]) {
+      clearError(name);
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    const error = validateField(name, value);
+    if (error) {
+      setError(name, error);
+    }
+  };
+
+  const handleOtherVehicleToggle = (checked: boolean) => {
+    setIsOtherVehicle(checked);
+    // Clear all errors when switching modes
+    Object.keys(errors).forEach(key => clearError(key));
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-6"
         >
-          <h1 className="text-3xl font-bold text-gray-900">Vehicle Setup</h1>
-          <p className="text-gray-600 mt-1">Add your vehicle details to get started</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Vehicle Setup</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Add your vehicle details to get started</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden"
         >
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             <div className="flex items-center gap-2 mb-6">
@@ -104,139 +164,144 @@ const VehicleSetupPage: React.FC = () => {
                 type="checkbox"
                 id="otherVehicle"
                 checked={isOtherVehicle}
-                onChange={(e) => setIsOtherVehicle(e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                onChange={(e) => handleOtherVehicleToggle(e.target.checked)}
+                className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
               />
-              <label htmlFor="otherVehicle" className="text-sm text-gray-700">
+              <label htmlFor="otherVehicle" className="text-sm text-gray-700 dark:text-gray-300">
                 Other Vehicle (not listed)
               </label>
             </div>
 
             {isOtherVehicle ? (
-              <div>
-                <label htmlFor="otherVehicleDescription" className="block text-sm font-medium text-gray-700 mb-2">
-                  Vehicle Description
-                </label>
-                <textarea
-                  id="otherVehicleDescription"
+              <FormField
+                label="Vehicle Description"
+                name="otherVehicleDescription"
+                error={errors.otherVehicleDescription}
+                required
+                description="Describe your vehicle (e.g., Custom built electric car, Golf cart, etc.)"
+              >
+                <Textarea
                   name="otherVehicleDescription"
                   value={formData.otherVehicleDescription}
                   onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  error={!!errors.otherVehicleDescription}
                   rows={3}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Describe your vehicle (e.g., Custom built electric car, Golf cart, etc.)"
                 />
-              </div>
+              </FormField>
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="make" className="block text-sm font-medium text-gray-700 mb-2">
-                      Make
-                    </label>
-                    <select
-                      id="make"
+                  <FormField
+                    label="Make"
+                    name="make"
+                    error={errors.make}
+                    required
+                  >
+                    <Select
                       name="make"
                       value={formData.make}
                       onChange={handleInputChange}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onBlur={handleBlur}
+                      error={!!errors.make}
+                      placeholder="Select Make"
                     >
-                      <option value="">Select Make</option>
                       {MAKES.map(make => (
                         <option key={make} value={make}>{make}</option>
                       ))}
-                    </select>
-                  </div>
+                    </Select>
+                  </FormField>
 
-                  <div>
-                    <label htmlFor="model" className="block text-sm font-medium text-gray-700 mb-2">
-                      Model
-                    </label>
-                    <select
-                      id="model"
+                  <FormField
+                    label="Model"
+                    name="model"
+                    error={errors.model}
+                    required
+                  >
+                    <Select
                       name="model"
                       value={formData.model}
                       onChange={handleInputChange}
+                      onBlur={handleBlur}
+                      error={!!errors.model}
                       disabled={!formData.make}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      placeholder="Select Model"
                     >
-                      <option value="">Select Model</option>
                       {formData.make && MODELS[formData.make]?.map(model => (
                         <option key={model} value={model}>{model}</option>
                       ))}
-                    </select>
-                  </div>
+                    </Select>
+                  </FormField>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-2">
-                      Year
-                    </label>
-                    <select
-                      id="year"
+                  <FormField
+                    label="Year"
+                    name="year"
+                    error={errors.year}
+                    required
+                  >
+                    <Select
                       name="year"
                       value={formData.year}
                       onChange={handleInputChange}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onBlur={handleBlur}
+                      error={!!errors.year}
                     >
                       {YEARS.map(year => (
                         <option key={year} value={year}>{year}</option>
                       ))}
-                    </select>
-                  </div>
+                    </Select>
+                  </FormField>
 
-                  <div>
-                    <label htmlFor="trim" className="block text-sm font-medium text-gray-700 mb-2">
-                      Trim (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      id="trim"
+                  <FormField
+                    label="Trim"
+                    name="trim"
+                    description="Optional"
+                  >
+                    <Input
                       name="trim"
                       value={formData.trim}
                       onChange={handleInputChange}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="e.g., Sport, Limited, etc."
                     />
-                  </div>
+                  </FormField>
                 </div>
               </>
             )}
 
-            <div>
-              <label htmlFor="vin" className="block text-sm font-medium text-gray-700 mb-2">
-                VIN Number (Optional)
-              </label>
-              <input
-                type="text"
-                id="vin"
+            <FormField
+              label="VIN Number"
+              name="vin"
+              description="Optional - Your VIN helps us get the most accurate results"
+            >
+              <Input
                 name="vin"
                 value={formData.vin}
                 onChange={handleInputChange}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter your VIN"
               />
-              <div className="mt-2 flex items-start gap-2 text-sm text-gray-600">
-                <AlertCircle className="h-5 w-5 flex-shrink-0 text-blue-500" />
+              <div className="mt-2 flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <AlertCircle className="h-5 w-5 flex-shrink-0 text-blue-500 mt-0.5" />
                 <p>
                   Your VIN helps us get the most accurate results — from vehicle history and recalls
                   to the exact parts it needs. It's like a fingerprint for your car.
                 </p>
               </div>
-            </div>
+            </FormField>
 
             <div className="flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => navigate('/diagnostic')}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
                 Skip for Now
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting || (!isOtherVehicle && (!formData.make || !formData.model || !formData.year)) || (isOtherVehicle && !formData.otherVehicleDescription)}
+                disabled={isSubmitting}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isSubmitting ? (
