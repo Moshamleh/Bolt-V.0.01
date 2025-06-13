@@ -4,6 +4,7 @@ import { Zap, Store, UsersRound, Settings, Wrench, Car, Loader2 } from 'lucide-r
 import OnboardingTour from './OnboardingTour';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { supabase } from '../lib/supabase';
+import InitialSetupRedirect from './InitialSetupRedirect';
 
 const Layout: React.FC = () => {
   const { showOnboarding, completeOnboarding, skipOnboarding } = useOnboarding();
@@ -63,6 +64,9 @@ const Layout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-neutral-100 dark:bg-gray-900">
+      {/* Add the InitialSetupRedirect component to handle redirects */}
+      <InitialSetupRedirect />
+      
       <main className="pb-20 pt-4 px-4 md:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-6">
           <Outlet />

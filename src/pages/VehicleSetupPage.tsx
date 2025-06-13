@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Car, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import supabase from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { useFormValidation, ValidationRules } from '../hooks/useFormValidation';
 import FormField from '../components/FormField';
 import Input from '../components/Input';
@@ -95,11 +95,20 @@ const VehicleSetupPage: React.FC = () => {
         other_vehicle_description: isOtherVehicle ? formData.otherVehicleDescription : null
       };
 
-      const { error } = await supabase
+      // First, insert the vehicle
+      const { error: vehicleError } = await supabase
         .from('vehicles')
         .insert(vehicleData);
 
-      if (error) throw error;
+      if (vehicleError) throw vehicleError;
+
+      // Then, update the user's profile to mark initial setup as complete
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ initial_setup_complete: true })
+        .eq('id', session.user.id);
+
+      if (profileError) throw profileError;
 
       toast.success('Vehicle added successfully');
       navigate('/diagnostic');
@@ -294,7 +303,16 @@ const VehicleSetupPage: React.FC = () => {
             <div className="flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => navigate('/diagnostic')}
+                onClick={() => {
+                  // Mark setup as complete even when skipping
+                  supabase
+                    .from('profiles')
+                    .update({ initial_setup_complete: true })
+                    .eq('id', supabase.auth.getUser().then(({ data }) => data.user?.id))
+                    .then(() => {
+                      navigate('/diagnostic');
+                    });
+                }}
                 className="px-4 py-2 border border-neutral-300 dark:border-gray-600 rounded-lg text-sm font-medium text-neutral-700 dark:text-gray-300 bg-neutral-100 dark:bg-gray-800 hover:bg-neutral-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
                 Skip for Now

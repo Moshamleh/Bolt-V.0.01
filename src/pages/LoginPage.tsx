@@ -148,9 +148,26 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const handleAcceptDisclaimer = () => {
-    setShowDisclaimer(false);
-    navigate('/diagnostic');
+  const handleAcceptDisclaimer = async () => {
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Mark initial setup as incomplete to trigger the vehicle setup flow
+        await supabase
+          .from('profiles')
+          .update({ initial_setup_complete: false })
+          .eq('id', user.id);
+      }
+      
+      setShowDisclaimer(false);
+      navigate('/vehicle-setup');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      // Navigate anyway even if there's an error
+      setShowDisclaimer(false);
+      navigate('/vehicle-setup');
+    }
   };
 
   return (
