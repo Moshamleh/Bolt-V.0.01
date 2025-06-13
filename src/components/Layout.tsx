@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Zap, Store, UsersRound, Settings, Wrench, Car, Loader2 } from 'lucide-react';
+import { Zap, Store, UsersRound, Settings, Wrench } from 'lucide-react';
 import OnboardingTour from './OnboardingTour';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { supabase } from '../lib/supabase';
@@ -86,18 +86,6 @@ const Layout: React.FC = () => {
           >
             <Zap className="h-6 w-6" />
             <span className="text-[10px]">Bolt Chat</span>
-          </NavLink>
-
-          <NavLink
-            to="/vehicles"
-            className={({ isActive }) => `
-              flex flex-col items-center gap-1 min-w-[64px]
-              ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-600 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white'}
-            `}
-            data-tour="vehicles"
-          >
-            <Car className="h-6 w-6" />
-            <span className="text-[10px]">Vehicles</span>
           </NavLink>
 
           <NavLink
