@@ -146,36 +146,51 @@ const DiagnosticPage: React.FC = () => {
     // The tour will automatically start since showOnboarding is true
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-neutral-100 dark:bg-gray-900 p-4 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin mx-auto mb-4" />
-          <p className="text-neutral-600 dark:text-gray-400">Loading your vehicles...</p>
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin mx-auto mb-4" />
+            <p className="text-neutral-600 dark:text-gray-400">Loading your vehicles...</p>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (!selectedVehicleId) {
+    if (!selectedVehicleId) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+          <Car className="h-16 w-16 text-neutral-400 dark:text-gray-500 mb-4" />
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
+            No Vehicle Selected
+          </h2>
+          <p className="text-neutral-600 dark:text-gray-400 mb-6 max-w-md">
+            Please add a vehicle to your profile to start getting diagnostic assistance
+          </p>
+          <button
+            onClick={() => window.location.href = '/vehicle-setup'}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          >
+            Add Vehicle
+          </button>
+        </div>
+      );
+    }
+
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-        <Car className="h-16 w-16 text-neutral-400 dark:text-gray-500 mb-4" />
-        <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
-          No Vehicle Selected
-        </h2>
-        <p className="text-neutral-600 dark:text-gray-400 mb-6 max-w-md">
-          Please add a vehicle to your profile to start getting diagnostic assistance
-        </p>
-        <button
-          onClick={() => window.location.href = '/vehicle-setup'}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-        >
-          Add Vehicle
-        </button>
-      </div>
+      <Suspense fallback={<ComponentLoader />}>
+        <ChatInterface 
+          selectedVehicleId={selectedVehicleId}
+          onDiagnosisAdded={handleDiagnosisAdded}
+          messages={activeChatMessages}
+          setMessages={setActiveChatMessages}
+          activeDiagnosisId={activeDiagnosisId}
+          setActiveDiagnosisId={setActiveDiagnosisId}
+        />
+      </Suspense>
     );
-  }
+  };
 
   return (
     <div className="min-h-screen bg-neutral-100 dark:bg-gray-900">
@@ -200,17 +215,8 @@ const DiagnosticPage: React.FC = () => {
         />
       </Suspense>
 
-      <div className="pt-[104px] pb-[64px] h-screen">
-        <Suspense fallback={<ComponentLoader />}>
-          <ChatInterface 
-            selectedVehicleId={selectedVehicleId}
-            onDiagnosisAdded={handleDiagnosisAdded}
-            messages={activeChatMessages}
-            setMessages={setActiveChatMessages}
-            activeDiagnosisId={activeDiagnosisId}
-            setActiveDiagnosisId={setActiveDiagnosisId}
-          />
-        </Suspense>
+      <div className="pt-[104px] pb-[64px] md:pt-4 md:pb-0 h-screen">
+        {renderContent()}
       </div>
 
       {/* Welcome Modal for new users */}
