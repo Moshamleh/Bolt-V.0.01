@@ -1,9 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Car, Loader2 } from 'lucide-react';
 import { Vehicle, getUserVehicles, getUserDiagnoses, Diagnosis } from '../lib/supabase';
-import ChatInterface from '../components/ChatInterface';
-import MobileTopNavBar from '../components/MobileTopNavBar';
-import MobileCollapsibleMenu from '../components/MobileCollapsibleMenu';
+import { useOnboarding } from '../hooks/useOnboarding';
+import WelcomeModal from '../components/WelcomeModal';
+
+// Lazy load components
+const ChatInterface = lazy(() => import('../components/ChatInterface'));
+const MobileTopNavBar = lazy(() => import('../components/MobileTopNavBar'));
+const MobileCollapsibleMenu = lazy(() => import('../components/MobileCollapsibleMenu'));
+
+// Loading fallback
+const ComponentLoader = () => (
+  <div className="flex items-center justify-center h-full">
+    <Loader2 className="h-6 w-6 text-blue-600 dark:text-blue-400 animate-spin" />
+  </div>
+);
 
 interface ChatMessage {
   id: string;
@@ -24,6 +35,16 @@ const DiagnosticPage: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeChatMessages, setActiveChatMessages] = useState<ChatMessage[]>([]);
   const [activeDiagnosisId, setActiveDiagnosisId] = useState<string | null>(null);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  
+  const { showOnboarding, completeOnboarding, isInitialized } = useOnboarding();
+
+  useEffect(() => {
+    // Show welcome modal for new users when onboarding is initialized
+    if (isInitialized && showOnboarding) {
+      setShowWelcomeModal(true);
+    }
+  }, [isInitialized, showOnboarding]);
 
   useEffect(() => {
     const loadVehicles = async () => {
@@ -118,6 +139,11 @@ const DiagnosticPage: React.FC = () => {
     setIsMenuOpen(false);
   };
 
+  const handleStartTour = () => {
+    setShowWelcomeModal(false);
+    // The tour will automatically start since showOnboarding is true
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 flex items-center justify-center">
@@ -151,33 +177,49 @@ const DiagnosticPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <MobileTopNavBar
-        vehicles={vehicles}
-        selectedVehicleId={selectedVehicleId}
-        onVehicleChange={setSelectedVehicleId}
-        onMenuToggle={() => setIsMenuOpen(true)}
-      />
+      <Suspense fallback={<ComponentLoader />}>
+        <MobileTopNavBar
+          vehicles={vehicles}
+          selectedVehicleId={selectedVehicleId}
+          onVehicleChange={setSelectedVehicleId}
+          onMenuToggle={() => setIsMenuOpen(true)}
+        />
+      </Suspense>
 
-      <MobileCollapsibleMenu
-        isOpen={isMenuOpen}
-        onClose={() => setIsMenuOpen(false)}
-        diagnoses={diagnoses}
-        loading={loading}
-        error={error}
-        onStatusChange={handleDiagnosisStatusChange}
-        onLoadDiagnosis={handleLoadDiagnosis}
-      />
+      <Suspense fallback={<ComponentLoader />}>
+        <MobileCollapsibleMenu
+          isOpen={isMenuOpen}
+          onClose={() => setIsMenuOpen(false)}
+          diagnoses={diagnoses}
+          loading={loading}
+          error={error}
+          onStatusChange={handleDiagnosisStatusChange}
+          onLoadDiagnosis={handleLoadDiagnosis}
+        />
+      </Suspense>
 
       <div className="pt-[104px] pb-[64px] h-screen">
-        <ChatInterface 
-          selectedVehicleId={selectedVehicleId}
-          onDiagnosisAdded={handleDiagnosisAdded}
-          messages={activeChatMessages}
-          setMessages={setActiveChatMessages}
-          activeDiagnosisId={activeDiagnosisId}
-          setActiveDiagnosisId={setActiveDiagnosisId}
-        />
+        <Suspense fallback={<ComponentLoader />}>
+          <ChatInterface 
+            selectedVehicleId={selectedVehicleId}
+            onDiagnosisAdded={handleDiagnosisAdded}
+            messages={activeChatMessages}
+            setMessages={setActiveChatMessages}
+            activeDiagnosisId={activeDiagnosisId}
+            setActiveDiagnosisId={setActiveDiagnosisId}
+          />
+        </Suspense>
       </div>
+
+      {/* Welcome Modal for new users */}
+      <WelcomeModal 
+        isOpen={showWelcomeModal} 
+        onClose={() => {
+          setShowWelcomeModal(false);
+          completeOnboarding();
+        }}
+        onStartTour={handleStartTour}
+      />
     </div>
   );
 };

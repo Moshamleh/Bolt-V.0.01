@@ -56,6 +56,12 @@ const LoginPage: React.FC = () => {
         await supabase
           .from('user_logins')
           .insert({ user_id: session?.user.id });
+          
+        // Set initial_setup_complete to false to trigger onboarding
+        await supabase
+          .from('profiles')
+          .update({ initial_setup_complete: false })
+          .eq('id', session?.user.id);
       } else {
         navigate('/diagnostic');
       }
@@ -74,6 +80,11 @@ const LoginPage: React.FC = () => {
       const { error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            initial_setup_complete: false // Set this for new users
+          }
+        }
       });
 
       if (error) throw error;
