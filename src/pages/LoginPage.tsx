@@ -154,22 +154,22 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-neutral-100 dark:from-gray-900 dark:to-gray-800">
       <div className="w-full max-w-md px-4">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-600 text-white mb-4">
             <Zap className="w-8 h-8" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Bolt Auto</h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">Your Personal AI Mechanic</p>
+          <h1 className="text-4xl font-bold text-neutral-900 dark:text-white mb-2">Bolt Auto</h1>
+          <p className="text-lg text-neutral-600 dark:text-gray-400">Your Personal AI Mechanic</p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+        <div className="bg-neutral-100 dark:bg-gray-800 rounded-2xl shadow-xl p-8">
           <div className="text-center">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+            <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white mb-2">
               Welcome Back
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-8">
+            <p className="text-neutral-600 dark:text-gray-400 mb-8">
               Sign in or create an account to get started
             </p>
           </div>
@@ -178,7 +178,7 @@ const LoginPage: React.FC = () => {
           <button
             onClick={handleGoogleSignIn}
             disabled={isGoogleLoading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 mb-3 border border-neutral-300 dark:border-gray-600 rounded-lg text-neutral-700 dark:text-gray-300 bg-neutral-100 dark:bg-gray-700 hover:bg-neutral-200 dark:hover:bg-gray-600 transition-colors"
           >
             {isGoogleLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -211,7 +211,7 @@ const LoginPage: React.FC = () => {
           <button
             onClick={handleAppleSignIn}
             disabled={isAppleLoading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 mb-6 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 mb-6 border border-neutral-300 dark:border-gray-600 rounded-lg text-neutral-700 dark:text-gray-300 bg-neutral-100 dark:bg-gray-700 hover:bg-neutral-200 dark:hover:bg-gray-600 transition-colors"
           >
             {isAppleLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -227,10 +227,10 @@ const LoginPage: React.FC = () => {
 
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+              <div className="w-full border-t border-neutral-300 dark:border-gray-600"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Or continue with</span>
+              <span className="px-2 bg-neutral-100 dark:bg-gray-800 text-neutral-500 dark:text-gray-400">Or continue with</span>
             </div>
           </div>
 
@@ -242,7 +242,7 @@ const LoginPage: React.FC = () => {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
+                    <Mail className="h-5 w-5 text-neutral-400" />
                   </div>
                   <input
                     id="email"
@@ -251,7 +251,7 @@ const LoginPage: React.FC = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                    className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border border-neutral-300 dark:border-gray-600 placeholder-neutral-500 dark:placeholder-gray-400 text-neutral-900 dark:text-white bg-neutral-100 dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="Email address"
                   />
                 </div>
@@ -263,7 +263,7 @@ const LoginPage: React.FC = () => {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <KeyRound className="h-5 w-5 text-gray-400" />
+                    <KeyRound className="h-5 w-5 text-neutral-400" />
                   </div>
                   <input
                     id="password"
@@ -272,7 +272,7 @@ const LoginPage: React.FC = () => {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                    className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border border-neutral-300 dark:border-gray-600 placeholder-neutral-500 dark:placeholder-gray-400 text-neutral-900 dark:text-white bg-neutral-100 dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="Password"
                   />
                 </div>
@@ -309,7 +309,7 @@ const LoginPage: React.FC = () => {
                 type="button"
                 onClick={handleSignUp}
                 disabled={isLoading}
-                className="relative flex-1 flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="relative flex-1 flex justify-center py-2 px-4 border border-neutral-300 dark:border-gray-600 text-sm font-medium rounded-lg text-neutral-700 dark:text-gray-300 bg-neutral-100 dark:bg-gray-700 hover:bg-neutral-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isLoading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -348,26 +348,26 @@ const LoginPage: React.FC = () => {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-md w-full p-6"
+              className="bg-neutral-100 dark:bg-gray-800 rounded-xl shadow-lg max-w-md w-full p-6"
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
                     <Zap className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">
                     Welcome to Bolt Auto
                   </h3>
                 </div>
                 <button
                   onClick={() => setShowDisclaimer(false)}
-                  className="text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400"
+                  className="text-neutral-400 dark:text-gray-500 hover:text-neutral-500 dark:hover:text-gray-400"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-neutral-600 dark:text-gray-400 mb-6">
                 By using Bolt Auto, you accept our Terms and understand that
                 AI-generated responses may not always be accurate. Always verify
                 critical information with a certified mechanic.

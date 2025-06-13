@@ -22,6 +22,8 @@ interface ChatMessage {
   isUser: boolean;
   isError?: boolean;
   timestamp: Date;
+  originalPrompt?: string;
+  isTypingIndicator?: boolean;
   diagnosisId?: string;
   hasFeedback?: boolean;
 }
@@ -146,10 +148,10 @@ const DiagnosticPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-100 dark:bg-gray-900 p-4 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Loading your vehicles...</p>
+          <p className="text-neutral-600 dark:text-gray-400">Loading your vehicles...</p>
         </div>
       </div>
     );
@@ -158,11 +160,11 @@ const DiagnosticPage: React.FC = () => {
   if (!selectedVehicleId) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-        <Car className="h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+        <Car className="h-16 w-16 text-neutral-400 dark:text-gray-500 mb-4" />
+        <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
           No Vehicle Selected
         </h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md">
+        <p className="text-neutral-600 dark:text-gray-400 mb-6 max-w-md">
           Please add a vehicle to your profile to start getting diagnostic assistance
         </p>
         <button
@@ -176,7 +178,7 @@ const DiagnosticPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-neutral-100 dark:bg-gray-900">
       <Suspense fallback={<ComponentLoader />}>
         <MobileTopNavBar
           vehicles={vehicles}

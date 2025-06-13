@@ -20,7 +20,7 @@
   }
 
   body {
-    @apply text-slate-900 bg-slate-50 dark:text-white dark:bg-gray-900;
+    @apply text-neutral-800 bg-neutral-100 dark:text-white dark:bg-gray-900;
   }
 }
 
@@ -31,15 +31,15 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-slate-100 dark:bg-gray-800;
+  @apply bg-neutral-200 dark:bg-gray-800;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-300 dark:bg-gray-600 rounded-full;
+  @apply bg-neutral-300 dark:bg-gray-600 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-slate-400 dark:bg-gray-500;
+  @apply bg-neutral-400 dark:bg-gray-500;
 }
 
 /* Typing indicator animation */
@@ -70,7 +70,7 @@
 
 /* Chat background gradient */
 .bg-chat-gradient {
-  @apply bg-gradient-to-b from-blue-50 to-white dark:from-gray-800 dark:to-gray-900;
+  @apply bg-gradient-to-b from-blue-50 to-neutral-100 dark:from-gray-800 dark:to-gray-900;
   background-attachment: fixed;
 }
 
@@ -94,19 +94,19 @@
   }
 
   .page-title {
-    @apply text-3xl font-bold text-gray-900 dark:text-white;
+    @apply text-3xl font-bold text-neutral-800 dark:text-white;
   }
 
   .page-subtitle {
-    @apply text-gray-600 dark:text-gray-400 mt-1;
+    @apply text-neutral-600 dark:text-gray-400 mt-1;
   }
 
   .card {
-    @apply bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden;
+    @apply bg-neutral-100 dark:bg-gray-800 rounded-2xl shadow-sm border border-neutral-200 dark:border-gray-700 overflow-hidden;
   }
 
   .card-header {
-    @apply p-6 border-b border-gray-100 dark:border-gray-700;
+    @apply p-6 border-b border-neutral-200 dark:border-gray-700;
   }
 
   .card-body {
@@ -114,11 +114,11 @@
   }
 
   .card-footer {
-    @apply p-6 border-t border-gray-100 dark:border-gray-700;
+    @apply p-6 border-t border-neutral-200 dark:border-gray-700;
   }
 
   .input {
-    @apply w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+    @apply w-full rounded-lg border border-neutral-300 dark:border-gray-600 px-4 py-2 bg-neutral-100 dark:bg-gray-700 text-neutral-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
   }
 
   .btn {
@@ -130,6 +130,6 @@
   }
 
   .btn-secondary {
-    @apply btn bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 focus:ring-gray-500;
+    @apply btn bg-neutral-200 dark:bg-gray-700 text-neutral-700 dark:text-gray-300 hover:bg-neutral-300 dark:hover:bg-gray-600 focus:ring-gray-500;
   }
 }

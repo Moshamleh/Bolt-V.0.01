@@ -141,22 +141,22 @@ const VehicleSetupPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-neutral-100 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-6"
         >
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Vehicle Setup</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Add your vehicle details to get started</p>
+          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Vehicle Setup</h1>
+          <p className="text-neutral-600 dark:text-gray-400 mt-1">Add your vehicle details to get started</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden"
+          className="bg-neutral-100 dark:bg-gray-800 rounded-xl shadow-sm border border-neutral-200 dark:border-gray-700 overflow-hidden"
         >
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             <div className="flex items-center gap-2 mb-6">
@@ -165,9 +165,9 @@ const VehicleSetupPage: React.FC = () => {
                 id="otherVehicle"
                 checked={isOtherVehicle}
                 onChange={(e) => handleOtherVehicleToggle(e.target.checked)}
-                className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                className="rounded border-neutral-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
               />
-              <label htmlFor="otherVehicle" className="text-sm text-gray-700 dark:text-gray-300">
+              <label htmlFor="otherVehicle" className="text-sm text-neutral-700 dark:text-gray-300">
                 Other Vehicle (not listed)
               </label>
             </div>
@@ -282,7 +282,7 @@ const VehicleSetupPage: React.FC = () => {
                 onChange={handleInputChange}
                 placeholder="Enter your VIN"
               />
-              <div className="mt-2 flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <div className="mt-2 flex items-start gap-2 text-sm text-neutral-600 dark:text-gray-400">
                 <AlertCircle className="h-5 w-5 flex-shrink-0 text-blue-500 mt-0.5" />
                 <p>
                   Your VIN helps us get the most accurate results — from vehicle history and recalls
@@ -295,7 +295,7 @@ const VehicleSetupPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate('/diagnostic')}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="px-4 py-2 border border-neutral-300 dark:border-gray-600 rounded-lg text-sm font-medium text-neutral-700 dark:text-gray-300 bg-neutral-100 dark:bg-gray-800 hover:bg-neutral-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
                 Skip for Now
               </button>

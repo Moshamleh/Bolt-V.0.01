@@ -130,7 +130,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               } list-inside mb-2 space-y-1 pl-4`}
             >
               {listItems.map((item, itemIndex) => (
-                <li key={`list-item-${blockIndex}-${itemIndex}`} className="text-gray-800 dark:text-gray-200">
+                <li key={`list-item-${blockIndex}-${itemIndex}`} className="text-neutral-800 dark:text-gray-200">
                   {item}
                 </li>
               ))}
@@ -285,7 +285,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         className="flex-1 overflow-y-auto p-4 space-y-4"
       >
         {messages.length === 0 ? (
-          <div className="text-center text-gray-400 dark:text-gray-500 py-8">
+          <div className="text-center text-neutral-400 dark:text-gray-500 py-8">
             Describe your car issue to get started
           </div>
         ) : (
@@ -305,7 +305,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         ? 'bg-blue-600 text-white rounded-br-none px-4 py-2'
                         : message.isError
                         ? 'bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-200 p-4'
-                        : 'bg-blue-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none p-4'
+                        : 'bg-neutral-100 dark:bg-gray-700 text-neutral-800 dark:text-gray-200 rounded-bl-none p-4'
                     }`}
                   >
                     {message.isTypingIndicator ? (
@@ -330,30 +330,30 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     className="flex items-center gap-2 pl-4"
                   >
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                    <span className="text-sm text-neutral-500 dark:text-gray-400">
                       Was this helpful?
                     </span>
                     <button
                       onClick={() => handleFeedback(message.id, message.diagnosisId!, true)}
                       disabled={!!submittingFeedback}
-                      className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                      className={`p-1 rounded hover:bg-neutral-200 dark:hover:bg-gray-700 transition-colors ${
                         submittingFeedback === message.id ? 'opacity-50' : ''
                       }`}
                     >
                       {submittingFeedback === message.id ? (
-                        <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                        <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
                       ) : (
-                        <ThumbsUp className="h-5 w-5 text-gray-400" />
+                        <ThumbsUp className="h-5 w-5 text-neutral-400" />
                       )}
                     </button>
                     <button
                       onClick={() => handleFeedback(message.id, message.diagnosisId!, false)}
                       disabled={!!submittingFeedback}
-                      className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                      className={`p-1 rounded hover:bg-neutral-200 dark:hover:bg-gray-700 transition-colors ${
                         submittingFeedback === message.id ? 'opacity-50' : ''
                       }`}
                     >
-                      <ThumbsDown className="h-5 w-5 text-gray-400" />
+                      <ThumbsDown className="h-5 w-5 text-neutral-400" />
                     </button>
                   </motion.div>
                 )}
@@ -366,7 +366,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       <form 
         onSubmit={handleSubmit} 
-        className="fixed bottom-[64px] left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-2 shadow-lg"
+        className="fixed bottom-[64px] left-0 right-0 bg-neutral-100 dark:bg-gray-800 border-t border-neutral-200 dark:border-gray-700 px-4 py-2 shadow-lg"
       >
         <div className="max-w-2xl mx-auto flex items-end gap-2">
           <TextareaAutosize
@@ -374,7 +374,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Describe your car issue..."
-            className="flex-1 resize-none overflow-hidden min-h-[40px] max-h-[120px] rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 resize-none overflow-hidden min-h-[40px] max-h-[120px] rounded-lg border border-neutral-300 dark:border-gray-600 px-4 py-2 bg-neutral-100 dark:bg-gray-700 text-neutral-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isSubmitting}
             minRows={1}
             maxRows={4}

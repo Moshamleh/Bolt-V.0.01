@@ -38,15 +38,15 @@ const MechanicRequestsQueue: React.FC = () => {
     return (
       <div className="animate-pulse space-y-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-4 flex items-center gap-4">
-            <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+          <div key={i} className="bg-neutral-100 dark:bg-gray-800 rounded-lg p-4 flex items-center gap-4">
+            <div className="w-12 h-12 bg-neutral-200 dark:bg-gray-700 rounded-full"></div>
             <div className="flex-1">
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
-              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+              <div className="h-4 bg-neutral-200 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
+              <div className="h-3 bg-neutral-200 dark:bg-gray-700 rounded w-1/3"></div>
             </div>
             <div className="flex gap-2">
-              <div className="w-24 h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
-              <div className="w-24 h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="w-24 h-8 bg-neutral-200 dark:bg-gray-700 rounded"></div>
+              <div className="w-24 h-8 bg-neutral-200 dark:bg-gray-700 rounded"></div>
             </div>
           </div>
         ))}
@@ -56,12 +56,12 @@ const MechanicRequestsQueue: React.FC = () => {
 
   if (mechanics.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
-        <User className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+      <div className="bg-neutral-100 dark:bg-gray-800 rounded-lg p-8 text-center">
+        <User className="h-12 w-12 text-neutral-400 dark:text-gray-500 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-2">
           No Pending Requests
         </h3>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-neutral-600 dark:text-gray-400">
           All mechanic requests have been processed
         </p>
       </div>
@@ -77,23 +77,23 @@ const MechanicRequestsQueue: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-4"
+            className="bg-neutral-100 dark:bg-gray-800 rounded-lg shadow-sm border border-neutral-200 dark:border-gray-700 p-4"
           >
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                  <User className="h-6 w-6 text-gray-400 dark:text-gray-500" />
+                <div className="w-12 h-12 bg-neutral-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                  <User className="h-6 w-6 text-neutral-400 dark:text-gray-500" />
                 </div>
               </div>
 
               <div className="flex-1 min-w-0">
-                <h4 className="text-lg font-medium text-gray-900 dark:text-white truncate flex items-center gap-2">
+                <h4 className="text-lg font-medium text-neutral-900 dark:text-white truncate flex items-center gap-2">
                   {mechanic.full_name}
                   {mechanic.is_certified && (
                     <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   )}
                 </h4>
-                <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                <div className="text-sm text-neutral-500 dark:text-gray-400 space-y-1">
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4" />
                     {mechanic.phone}

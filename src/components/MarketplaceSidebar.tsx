@@ -30,16 +30,16 @@ const MarketplaceSidebar: React.FC<MarketplaceSidebarProps> = ({ isOpen, onClose
         initial={{ x: "-100%" }}
         animate={{ x: isOpen ? 0 : "-100%" }}
         transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-        className={`fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg z-50 transform ${
+        className={`fixed left-0 top-0 h-full w-64 bg-neutral-100 dark:bg-gray-800 shadow-lg z-50 transform ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:z-0`}
       >
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-b border-neutral-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Marketplace</h2>
+            <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Marketplace</h2>
             <button
               onClick={onClose}
-              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 md:hidden"
+              className="p-2 text-neutral-500 hover:text-neutral-700 dark:text-gray-400 dark:hover:text-gray-300 md:hidden"
             >
               <X className="h-5 w-5" />
             </button>
@@ -53,7 +53,7 @@ const MarketplaceSidebar: React.FC<MarketplaceSidebarProps> = ({ isOpen, onClose
               flex items-center gap-3 px-4 py-2 rounded-lg transition-colors
               ${isActive 
                 ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' 
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                : 'text-neutral-700 dark:text-gray-300 hover:bg-neutral-200 dark:hover:bg-gray-700'
               }
             `}
           >
@@ -67,7 +67,7 @@ const MarketplaceSidebar: React.FC<MarketplaceSidebarProps> = ({ isOpen, onClose
               flex items-center gap-3 px-4 py-2 rounded-lg transition-colors
               ${isActive 
                 ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' 
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                : 'text-neutral-700 dark:text-gray-300 hover:bg-neutral-200 dark:hover:bg-gray-700'
               }
             `}
           >
@@ -89,7 +89,7 @@ const MarketplaceSidebar: React.FC<MarketplaceSidebarProps> = ({ isOpen, onClose
               flex items-center gap-3 px-4 py-2 rounded-lg transition-colors
               ${isActive 
                 ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' 
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                : 'text-neutral-700 dark:text-gray-300 hover:bg-neutral-200 dark:hover:bg-gray-700'
               }
             `}
           >
@@ -103,7 +103,7 @@ const MarketplaceSidebar: React.FC<MarketplaceSidebarProps> = ({ isOpen, onClose
               flex items-center gap-3 px-4 py-2 rounded-lg transition-colors
               ${isActive 
                 ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' 
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                : 'text-neutral-700 dark:text-gray-300 hover:bg-neutral-200 dark:hover:bg-gray-700'
               }
             `}
           >
@@ -117,7 +117,7 @@ const MarketplaceSidebar: React.FC<MarketplaceSidebarProps> = ({ isOpen, onClose
               flex items-center gap-3 px-4 py-2 rounded-lg transition-colors
               ${isActive 
                 ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' 
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                : 'text-neutral-700 dark:text-gray-300 hover:bg-neutral-200 dark:hover:bg-gray-700'
               }
             `}
           >

@@ -11,14 +11,14 @@ const SupportFeedbackSection: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-100 dark:border-gray-700">
+      <div className="bg-neutral-100 dark:bg-gray-800 rounded-xl p-6 border border-neutral-200 dark:border-gray-700">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
             <HelpCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <h3 className="font-medium text-gray-900 dark:text-white">Help & Support</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Get help or send us feedback</p>
+            <h3 className="font-medium text-neutral-900 dark:text-white">Help & Support</h3>
+            <p className="text-sm text-neutral-600 dark:text-gray-400">Get help or send us feedback</p>
           </div>
         </div>
 
@@ -33,7 +33,7 @@ const SupportFeedbackSection: React.FC = () => {
 
           <button
             onClick={handleContactSupport}
-            className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 border border-neutral-300 dark:border-gray-600 text-neutral-700 dark:text-gray-300 rounded-lg font-medium hover:bg-neutral-200 dark:hover:bg-gray-700 transition-colors"
           >
             <HelpCircle className="h-5 w-5" />
             Contact Support

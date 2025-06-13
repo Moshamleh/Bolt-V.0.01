@@ -44,14 +44,14 @@ const PartCard: React.FC<PartCardProps> = ({
       case 'refurbished':
         return 'bg-blue-100/90 text-blue-800';
       default:
-        return 'bg-gray-100/90 text-gray-800';
+        return 'bg-neutral-100/90 text-neutral-800';
     }
   };
 
   return (
     <div
       onClick={onClick}
-      className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer"
+      className="group bg-neutral-100 rounded-xl shadow-sm border border-neutral-200 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer"
     >
       <div className="relative aspect-[4/3] overflow-hidden">
         <img
@@ -71,7 +71,7 @@ const PartCard: React.FC<PartCardProps> = ({
 
       <div className="p-4">
         <div className="flex justify-between items-start gap-2 mb-3">
-          <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
+          <h3 className="text-lg font-semibold text-neutral-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
             {title}
           </h3>
           <span className="flex-shrink-0 text-lg font-bold text-blue-600">
@@ -80,17 +80,17 @@ const PartCard: React.FC<PartCardProps> = ({
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-neutral-600">
             <Car className="h-4 w-4 mr-1.5 flex-shrink-0" />
             <span className="truncate">
               {year} {make} {model}
             </span>
           </div>
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-neutral-600">
             <MapPin className="h-4 w-4 mr-1.5 flex-shrink-0" />
             <span className="truncate">{location}</span>
           </div>
-          <div className="text-xs text-gray-500 pt-1">
+          <div className="text-xs text-neutral-500 pt-1">
             Listed {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
           </div>
         </div>

@@ -51,15 +51,15 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-md w-full"
+        className="bg-neutral-100 dark:bg-gray-800 rounded-xl shadow-lg max-w-md w-full"
       >
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
             Send Feedback
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
+            className="text-neutral-400 dark:text-gray-500 hover:text-neutral-500 dark:hover:text-gray-400 transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -67,7 +67,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-gray-300 mb-2">
               How was your experience?
             </label>
             <div className="flex justify-center gap-4">
@@ -77,7 +77,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
                 className={`text-4xl p-2 rounded-lg transition-colors ${
                   sentiment === 'happy'
                     ? 'bg-green-100 dark:bg-green-900/50 scale-110'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                    : 'hover:bg-neutral-200 dark:hover:bg-gray-700'
                 }`}
               >
                 😊
@@ -88,7 +88,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
                 className={`text-4xl p-2 rounded-lg transition-colors ${
                   sentiment === 'neutral'
                     ? 'bg-blue-100 dark:bg-blue-900/50 scale-110'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                    : 'hover:bg-neutral-200 dark:hover:bg-gray-700'
                 }`}
               >
                 😐
@@ -99,7 +99,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
                 className={`text-4xl p-2 rounded-lg transition-colors ${
                   sentiment === 'angry'
                     ? 'bg-red-100 dark:bg-red-900/50 scale-110'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                    : 'hover:bg-neutral-200 dark:hover:bg-gray-700'
                 }`}
               >
                 😡
@@ -110,7 +110,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
           <div>
             <label
               htmlFor="message"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              className="block text-sm font-medium text-neutral-700 dark:text-gray-300 mb-2"
             >
               Your Feedback
             </label>
@@ -119,7 +119,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={4}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-lg border border-neutral-300 dark:border-gray-600 px-4 py-2 bg-neutral-100 dark:bg-gray-700 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Tell us what you think..."
             />
           </div>
@@ -128,7 +128,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              className="px-4 py-2 border border-neutral-300 dark:border-gray-600 rounded-lg text-sm font-medium text-neutral-700 dark:text-gray-300 bg-neutral-100 dark:bg-gray-800 hover:bg-neutral-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
               Cancel
             </button>
