@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, Plus, Settings, Wrench, Loader2 } from 'lucide-react';
+import { Car, Plus, Settings, Wrench, Loader2, FileText, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, getUserVehicles } from '../lib/supabase';
 
@@ -37,6 +37,14 @@ const VehicleManagementPage: React.FC = () => {
 
   const handleRunDiagnostic = (vehicleId: string) => {
     navigate('/diagnostic');
+  };
+
+  const handleAddServiceRecord = (vehicleId: string) => {
+    navigate(`/vehicles/${vehicleId}/add-service`);
+  };
+
+  const handleViewServiceHistory = (vehicleId: string) => {
+    navigate(`/vehicles/${vehicleId}/service-history`);
   };
 
   const LoadingSkeleton = () => (
@@ -109,7 +117,7 @@ const VehicleManagementPage: React.FC = () => {
         >
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Your Vehicles</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage your vehicles and run diagnostics
+            Manage your vehicles, service records, and run diagnostics
           </p>
         </motion.div>
 
@@ -130,11 +138,10 @@ const VehicleManagementPage: React.FC = () => {
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {vehicle.year} {vehicle.make}
+                      {vehicle.other_vehicle_description || `${vehicle.year} ${vehicle.make}`}
                     </h3>
                     <p className="text-gray-600 dark:text-gray-400">
-                      {vehicle.model}
-                      {vehicle.trim && ` ${vehicle.trim}`}
+                      {vehicle.other_vehicle_description ? '' : `${vehicle.model}${vehicle.trim ? ` ${vehicle.trim}` : ''}`}
                     </p>
                   </div>
                   <button
@@ -146,13 +153,33 @@ const VehicleManagementPage: React.FC = () => {
                   </button>
                 </div>
 
-                <button
-                  onClick={() => handleRunDiagnostic(vehicle.id)}
-                  className="w-full flex items-center justify-center px-4 py-2 mt-4 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                >
-                  <Wrench className="h-5 w-5 mr-2" />
-                  Run Diagnostic
-                </button>
+                <div className="mt-4 space-y-3">
+                  <button
+                    onClick={() => handleRunDiagnostic(vehicle.id)}
+                    className="w-full flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  >
+                    <Wrench className="h-5 w-5 mr-2" />
+                    Run Diagnostic
+                  </button>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => handleAddServiceRecord(vehicle.id)}
+                      className="flex items-center justify-center px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium hover:bg-green-200 dark:hover:bg-green-800/50 transition-colors"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Add Service
+                    </button>
+                    
+                    <button
+                      onClick={() => handleViewServiceHistory(vehicle.id)}
+                      className="flex items-center justify-center px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Service History
+                    </button>
+                  </div>
+                </div>
               </motion.div>
             ))}
 

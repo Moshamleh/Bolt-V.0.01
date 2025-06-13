@@ -37,6 +37,8 @@ const MechanicChatPage = lazy(() => import('./pages/MechanicChatPage'));
 const MechanicSettingsPage = lazy(() => import('./pages/MechanicSettingsPage'));
 const MechanicProfilePage = lazy(() => import('./pages/MechanicProfilePage'));
 const BoltFixes = lazy(() => import('./components/BoltFixes'));
+const AddServiceRecordPage = lazy(() => import('./pages/AddServiceRecordPage'));
+const ServiceHistoryPage = lazy(() => import('./pages/ServiceHistoryPage'));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -88,6 +90,8 @@ function App() {
             <Route index element={<Navigate to="/vehicles" replace />} />
             <Route path="/vehicles" element={<VehicleManagementPage />} />
             <Route path="/vehicle-setup" element={<VehicleSetupPage />} />
+            <Route path="/vehicles/:vehicleId/add-service" element={<AddServiceRecordPage />} />
+            <Route path="/vehicles/:vehicleId/service-history" element={<ServiceHistoryPage />} />
             <Route path="/diagnostic" element={<DiagnosticPage />} />
             <Route path="/mechanic-support" element={<MechanicSupportPage />} />
             <Route path="/mechanic-support/chat/:mechanicId" element={<MechanicChatPage />} />
