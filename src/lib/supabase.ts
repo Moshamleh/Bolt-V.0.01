@@ -1384,12 +1384,20 @@ export async function getMechanics(): Promise<Mechanic[]> {
   return data || [];
 }
 
-export async function getApprovedMechanics(): Promise<Mechanic[]> {
-  const { data, error } = await supabase
+export async function getApprovedMechanics(filters?: string[]): Promise<Mechanic[]> {
+  let query = supabase
     .from('mechanics')
     .select('*')
     .eq('status', 'approved')
     .order('created_at', { ascending: false });
+
+  // If specialties filter is provided, filter mechanics by specialties
+  if (filters && filters.length > 0) {
+    // Use PostgreSQL array operator @> to check if specialties column contains any of the filters
+    query = query.filter('specialties', 'cs', `{${filters.join(',')}}`);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
   return data || [];

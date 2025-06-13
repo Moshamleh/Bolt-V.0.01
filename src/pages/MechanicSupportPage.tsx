@@ -1,10 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wrench, MessageSquare, Phone, Shield, MapPin, Star, User, CheckCircle } from 'lucide-react';
+import { Wrench, MessageSquare, Phone, Shield, MapPin, Star, User, CheckCircle, Filter, X } from 'lucide-react';
 import { getApprovedMechanics, getOrCreateMechanicChat, Mechanic } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
+
+// Define expertise areas for filtering
+const EXPERTISE_AREAS = [
+  'Engine Repair',
+  'Transmission',
+  'Brakes',
+  'Suspension',
+  'Electrical Systems',
+  'Air Conditioning',
+  'Diagnostics',
+  'Oil Changes',
+  'Tire Service',
+  'Body Work',
+  'Paint',
+  'Welding',
+  'Performance Tuning',
+  'Hybrid/Electric Vehicles',
+  'Diesel Engines',
+  'Classic Cars',
+  'Motorcycles',
+  'Heavy Duty Trucks'
+];
 
 const MechanicSupportPage: React.FC = () => {
   const navigate = useNavigate();
@@ -13,11 +35,14 @@ const MechanicSupportPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [startingChat, setStartingChat] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
 
   useEffect(() => {
     const loadMechanics = async () => {
       try {
-        const data = await getApprovedMechanics();
+        setLoading(true);
+        const data = await getApprovedMechanics(selectedSpecialties);
         setMechanics(data);
       } catch (err) {
         console.error('Failed to load mechanics:', err);
@@ -28,7 +53,7 @@ const MechanicSupportPage: React.FC = () => {
     };
 
     loadMechanics();
-  }, []);
+  }, [selectedSpecialties]);
 
   const handleStartChat = async (mechanic: Mechanic) => {
     setStartingChat(mechanic.id);
@@ -60,6 +85,18 @@ const MechanicSupportPage: React.FC = () => {
     e.preventDefault();
     toast.success('Callback request submitted');
     // TODO: Implement callback request
+  };
+
+  const handleExpertiseToggle = (expertise: string) => {
+    setSelectedSpecialties(prev => 
+      prev.includes(expertise)
+        ? prev.filter(item => item !== expertise)
+        : [...prev, expertise]
+    );
+  };
+
+  const handleClearFilters = () => {
+    setSelectedSpecialties([]);
   };
 
   const MechanicCard: React.FC<{ mechanic: Mechanic }> = ({ mechanic }) => (
@@ -169,6 +206,67 @@ const MechanicSupportPage: React.FC = () => {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-6"
             >
+              {/* Filter Section */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                  >
+                    <Filter className="h-5 w-5" />
+                    <span>Filter by Expertise</span>
+                    {selectedSpecialties.length > 0 && (
+                      <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs rounded-full">
+                        {selectedSpecialties.length}
+                      </span>
+                    )}
+                  </button>
+                  
+                  {selectedSpecialties.length > 0 && (
+                    <button
+                      onClick={handleClearFilters}
+                      className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+                </div>
+                
+                <AnimatePresence>
+                  {showFilters && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                          Expertise Areas
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {EXPERTISE_AREAS.map((expertise) => (
+                            <motion.button
+                              key={expertise}
+                              onClick={() => handleExpertiseToggle(expertise)}
+                              whileTap={{ scale: 0.95 }}
+                              className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
+                                selectedSpecialties.includes(expertise)
+                                  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }`}
+                            >
+                              {expertise}
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
               {loading ? (
                 <div className="space-y-4">
                   {[1, 2, 3].map((i) => (
@@ -192,11 +290,23 @@ const MechanicSupportPage: React.FC = () => {
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center">
                   <Wrench className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    No mechanics available
+                    {selectedSpecialties.length > 0 
+                      ? 'No mechanics match your filters' 
+                      : 'No mechanics available'}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400">
-                    Please try again later or request a callback
+                    {selectedSpecialties.length > 0 
+                      ? 'Try adjusting your filters or check back later' 
+                      : 'Please try again later or request a callback'}
                   </p>
+                  {selectedSpecialties.length > 0 && (
+                    <button
+                      onClick={handleClearFilters}
+                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
                 </div>
               ) : (
                 mechanics.map((mechanic) => (
