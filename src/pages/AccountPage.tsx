@@ -1,13 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Settings, User, Moon, Shield, HelpCircle, Loader2, Award } from 'lucide-react';
 import { Profile, getProfile, getUserBadges, UserEarnedBadge, supabase } from '../lib/supabase';
-import ProfileSection from '../components/ProfileSection';
-import PreferencesSection from '../components/PreferencesSection';
-import SecurityLoginSection from '../components/SecurityLoginSection';
-import SupportFeedbackSection from '../components/SupportFeedbackSection';
-import BadgesPanel from '../components/BadgesPanel';
+
+// Lazy load components
+const ProfileSection = lazy(() => import('../components/ProfileSection'));
+const PreferencesSection = lazy(() => import('../components/PreferencesSection'));
+const SecurityLoginSection = lazy(() => import('../components/SecurityLoginSection'));
+const SupportFeedbackSection = lazy(() => import('../components/SupportFeedbackSection'));
+const BadgesPanel = lazy(() => import('../components/BadgesPanel'));
+
+// Loading fallback component
+const ComponentLoader = () => (
+  <div className="flex items-center justify-center py-8">
+    <Loader2 className="h-6 w-6 text-blue-600 dark:text-blue-400 animate-spin" />
+  </div>
+);
 
 const AccountPage = () => {
   const navigate = useNavigate();
@@ -66,32 +75,48 @@ const AccountPage = () => {
     switch (activeTab) {
       case 'profile':
         return (
-          <ProfileSection
-            profile={profile}
-            email={userEmail}
-            onProfileUpdate={setProfile}
-          />
+          <Suspense fallback={<ComponentLoader />}>
+            <ProfileSection
+              profile={profile}
+              email={userEmail}
+              onProfileUpdate={setProfile}
+            />
+          </Suspense>
         );
       case 'achievements':
         return (
-          <div>
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                Your Achievements
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400">
-                Badges you've earned by using Bolt Auto and participating in the community
-              </p>
+          <Suspense fallback={<ComponentLoader />}>
+            <div>
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Your Achievements
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Badges you've earned by using Bolt Auto and participating in the community
+                </p>
+              </div>
+              <BadgesPanel badges={badges} loading={badgesLoading} />
             </div>
-            <BadgesPanel badges={badges} loading={badgesLoading} />
-          </div>
+          </Suspense>
         );
       case 'preferences':
-        return <PreferencesSection />;
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <PreferencesSection />
+          </Suspense>
+        );
       case 'security':
-        return <SecurityLoginSection />;
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <SecurityLoginSection />
+          </Suspense>
+        );
       case 'support':
-        return <SupportFeedbackSection />;
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <SupportFeedbackSection />
+          </Suspense>
+        );
       default:
         return null;
     }
