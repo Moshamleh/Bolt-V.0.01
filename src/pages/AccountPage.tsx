@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Settings, User, Moon, Shield, HelpCircle, Loader2, Award } from 'lucide-react';
 import { Profile, getProfile, getUserBadges, UserEarnedBadge, supabase } from '../lib/supabase';
+import LazyErrorBoundary from '../components/LazyErrorBoundary';
 
 // Lazy load components
 const ProfileSection = lazy(() => import('../components/ProfileSection'));
@@ -75,47 +76,57 @@ const AccountPage = () => {
     switch (activeTab) {
       case 'profile':
         return (
-          <Suspense fallback={<ComponentLoader />}>
-            <ProfileSection
-              profile={profile}
-              email={userEmail}
-              onProfileUpdate={setProfile}
-            />
-          </Suspense>
+          <LazyErrorBoundary componentName="Profile Section">
+            <Suspense fallback={<ComponentLoader />}>
+              <ProfileSection
+                profile={profile}
+                email={userEmail}
+                onProfileUpdate={setProfile}
+              />
+            </Suspense>
+          </LazyErrorBoundary>
         );
       case 'achievements':
         return (
-          <Suspense fallback={<ComponentLoader />}>
-            <div>
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  Your Achievements
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Badges you've earned by using Bolt Auto and participating in the community
-                </p>
+          <LazyErrorBoundary componentName="Achievements Section">
+            <Suspense fallback={<ComponentLoader />}>
+              <div>
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    Your Achievements
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Badges you've earned by using Bolt Auto and participating in the community
+                  </p>
+                </div>
+                <BadgesPanel badges={badges} loading={badgesLoading} />
               </div>
-              <BadgesPanel badges={badges} loading={badgesLoading} />
-            </div>
-          </Suspense>
+            </Suspense>
+          </LazyErrorBoundary>
         );
       case 'preferences':
         return (
-          <Suspense fallback={<ComponentLoader />}>
-            <PreferencesSection />
-          </Suspense>
+          <LazyErrorBoundary componentName="Preferences Section">
+            <Suspense fallback={<ComponentLoader />}>
+              <PreferencesSection />
+            </Suspense>
+          </LazyErrorBoundary>
         );
       case 'security':
         return (
-          <Suspense fallback={<ComponentLoader />}>
-            <SecurityLoginSection />
-          </Suspense>
+          <LazyErrorBoundary componentName="Security Section">
+            <Suspense fallback={<ComponentLoader />}>
+              <SecurityLoginSection />
+            </Suspense>
+          </LazyErrorBoundary>
         );
       case 'support':
         return (
-          <Suspense fallback={<ComponentLoader />}>
-            <SupportFeedbackSection />
-          </Suspense>
+          <LazyErrorBoundary componentName="Support Section">
+            <Suspense fallback={<ComponentLoader />}>
+              <SupportFeedbackSection />
+            </Suspense>
+          </LazyErrorBoundary>
         );
       default:
         return null;

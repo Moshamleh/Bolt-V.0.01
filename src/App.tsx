@@ -5,6 +5,7 @@ import { supabase } from './lib/supabase';
 import Layout from './components/Layout';
 import AuthLayout from './components/AuthLayout';
 import MarketplaceLayout from './components/MarketplaceLayout';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy load all page components
 const DiagnosticPage = lazy(() => import('./pages/DiagnosticPage'));
@@ -65,55 +66,65 @@ function App() {
     };
   }, [navigate]);
 
+  const handleAppError = (error: Error, errorInfo: React.ErrorInfo) => {
+    // Log application-level errors
+    console.error('Application Error:', error, errorInfo);
+    
+    // In production, send to error reporting service
+    // Example: Sentry.captureException(error, { extra: errorInfo });
+  };
+
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        {/* Auth routes */}
-        <Route element={<AuthLayout />}>
-          <Route path="/login" element={<LoginPage />} />
-        </Route>
-
-        {/* Main app routes */}
-        <Route element={<Layout />}>
-          <Route index element={<Navigate to="/vehicles" replace />} />
-          <Route path="/vehicles" element={<VehicleManagementPage />} />
-          <Route path="/vehicle-setup" element={<VehicleSetupPage />} />
-          <Route path="/diagnostic" element={<DiagnosticPage />} />
-          <Route path="/mechanic-support" element={<MechanicSupportPage />} />
-          <Route path="/mechanic-support/chat/:mechanicId" element={<MechanicChatPage />} />
-          <Route path="/mechanic/settings" element={<MechanicSettingsPage />} />
-          <Route path="/mechanic/:id" element={<MechanicProfilePage />} />
-          <Route path="/clubs" element={<ClubListPage />} />
-          <Route path="/clubs/create" element={<CreateClubPage />} />
-          <Route path="/clubs/:id" element={<ClubDetailPage />} />
-          <Route path="/bolt-fixes" element={<BoltFixes />} />
-
-          {/* Marketplace Routes */}
-          <Route path="/marketplace" element={<MarketplaceLayout />}>
-            <Route index element={<MarketplacePage />} />
-            <Route path="my-listings" element={<MyListingsPage />} />
-            <Route path="messages" element={<MyChatsPage />} />
-            <Route path="messages/:chatId" element={<PartChatPage />} />
-            <Route path="saved" element={<SavedPartsPage />} />
-            <Route path="seller-dashboard" element={<SellerDashboardPage />} />
+    <ErrorBoundary onError={handleAppError}>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* Auth routes */}
+          <Route element={<AuthLayout />}>
+            <Route path="/login" element={<LoginPage />} />
           </Route>
 
-          <Route path="/sell-part" element={<ListPartPage />} />
-          <Route path="/parts/:id" element={<PartDetailPage />} />
-          <Route path="/account" element={<AccountPage />} />
-          <Route path="/help" element={<HelpFAQPage />} />
-          <Route path="/ai-safety" element={<AIDisclaimerPage />} />
-          <Route path="/kyc" element={<SellerKYC />} />
+          {/* Main app routes */}
+          <Route element={<Layout />}>
+            <Route index element={<Navigate to="/vehicles" replace />} />
+            <Route path="/vehicles" element={<VehicleManagementPage />} />
+            <Route path="/vehicle-setup" element={<VehicleSetupPage />} />
+            <Route path="/diagnostic" element={<DiagnosticPage />} />
+            <Route path="/mechanic-support" element={<MechanicSupportPage />} />
+            <Route path="/mechanic-support/chat/:mechanicId" element={<MechanicChatPage />} />
+            <Route path="/mechanic/settings" element={<MechanicSettingsPage />} />
+            <Route path="/mechanic/:id" element={<MechanicProfilePage />} />
+            <Route path="/clubs" element={<ClubListPage />} />
+            <Route path="/clubs/create" element={<CreateClubPage />} />
+            <Route path="/clubs/:id" element={<ClubDetailPage />} />
+            <Route path="/bolt-fixes" element={<BoltFixes />} />
 
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/users" element={<AdminUserManagement />} />
-          <Route path="/admin/feedback" element={<AdminFeedbackPage />} />
-          <Route path="/admin/ai-feedback" element={<AdminAiFeedback />} />
-          <Route path="/admin/ai-performance" element={<AdminAiPerformancePage />} />
-        </Route>
-      </Routes>
-    </Suspense>
+            {/* Marketplace Routes */}
+            <Route path="/marketplace" element={<MarketplaceLayout />}>
+              <Route index element={<MarketplacePage />} />
+              <Route path="my-listings" element={<MyListingsPage />} />
+              <Route path="messages" element={<MyChatsPage />} />
+              <Route path="messages/:chatId" element={<PartChatPage />} />
+              <Route path="saved" element={<SavedPartsPage />} />
+              <Route path="seller-dashboard" element={<SellerDashboardPage />} />
+            </Route>
+
+            <Route path="/sell-part" element={<ListPartPage />} />
+            <Route path="/parts/:id" element={<PartDetailPage />} />
+            <Route path="/account" element={<AccountPage />} />
+            <Route path="/help" element={<HelpFAQPage />} />
+            <Route path="/ai-safety" element={<AIDisclaimerPage />} />
+            <Route path="/kyc" element={<SellerKYC />} />
+
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/users" element={<AdminUserManagement />} />
+            <Route path="/admin/feedback" element={<AdminFeedbackPage />} />
+            <Route path="/admin/ai-feedback" element={<AdminAiFeedback />} />
+            <Route path="/admin/ai-performance" element={<AdminAiPerformancePage />} />
+          </Route>
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
