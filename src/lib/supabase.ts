@@ -34,6 +34,27 @@ export interface Diagnosis {
   };
 }
 
+export interface ServiceRecord {
+  id: string;
+  user_id: string;
+  vehicle_id: string;
+  service_date: string;
+  service_type: string;
+  description: string;
+  mileage: number;
+  cost: number;
+  service_provider?: string;
+  notes?: string;
+  invoice_url?: string;
+  created_at: string;
+  vehicle?: {
+    make: string;
+    model: string;
+    year: number;
+    other_vehicle_description?: string;
+  };
+}
+
 export interface Profile {
   id: string;
   full_name?: string;
@@ -572,6 +593,153 @@ export async function deleteVehicle(vehicleId: string) {
     .eq('id', vehicleId);
 
   if (error) throw error;
+}
+
+// Service Records functions
+export async function getVehicleServiceRecords(vehicleId: string): Promise<ServiceRecord[]> {
+  const user = await getCurrentUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from('service_records')
+    .select(`
+      *,
+      vehicle:vehicles(
+        make,
+        model,
+        year,
+        other_vehicle_description
+      )
+    `)
+    .eq('vehicle_id', vehicleId)
+    .eq('user_id', user.id)
+    .order('service_date', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getAllServiceRecords(): Promise<ServiceRecord[]> {
+  const user = await getCurrentUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from('service_records')
+    .select(`
+      *,
+      vehicle:vehicles(
+        make,
+        model,
+        year,
+        other_vehicle_description
+      )
+    `)
+    .eq('user_id', user.id)
+    .order('service_date', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getServiceRecordById(recordId: string): Promise<ServiceRecord | null> {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('service_records')
+    .select(`
+      *,
+      vehicle:vehicles(
+        make,
+        model,
+        year,
+        other_vehicle_description
+      )
+    `)
+    .eq('id', recordId)
+    .eq('user_id', user.id)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return null;
+    }
+    throw error;
+  }
+  
+  return data;
+}
+
+export async function createServiceRecord(record: Omit<ServiceRecord, 'id' | 'user_id' | 'created_at'>): Promise<ServiceRecord> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('User not authenticated');
+
+  const { data, error } = await supabase
+    .from('service_records')
+    .insert([{
+      ...record,
+      user_id: user.id
+    }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateServiceRecord(recordId: string, updates: Partial<ServiceRecord>): Promise<ServiceRecord> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('User not authenticated');
+
+  const { data, error } = await supabase
+    .from('service_records')
+    .update(updates)
+    .eq('id', recordId)
+    .eq('user_id', user.id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteServiceRecord(recordId: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('User not authenticated');
+
+  const { error } = await supabase
+    .from('service_records')
+    .delete()
+    .eq('id', recordId)
+    .eq('user_id', user.id);
+
+  if (error) throw error;
+}
+
+export async function uploadServiceInvoice(file: File, recordId: string): Promise<string> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('User not authenticated');
+
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${recordId}-${Math.random()}.${fileExt}`;
+  const filePath = `${user.id}/${fileName}`;
+
+  try {
+    const { error: uploadError } = await supabase.storage
+      .from('service-invoices')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('service-invoices')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  } catch (error) {
+    console.error('Failed to upload invoice:', error);
+    throw error;
+  }
 }
 
 // Diagnosis functions
