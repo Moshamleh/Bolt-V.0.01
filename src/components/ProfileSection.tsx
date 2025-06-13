@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Loader2, Mail, User, AlertCircle } from 'lucide-react';
+import { Camera, Loader2, Mail, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Profile, updateProfile, uploadAvatar } from '../lib/supabase';
@@ -105,17 +105,6 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ profile, email, onProfi
           <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mt-1">
             <Mail className="h-4 w-4" />
             <span>{email}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Avatar upload notice */}
-      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-amber-800 dark:text-amber-200">
-            <p className="font-medium mb-1">Avatar Upload Notice</p>
-            <p>Avatar uploads require additional storage configuration. If you encounter issues uploading your profile picture, please contact support for assistance.</p>
           </div>
         </div>
       </div>
