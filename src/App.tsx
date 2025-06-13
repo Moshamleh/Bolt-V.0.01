@@ -32,6 +32,7 @@ const AdminFeedbackPage = lazy(() => import('./pages/AdminFeedbackPage'));
 const AdminAiFeedback = lazy(() => import('./pages/AdminAiFeedback'));
 const AdminAiPerformancePage = lazy(() => import('./pages/AdminAiPerformancePage'));
 const SellerKYC = lazy(() => import('./pages/kyc/SellerKYC'));
+const KYCSuccessPage = lazy(() => import('./pages/kyc/KYCSuccessPage'));
 const MechanicSupportPage = lazy(() => import('./pages/MechanicSupportPage'));
 const MechanicChatPage = lazy(() => import('./pages/MechanicChatPage'));
 const MechanicSettingsPage = lazy(() => import('./pages/MechanicSettingsPage'));
@@ -87,7 +88,7 @@ function App() {
 
           {/* Main app routes */}
           <Route element={<Layout />}>
-            <Route index element={<Navigate to="/diagnostic" replace />} />
+            <Route index element={<Navigate to="/vehicles" replace />} />
             <Route path="/vehicles" element={<VehicleManagementPage />} />
             <Route path="/vehicle-setup" element={<VehicleSetupPage />} />
             <Route path="/vehicles/:vehicleId/add-service" element={<AddServiceRecordPage />} />
@@ -118,6 +119,7 @@ function App() {
             <Route path="/help" element={<HelpFAQPage />} />
             <Route path="/ai-safety" element={<AIDisclaimerPage />} />
             <Route path="/kyc" element={<SellerKYC />} />
+            <Route path="/kyc/success" element={<KYCSuccessPage />} />
 
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminDashboard />} />

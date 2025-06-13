@@ -93,31 +93,24 @@ const SellerKYC: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
-    // Set isSubmitting to true immediately to provide feedback
-    setIsSubmitting(true);
 
     // Validate files
     if (!governmentIdFile) {
       setGovernmentIdError('Please upload your Government ID');
-      toast.error('Please upload your Government ID');
-      setIsSubmitting(false);
       return;
     }
 
     if (!proofOfAddressFile) {
       setProofOfAddressError('Please upload your Proof of Address');
-      toast.error('Please upload your Proof of Address');
-      setIsSubmitting(false);
       return;
     }
 
     // Validate form
     if (!validateForm(formData)) {
-      toast.error('Please fix the errors in the form');
-      setIsSubmitting(false);
       return;
     }
+
+    setIsSubmitting(true);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -151,13 +144,12 @@ const SellerKYC: React.FC = () => {
         .update({ kyc_verified: false, initial_setup_complete: true })
         .eq('id', userId);
 
-      toast.success('KYC submitted successfully! We will review your documents and notify you once verified.');
-      navigate('/marketplace');
+      // Navigate to success page instead of showing toast
+      navigate('/kyc/success');
     } catch (err: any) {
       console.error('KYC submission failed:', err);
       setError(err.message || 'Failed to submit KYC request.');
       toast.error(err.message || 'Failed to submit KYC request.');
-    } finally {
       setIsSubmitting(false);
     }
   };

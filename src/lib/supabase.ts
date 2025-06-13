@@ -230,6 +230,17 @@ export interface KYCUser {
   location?: string;
 }
 
+export interface KYCRequest {
+  id: string;
+  user_id: string;
+  full_name: string;
+  business_name?: string;
+  gov_id_url: string;
+  proof_of_address_url: string;
+  status: 'pending' | 'verified' | 'rejected';
+  created_at: string;
+}
+
 export interface Badge {
   id: string;
   name: string;
@@ -1550,6 +1561,28 @@ export async function checkKycStatus(): Promise<boolean> {
 
   if (error) throw error;
   return data?.kyc_verified || false;
+}
+
+export async function getKycRequest(): Promise<KYCRequest | null> {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('kyc_requests')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return null;
+    }
+    throw error;
+  }
+  
+  return data;
 }
 
 export async function getAllProfiles(): Promise<UserProfile[]> {
