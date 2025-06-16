@@ -40,6 +40,7 @@ const MechanicProfilePage = lazy(() => import('./pages/MechanicProfilePage'));
 const BoltFixes = lazy(() => import('./components/BoltFixes'));
 const AddServiceRecordPage = lazy(() => import('./pages/AddServiceRecordPage'));
 const ServiceHistoryPage = lazy(() => import('./pages/ServiceHistoryPage'));
+const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -102,6 +103,7 @@ function App() {
             <Route path="/clubs/create" element={<CreateClubPage />} />
             <Route path="/clubs/:id" element={<ClubDetailPage />} />
             <Route path="/bolt-fixes" element={<BoltFixes />} />
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
 
             {/* Marketplace Routes */}
             <Route path="/marketplace" element={<MarketplaceLayout />}>

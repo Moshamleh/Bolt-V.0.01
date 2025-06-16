@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Zap, Store, UsersRound, Settings, Wrench, Loader2, Car } from 'lucide-react';
+import { Zap, Store, UsersRound, Settings, Wrench, Loader2, Car, Trophy } from 'lucide-react';
 import OnboardingTour from './OnboardingTour';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { supabase } from '../lib/supabase';
@@ -139,6 +139,17 @@ const Layout: React.FC = () => {
                 <UsersRound className="h-5 w-5" />
                 <span>Clubs</span>
               </NavLink>
+
+              <NavLink
+                to="/leaderboard"
+                className={({ isActive }) => `
+                  flex items-center gap-2 px-4 py-2 rounded-lg transition-colors
+                  ${isActive ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-neutral-600 dark:text-gray-300 hover:bg-neutral-100 dark:hover:bg-gray-700/50'}
+                `}
+              >
+                <Trophy className="h-5 w-5" />
+                <span>Leaderboard</span>
+              </NavLink>
             </nav>
             
             {/* Account/Settings */}
@@ -204,15 +215,14 @@ const Layout: React.FC = () => {
           </NavLink>
 
           <NavLink
-            to="/clubs"
+            to="/leaderboard"
             className={({ isActive }) => `
               flex flex-col items-center gap-1 min-w-[64px]
               ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-600 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white'}
             `}
-            data-tour="clubs"
           >
-            <UsersRound className="h-6 w-6" />
-            <span className="text-[10px]">Clubs</span>
+            <Trophy className="h-6 w-6" />
+            <span className="text-[10px]">Leaderboard</span>
           </NavLink>
 
           <NavLink

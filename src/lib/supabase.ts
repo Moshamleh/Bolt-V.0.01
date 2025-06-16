@@ -269,6 +269,30 @@ export interface UserEarnedBadge {
   note?: string;
 }
 
+// Leaderboard interfaces
+export interface LeaderboardEntry {
+  id: string;
+  full_name: string;
+  username: string | null;
+  avatar_url: string | null;
+  location: string | null;
+  rank: number;
+  [key: string]: any; // Additional properties based on leaderboard type
+}
+
+export interface LeaderboardData {
+  overall: LeaderboardEntry[];
+  diagnosticians: LeaderboardEntry[];
+  sellers: LeaderboardEntry[];
+  contributors: LeaderboardEntry[];
+  userRank?: {
+    overall: number | null;
+    diagnosticians: number | null;
+    sellers: number | null;
+    contributors: number | null;
+  };
+}
+
 // Pagination interface for consistent pagination responses
 export interface PaginatedResponse<T> {
   data: T[];
@@ -1786,6 +1810,36 @@ export async function getAllAiFeedback(page: number = 1, limit: number = 10): Pr
     hasNextPage: page < totalPages,
     hasPreviousPage: page > 1
   };
+}
+
+// Leaderboard functions
+export async function getLeaderboardData(category: string = 'all', limit: number = 50): Promise<LeaderboardData> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
+    const apiUrl = `${supabaseUrl}/functions/v1/get-leaderboard?category=${category}&limit=${limit}`;
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(apiUrl, { headers });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch leaderboard data: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching leaderboard data:', error);
+    throw error;
+  }
 }
 
 export default supabase
