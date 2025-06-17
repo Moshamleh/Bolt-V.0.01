@@ -297,6 +297,32 @@ export interface ReportedPart {
   };
 }
 
+export interface SellerReview {
+  id: string;
+  seller_id: string;
+  buyer_id: string;
+  part_id: string | null;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  buyer?: {
+    full_name: string | null;
+    username: string | null;
+    avatar_url: string | null;
+  };
+}
+
+export interface SellerRatingStats {
+  seller_id: string;
+  review_count: number;
+  average_rating: number;
+  five_star_count: number;
+  four_star_count: number;
+  three_star_count: number;
+  two_star_count: number;
+  one_star_count: number;
+}
+
 // Auth functions
 export const signUp = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signUp({
@@ -547,11 +573,12 @@ export const getParts = async (
     .from('parts')
     .select('*', { count: 'exact' });
 
-  // Apply filters
+  // Apply search
   if (filters.search) {
     query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
   }
   
+  // Apply filters
   if (filters.make) {
     query = query.eq('make', filters.make);
   }
@@ -881,6 +908,97 @@ export const deleteReport = async (reportId: string): Promise<void> => {
     .eq('id', reportId);
 
   if (error) throw error;
+};
+
+// Seller Reviews functions
+export const getSellerReviews = async (sellerId: string): Promise<SellerReview[]> => {
+  const { data, error } = await supabase
+    .from('seller_reviews')
+    .select(`
+      *,
+      buyer:buyer_id (
+        full_name,
+        username,
+        avatar_url
+      )
+    `)
+    .eq('seller_id', sellerId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const getSellerRatingStats = async (sellerId: string): Promise<SellerRatingStats | null> => {
+  const { data, error } = await supabase
+    .from('seller_rating_stats')
+    .select('*')
+    .eq('seller_id', sellerId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+};
+
+export const createSellerReview = async (review: {
+  seller_id: string;
+  part_id?: string;
+  rating: number;
+  comment?: string;
+}): Promise<SellerReview> => {
+  const { data, error } = await supabase
+    .from('seller_reviews')
+    .insert({
+      seller_id: review.seller_id,
+      part_id: review.part_id || null,
+      rating: review.rating,
+      comment: review.comment || null
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const updateSellerReview = async (
+  reviewId: string,
+  updates: { rating?: number; comment?: string }
+): Promise<SellerReview> => {
+  const { data, error } = await supabase
+    .from('seller_reviews')
+    .update(updates)
+    .eq('id', reviewId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const deleteSellerReview = async (reviewId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('seller_reviews')
+    .delete()
+    .eq('id', reviewId);
+
+  if (error) throw error;
+};
+
+export const hasUserReviewedSeller = async (sellerId: string, partId?: string): Promise<boolean> => {
+  let query = supabase
+    .from('seller_reviews')
+    .select('id')
+    .eq('seller_id', sellerId);
+  
+  if (partId) {
+    query = query.eq('part_id', partId);
+  }
+  
+  const { data, error } = await query.maybeSingle();
+
+  if (error) throw error;
+  return !!data;
 };
 
 // Chat functions
