@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Search, Filter, Plus, ChevronDown, ChevronUp, Loader2,
   Menu, X, ShoppingBag, MessageSquare, Settings, Heart,
-  AlertCircle, Package
+  AlertCircle, Package, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Part, getParts, getOrCreatePartChat } from '../lib/supabase';
+import { Part, getParts, getOrCreatePartChat, PaginatedResponse } from '../lib/supabase';
 import PartCard from '../components/PartCard';
+
+const ITEMS_PER_PAGE = 12;
 
 const MarketplacePage: React.FC = () => {
   const navigate = useNavigate();
@@ -24,6 +26,12 @@ const MarketplacePage: React.FC = () => {
   const [isMessagingLoading, setIsMessagingLoading] = useState<Record<string, boolean>>({});
   const [showFilters, setShowFilters] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [paginatedResponse, setPaginatedResponse] = useState<PaginatedResponse<Part> | null>(null);
 
   useEffect(() => {
     const loadParts = async () => {
@@ -38,8 +46,12 @@ const MarketplacePage: React.FC = () => {
           minPrice: priceRange.min,
           maxPrice: priceRange.max,
         };
-        const data = await getParts(filters);
-        setParts(data);
+        
+        const response = await getParts(filters, currentPage, ITEMS_PER_PAGE);
+        setParts(response.data);
+        setTotalItems(response.total);
+        setTotalPages(response.totalPages);
+        setPaginatedResponse(response);
       } catch (err) {
         console.error('Failed to load parts:', err);
         setError('Failed to load marketplace listings');
@@ -50,7 +62,15 @@ const MarketplacePage: React.FC = () => {
 
     const debounceTimeout = setTimeout(loadParts, 300);
     return () => clearTimeout(debounceTimeout);
-  }, [searchTerm, selectedMake, selectedModel, selectedCondition, selectedCategory, priceRange]);
+  }, [
+    searchTerm, 
+    selectedMake, 
+    selectedModel, 
+    selectedCondition, 
+    selectedCategory, 
+    priceRange,
+    currentPage
+  ]);
 
   const handleSellPart = () => {
     navigate('/sell-part');
@@ -85,10 +105,18 @@ const MarketplacePage: React.FC = () => {
     setSelectedCondition('');
     setSelectedCategory('');
     setPriceRange({});
+    setCurrentPage(1);
   };
 
   const handleReportIssue = () => {
     window.location.href = 'mailto:support@boltauto.com?subject=Marketplace Issue Report';
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    // Scroll to top when changing pages
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const LoadingSkeleton = () => (
@@ -149,6 +177,83 @@ const MarketplacePage: React.FC = () => {
     );
   };
 
+  const PaginationControls = () => {
+    if (!paginatedResponse || totalPages <= 1) return null;
+
+    // Generate page numbers to show
+    const getPageNumbers = () => {
+      const delta = 1; // Number of pages to show on each side of current page
+      const range = [];
+      const rangeWithDots = [];
+
+      for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+        range.push(i);
+      }
+
+      if (currentPage - delta > 2) {
+        rangeWithDots.push(1, '...');
+      } else {
+        rangeWithDots.push(1);
+      }
+
+      rangeWithDots.push(...range);
+
+      if (currentPage + delta < totalPages - 1) {
+        rangeWithDots.push('...', totalPages);
+      } else if (totalPages > 1) {
+        rangeWithDots.push(totalPages);
+      }
+
+      return rangeWithDots;
+    };
+
+    return (
+      <div className="flex justify-center mt-8">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={!paginatedResponse.hasPreviousPage || loading}
+            className="flex items-center gap-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </button>
+
+          <div className="flex items-center gap-1">
+            {getPageNumbers().map((pageNum, index) => (
+              <React.Fragment key={index}>
+                {pageNum === '...' ? (
+                  <span className="px-3 py-2 text-gray-500 dark:text-gray-400">...</span>
+                ) : (
+                  <button
+                    onClick={() => handlePageChange(pageNum as number)}
+                    disabled={loading}
+                    className={`px-3 py-2 rounded-lg transition-colors ${
+                      pageNum === currentPage
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {pageNum}
+                  </button>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={!paginatedResponse.hasNextPage || loading}
+            className="flex items-center gap-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
@@ -199,7 +304,10 @@ const MarketplacePage: React.FC = () => {
                 type="text"
                 placeholder="Search parts..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1); // Reset to first page on search
+                }}
                 className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -240,7 +348,10 @@ const MarketplacePage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                     <select
                       value={selectedMake}
-                      onChange={(e) => setSelectedMake(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedMake(e.target.value);
+                        setCurrentPage(1); // Reset to first page on filter change
+                      }}
                       className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="">All Makes</option>
@@ -252,7 +363,10 @@ const MarketplacePage: React.FC = () => {
 
                     <select
                       value={selectedCondition}
-                      onChange={(e) => setSelectedCondition(e.target.value as any)}
+                      onChange={(e) => {
+                        setSelectedCondition(e.target.value as any);
+                        setCurrentPage(1); // Reset to first page on filter change
+                      }}
                       className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="">All Conditions</option>
@@ -263,7 +377,10 @@ const MarketplacePage: React.FC = () => {
 
                     <select
                       value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedCategory(e.target.value);
+                        setCurrentPage(1); // Reset to first page on filter change
+                      }}
                       className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="">All Categories</option>
@@ -281,7 +398,13 @@ const MarketplacePage: React.FC = () => {
                         type="number"
                         placeholder="Min Price"
                         value={priceRange.min || ''}
-                        onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value ? Number(e.target.value) : undefined }))}
+                        onChange={(e) => {
+                          setPriceRange(prev => ({ 
+                            ...prev, 
+                            min: e.target.value ? Number(e.target.value) : undefined 
+                          }));
+                          setCurrentPage(1); // Reset to first page on filter change
+                        }}
                         className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         min="0"
                       />
@@ -292,7 +415,13 @@ const MarketplacePage: React.FC = () => {
                         type="number"
                         placeholder="Max Price"
                         value={priceRange.max || ''}
-                        onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value ? Number(e.target.value) : undefined }))}
+                        onChange={(e) => {
+                          setPriceRange(prev => ({ 
+                            ...prev, 
+                            max: e.target.value ? Number(e.target.value) : undefined 
+                          }));
+                          setCurrentPage(1); // Reset to first page on filter change
+                        }}
                         className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         min="0"
                       />
@@ -304,37 +433,49 @@ const MarketplacePage: React.FC = () => {
           </div>
         </div>
 
-        {loading ? (
+        {loading && parts.length === 0 ? (
           <LoadingSkeleton />
         ) : parts.length === 0 ? (
           <EmptyState />
         ) : (
-          <AnimatePresence>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {parts.map((part, index) => (
-                <motion.div
-                  key={part.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <PartCard
-                    id={part.id}
-                    image={part.image_url}
-                    title={part.title}
-                    price={part.price}
-                    condition={part.condition}
-                    year={part.year}
-                    make={part.make}
-                    model={part.model}
-                    location={part.location}
-                    createdAt={part.created_at}
-                    onClick={() => handlePartClick(part.id)}
-                  />
-                </motion.div>
-              ))}
-            </div>
-          </AnimatePresence>
+          <>
+            <AnimatePresence>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {parts.map((part, index) => (
+                  <motion.div
+                    key={part.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <PartCard
+                      id={part.id}
+                      image={part.image_url}
+                      title={part.title}
+                      price={part.price}
+                      condition={part.condition}
+                      year={part.year}
+                      make={part.make}
+                      model={part.model}
+                      location={part.location}
+                      createdAt={part.created_at}
+                      onClick={() => handlePartClick(part.id)}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            </AnimatePresence>
+
+            {/* Pagination Controls */}
+            <PaginationControls />
+
+            {/* Results Summary */}
+            {paginatedResponse && (
+              <div className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
+                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} of {totalItems} results
+              </div>
+            )}
+          </>
         )}
       </div>
 
