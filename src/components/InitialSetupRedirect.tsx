@@ -16,7 +16,13 @@ const InitialSetupRedirect: React.FC = () => {
     const checkSetupStatus = async () => {
       try {
         // Skip redirect for these paths
-        const excludedPaths = ['/login', '/vehicle-setup', '/profile-setup', '/ai-safety'];
+        const excludedPaths = [
+          '/login', 
+          '/profile-setup', 
+          '/vehicle-setup', 
+          '/ai-safety'
+        ];
+        
         if (excludedPaths.some(path => location.pathname.startsWith(path))) {
           setIsChecking(false);
           return;
@@ -24,23 +30,15 @@ const InitialSetupRedirect: React.FC = () => {
 
         const profile = await getProfile();
         
-        // If profile doesn't exist or is incomplete, redirect to appropriate setup page
+        // If no profile exists, redirect to profile setup
         if (!profile) {
-          // If no profile exists, redirect to profile setup
           navigate('/profile-setup');
           return;
         }
         
-        // If profile exists but initial_setup_complete is false
-        if (profile.initial_setup_complete === false) {
-          // Check if profile has name and username
-          if (!profile.full_name || !profile.username) {
-            // If profile is missing name or username, redirect to profile setup
-            navigate('/profile-setup');
-          } else {
-            // If profile has name and username but setup is not complete, redirect to vehicle setup
-            navigate('/vehicle-setup');
-          }
+        // If profile exists but initial_setup_complete is false, redirect to vehicle setup
+        if (profile && profile.initial_setup_complete === false) {
+          navigate('/vehicle-setup');
         }
       } catch (error) {
         console.error('Failed to check setup status:', error);

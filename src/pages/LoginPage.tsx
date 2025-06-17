@@ -56,31 +56,22 @@ const LoginPage: React.FC = () => {
         await supabase
           .from('user_logins')
           .insert({ user_id: session?.user.id });
-          
-        // Set initial_setup_complete to false to trigger onboarding
-        await supabase
-          .from('profiles')
-          .update({ initial_setup_complete: false })
-          .eq('id', session?.user.id);
       } else {
-        // Check if profile is complete
+        // Check if user has completed initial setup
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, username, initial_setup_complete')
+          .select('initial_setup_complete')
           .eq('id', session?.user.id)
           .single();
-
+        
         if (!profile) {
           // No profile exists, redirect to profile setup
           navigate('/profile-setup');
-        } else if (!profile.full_name || !profile.username) {
-          // Profile exists but is incomplete, redirect to profile setup
-          navigate('/profile-setup');
         } else if (profile.initial_setup_complete === false) {
-          // Profile is complete but vehicle setup is not, redirect to vehicle setup
+          // Profile exists but setup not complete, redirect to vehicle setup
           navigate('/vehicle-setup');
         } else {
-          // Everything is complete, redirect to main app
+          // Setup complete, go to main app
           navigate('/diagnostic');
         }
       }
@@ -172,19 +163,12 @@ const LoginPage: React.FC = () => {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Mark initial setup as incomplete to trigger the profile setup flow
-        await supabase
-          .from('profiles')
-          .update({ initial_setup_complete: false })
-          .eq('id', user.id);
+        // Navigate to profile setup
+        navigate('/profile-setup');
       }
-      
-      setShowDisclaimer(false);
-      navigate('/profile-setup');
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error('Error during disclaimer acceptance:', error);
       // Navigate anyway even if there's an error
-      setShowDisclaimer(false);
       navigate('/profile-setup');
     }
   };
@@ -200,7 +184,7 @@ const LoginPage: React.FC = () => {
           <p className="text-lg text-neutral-600 dark:text-gray-400">Your Personal AI Mechanic</p>
         </div>
 
-        <div className="bg-neutral-100 dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
           <div className="text-center">
             <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white mb-2">
               Welcome Back
@@ -214,7 +198,7 @@ const LoginPage: React.FC = () => {
           <button
             onClick={handleGoogleSignIn}
             disabled={isGoogleLoading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 mb-3 border border-neutral-300 dark:border-gray-600 rounded-lg text-neutral-700 dark:text-gray-300 bg-neutral-100 dark:bg-gray-700 hover:bg-neutral-200 dark:hover:bg-gray-600 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 mb-3 border border-neutral-300 dark:border-gray-600 rounded-lg text-neutral-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-neutral-50 dark:hover:bg-gray-600 transition-colors"
           >
             {isGoogleLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -247,7 +231,7 @@ const LoginPage: React.FC = () => {
           <button
             onClick={handleAppleSignIn}
             disabled={isAppleLoading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 mb-6 border border-neutral-300 dark:border-gray-600 rounded-lg text-neutral-700 dark:text-gray-300 bg-neutral-100 dark:bg-gray-700 hover:bg-neutral-200 dark:hover:bg-gray-600 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 mb-6 border border-neutral-300 dark:border-gray-600 rounded-lg text-neutral-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-neutral-50 dark:hover:bg-gray-600 transition-colors"
           >
             {isAppleLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -266,7 +250,7 @@ const LoginPage: React.FC = () => {
               <div className="w-full border-t border-neutral-300 dark:border-gray-600"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-neutral-100 dark:bg-gray-800 text-neutral-500 dark:text-gray-400">Or continue with</span>
+              <span className="px-2 bg-white dark:bg-gray-800 text-neutral-500 dark:text-gray-400">Or continue with</span>
             </div>
           </div>
 
@@ -287,7 +271,7 @@ const LoginPage: React.FC = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border border-neutral-300 dark:border-gray-600 placeholder-neutral-500 dark:placeholder-gray-400 text-neutral-900 dark:text-white bg-neutral-100 dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                    className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border border-neutral-300 dark:border-gray-600 placeholder-neutral-500 dark:placeholder-gray-400 text-neutral-900 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="Email address"
                   />
                 </div>
@@ -308,7 +292,7 @@ const LoginPage: React.FC = () => {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border border-neutral-300 dark:border-gray-600 placeholder-neutral-500 dark:placeholder-gray-400 text-neutral-900 dark:text-white bg-neutral-100 dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                    className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border border-neutral-300 dark:border-gray-600 placeholder-neutral-500 dark:placeholder-gray-400 text-neutral-900 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="Password"
                   />
                 </div>
@@ -345,7 +329,7 @@ const LoginPage: React.FC = () => {
                 type="button"
                 onClick={handleSignUp}
                 disabled={isLoading}
-                className="relative flex-1 flex justify-center py-2 px-4 border border-neutral-300 dark:border-gray-600 text-sm font-medium rounded-lg text-neutral-700 dark:text-gray-300 bg-neutral-100 dark:bg-gray-700 hover:bg-neutral-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="relative flex-1 flex justify-center py-2 px-4 border border-neutral-300 dark:border-gray-600 text-sm font-medium rounded-lg text-neutral-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-neutral-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isLoading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -384,7 +368,7 @@ const LoginPage: React.FC = () => {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-neutral-100 dark:bg-gray-800 rounded-xl shadow-lg max-w-md w-full p-6"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-md w-full p-6"
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">

@@ -492,8 +492,7 @@ export async function getProfile(): Promise<Profile | null> {
     .single();
 
   if (error) {
-    // Check for both error.code and error.message to handle PGRST116 (no rows found)
-    if (error.code === 'PGRST116' || (error.message && error.message.includes('PGRST116'))) {
+    if (error.code === 'PGRST116') {
       return null;
     }
     throw error;
@@ -506,62 +505,21 @@ export async function updateProfile(updates: Partial<Profile>): Promise<Profile>
   const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
 
-  try {
-    // First, try to get the existing profile
-    const { data: existingProfile, error: fetchError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    // If profile doesn't exist (PGRST116 error), create a new one
-    if (fetchError && (fetchError.code === 'PGRST116' || fetchError.message?.includes('PGRST116'))) {
-      // Create a new profile with the user's ID and the provided updates
-      const { data: newProfile, error: insertError } = await supabase
-        .from('profiles')
-        .insert({
-          id: user.id,
-          ...updates,
-          // Set default values for required fields if not provided
-          push_notifications_enabled: updates.push_notifications_enabled ?? true,
-          email_updates_enabled: updates.email_updates_enabled ?? true,
-          ai_repair_tips_enabled: updates.ai_repair_tips_enabled ?? true,
-          dark_mode_enabled: updates.dark_mode_enabled ?? false,
-          is_admin: updates.is_admin ?? false,
-          initial_setup_complete: updates.initial_setup_complete ?? false,
-          diagnostic_suggestions_enabled: updates.diagnostic_suggestions_enabled ?? true,
-          kyc_verified: updates.kyc_verified ?? false
-        })
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
-      return newProfile;
-    } else if (fetchError) {
-      // If there was a different error, throw it
-      throw fetchError;
-    }
-
-    // If profile exists, update it
-    const { data: updatedProfile, error: updateError } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', user.id)
-      .select()
-      .single();
-
-    if (updateError) throw updateError;
-    return updatedProfile;
-  } catch (error) {
-    console.error('Error in updateProfile:', error);
-    throw error;
-  }
-}
-
-export async function createProfile(profile: Omit<Profile, 'created_at'>) {
   const { data, error } = await supabase
     .from('profiles')
-    .insert([profile])
+    .update(updates)
+    .eq('id', user.id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function createProfile(profile: Omit<Profile, 'created_at'>): Promise<Profile> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .upsert([profile])
     .select()
     .single();
 
@@ -622,7 +580,7 @@ export async function getUserVehicles(): Promise<Vehicle[]> {
 export async function createVehicle(
   vehicle: Omit<Vehicle, 'id' | 'created_at'>, 
   onEarned?: (badge: UserEarnedBadge) => void
-) {
+): Promise<Vehicle> {
   const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
 
@@ -651,7 +609,7 @@ export async function createVehicle(
   return data;
 }
 
-export async function updateVehicle(vehicleId: string, updates: Partial<Vehicle>) {
+export async function updateVehicle(vehicleId: string, updates: Partial<Vehicle>): Promise<Vehicle> {
   const { data, error } = await supabase
     .from('vehicles')
     .update(updates)
@@ -663,7 +621,7 @@ export async function updateVehicle(vehicleId: string, updates: Partial<Vehicle>
   return data;
 }
 
-export async function deleteVehicle(vehicleId: string) {
+export async function deleteVehicle(vehicleId: string): Promise<void> {
   const { error } = await supabase
     .from('vehicles')
     .delete()
@@ -889,7 +847,7 @@ export async function getUserDiagnoses(vehicleId?: string): Promise<Diagnosis[]>
   return data || [];
 }
 
-export async function updateDiagnosisResolved(diagnosisId: string, resolved: boolean) {
+export async function updateDiagnosisResolved(diagnosisId: string, resolved: boolean): Promise<Diagnosis> {
   const { data, error } = await supabase
     .from('diagnoses')
     .update({ resolved })
@@ -901,7 +859,7 @@ export async function updateDiagnosisResolved(diagnosisId: string, resolved: boo
   return data;
 }
 
-export function subscribeToDiagnosisUpdates(diagnosisId: string, callback: (diagnosis: Diagnosis) => void) {
+export function subscribeToDiagnosisUpdates(diagnosisId: string, callback: (diagnosis: Diagnosis) => void): () => void {
   const subscription = supabase
     .channel(`diagnosis-${diagnosisId}`)
     .on(
@@ -924,7 +882,7 @@ export function subscribeToDiagnosisUpdates(diagnosisId: string, callback: (diag
 }
 
 // AI Feedback function
-export async function recordAiFeedback(diagnosisId: string, wasHelpful: boolean) {
+export async function recordAiFeedback(diagnosisId: string, wasHelpful: boolean): Promise<any> {
   const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
 
@@ -1016,7 +974,7 @@ export async function getPartById(partId: string): Promise<(Part & { seller_emai
   };
 }
 
-export async function createPart(part: Omit<Part, 'id' | 'created_at' | 'seller_id'>) {
+export async function createPart(part: Omit<Part, 'id' | 'created_at' | 'seller_id'>): Promise<Part> {
   const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
 
@@ -1030,7 +988,7 @@ export async function createPart(part: Omit<Part, 'id' | 'created_at' | 'seller_
   return data;
 }
 
-export async function updatePart(partId: string, updates: Partial<Part>) {
+export async function updatePart(partId: string, updates: Partial<Part>): Promise<Part> {
   const { data, error } = await supabase
     .from('parts')
     .update(updates)
@@ -1042,7 +1000,7 @@ export async function updatePart(partId: string, updates: Partial<Part>) {
   return data;
 }
 
-export async function deletePart(partId: string) {
+export async function deletePart(partId: string): Promise<void> {
   const { error } = await supabase
     .from('parts')
     .delete()
@@ -1082,7 +1040,7 @@ export async function getSavedParts(): Promise<Part[]> {
   return data?.map(item => item.parts).filter(Boolean) || [];
 }
 
-export async function savePart(partId: string) {
+export async function savePart(partId: string): Promise<any> {
   const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
 
@@ -1096,7 +1054,7 @@ export async function savePart(partId: string) {
   return data;
 }
 
-export async function unsavePart(partId: string) {
+export async function unsavePart(partId: string): Promise<void> {
   const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
 
@@ -1224,7 +1182,7 @@ export async function getPartMessages(chatId: string): Promise<PartMessage[]> {
   })) || [];
 }
 
-export async function sendPartMessage(chatId: string, content: string) {
+export async function sendPartMessage(chatId: string, content: string): Promise<PartMessage> {
   const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
 
@@ -1273,7 +1231,7 @@ export async function getClubById(clubId: string): Promise<Club | null> {
 export async function createClub(
   club: Omit<Club, 'id' | 'created_at'>, 
   onEarned?: (badge: UserEarnedBadge) => void
-) {
+): Promise<Club> {
   const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
 
@@ -1301,7 +1259,7 @@ export async function createClub(
   return data;
 }
 
-export async function joinClub(clubId: string) {
+export async function joinClub(clubId: string): Promise<ClubMember> {
   const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
 
@@ -1315,7 +1273,7 @@ export async function joinClub(clubId: string) {
   return data;
 }
 
-export async function leaveClub(clubId: string) {
+export async function leaveClub(clubId: string): Promise<void> {
   const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
 
@@ -1420,7 +1378,7 @@ export async function getClubMessages(clubId: string): Promise<ClubMessage[]> {
   return data || [];
 }
 
-export async function sendClubMessage(clubId: string, content: string) {
+export async function sendClubMessage(clubId: string, content: string): Promise<ClubMessage> {
   const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
 
@@ -1480,7 +1438,7 @@ export async function getPendingMechanicRequests(): Promise<Mechanic[]> {
   return data || [];
 }
 
-export async function updateMechanicStatus(mechanicId: string, status: string) {
+export async function updateMechanicStatus(mechanicId: string, status: string): Promise<Mechanic> {
   const { data, error } = await supabase
     .from('mechanics')
     .update({ status })
@@ -1681,7 +1639,7 @@ export async function getAllProfiles(): Promise<UserProfile[]> {
   })) || [];
 }
 
-export async function updateUserAdminStatus(userId: string, isAdmin: boolean) {
+export async function updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<Profile> {
   const { data, error } = await supabase
     .from('profiles')
     .update({ is_admin: isAdmin })
@@ -1693,7 +1651,7 @@ export async function updateUserAdminStatus(userId: string, isAdmin: boolean) {
   return data;
 }
 
-export async function updateUserKycStatus(userId: string, isVerified: boolean) {
+export async function updateUserKycStatus(userId: string, isVerified: boolean): Promise<Profile> {
   const { data, error } = await supabase
     .from('profiles')
     .update({ kyc_verified: isVerified })
@@ -1756,7 +1714,7 @@ export async function updatePreferences(preferences: {
   push_notifications_enabled?: boolean;
   email_updates_enabled?: boolean;
   ai_repair_tips_enabled?: boolean;
-}) {
+}): Promise<Profile> {
   const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
 
@@ -1884,4 +1842,4 @@ export async function getLeaderboardData(category: string = 'all', limit: number
   }
 }
 
-export default supabase
+export default supabase;

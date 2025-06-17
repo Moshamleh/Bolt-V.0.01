@@ -10,9 +10,9 @@ import ErrorBoundary from './components/ErrorBoundary';
 // Lazy load all page components
 const DiagnosticPage = lazy(() => import('./pages/DiagnosticPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
+const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage'));
 const VehicleManagementPage = lazy(() => import('./pages/VehicleManagementPage'));
 const VehicleSetupPage = lazy(() => import('./pages/VehicleSetupPage'));
-const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage'));
 const ClubDetailPage = lazy(() => import('./pages/ClubDetailPage'));
 const ClubListPage = lazy(() => import('./pages/ClubListPage'));
 const CreateClubPage = lazy(() => import('./pages/CreateClubPage'));
@@ -88,12 +88,14 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
           </Route>
 
+          {/* Setup routes */}
+          <Route path="/profile-setup" element={<ProfileSetupPage />} />
+          <Route path="/vehicle-setup" element={<VehicleSetupPage />} />
+
           {/* Main app routes */}
           <Route element={<Layout />}>
             <Route index element={<Navigate to="/vehicles" replace />} />
-            <Route path="/profile-setup" element={<ProfileSetupPage />} />
             <Route path="/vehicles" element={<VehicleManagementPage />} />
-            <Route path="/vehicle-setup" element={<VehicleSetupPage />} />
             <Route path="/vehicles/:vehicleId/add-service" element={<AddServiceRecordPage />} />
             <Route path="/vehicles/:vehicleId/service-history" element={<ServiceHistoryPage />} />
             <Route path="/diagnostic" element={<DiagnosticPage />} />

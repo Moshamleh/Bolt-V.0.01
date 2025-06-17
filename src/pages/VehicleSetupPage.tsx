@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Car, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { supabase } from '../lib/supabase';
+import { supabase, createVehicle, getProfile } from '../lib/supabase';
 import { useFormValidation, ValidationRules } from '../hooks/useFormValidation';
 import FormField from '../components/FormField';
 import Input from '../components/Input';
 import Textarea from '../components/Textarea';
 import Select from '../components/Select';
+import SetupProgressIndicator, { Step } from '../components/SetupProgressIndicator';
 
 const YEARS = Array.from({ length: 75 }, (_, i) => new Date().getFullYear() - i);
 const MAKES = [
@@ -54,6 +55,12 @@ const VehicleSetupPage: React.FC = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOtherVehicle, setIsOtherVehicle] = useState(false);
+  const [hasProfile, setHasProfile] = useState(false);
+  const [setupSteps, setSetupSteps] = useState<Step[]>([
+    { id: 'account', label: 'Account', completed: false, current: false },
+    { id: 'vehicle', label: 'Vehicle', completed: false, current: true },
+    { id: 'complete', label: 'Complete', completed: false, current: false }
+  ]);
   const [formData, setFormData] = useState({
     make: '',
     model: '',
@@ -65,6 +72,25 @@ const VehicleSetupPage: React.FC = () => {
 
   const currentRules = isOtherVehicle ? otherVehicleRules : standardVehicleRules;
   const { errors, validateField, validateForm, clearError, setError } = useFormValidation(currentRules);
+
+  useEffect(() => {
+    const checkProfileStatus = async () => {
+      try {
+        const profile = await getProfile();
+        if (profile) {
+          // If we have a profile, mark the account step as completed
+          setHasProfile(true);
+          setSetupSteps(prev => prev.map(step => 
+            step.id === 'account' ? { ...step, completed: true } : step
+          ));
+        }
+      } catch (error) {
+        console.error('Error checking profile status:', error);
+      }
+    };
+
+    checkProfileStatus();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,27 +121,32 @@ const VehicleSetupPage: React.FC = () => {
         other_vehicle_description: isOtherVehicle ? formData.otherVehicleDescription : null
       };
 
-      // First, insert the vehicle
-      const { error: vehicleError } = await supabase
-        .from('vehicles')
-        .insert(vehicleData);
+      // Create the vehicle
+      await createVehicle(vehicleData);
 
-      if (vehicleError) throw vehicleError;
-
-      // Then, update the user's profile to mark initial setup as complete
-      const { error: profileError } = await supabase
+      // Update the user's profile to mark initial setup as complete
+      await supabase
         .from('profiles')
         .update({ initial_setup_complete: true })
         .eq('id', session.user.id);
 
-      if (profileError) throw profileError;
+      // Update progress steps
+      setSetupSteps(prev => prev.map(step => {
+        if (step.id === 'vehicle') return { ...step, completed: true, current: false };
+        if (step.id === 'complete') return { ...step, completed: true, current: true };
+        return step;
+      }));
 
+      // Show success message
       toast.success('Vehicle added successfully');
-      navigate('/diagnostic');
+      
+      // Delay navigation to show the completed progress
+      setTimeout(() => {
+        navigate('/diagnostic');
+      }, 1500);
     } catch (err) {
       console.error('Failed to save vehicle:', err);
       toast.error('Failed to save vehicle');
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -149,38 +180,62 @@ const VehicleSetupPage: React.FC = () => {
     Object.keys(errors).forEach(key => clearError(key));
   };
 
+  const handleSkip = async () => {
+    setIsSubmitting(true);
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Mark initial setup as complete
+        await supabase
+          .from('profiles')
+          .update({ initial_setup_complete: true })
+          .eq('id', user.id);
+      }
+      
+      // Update progress steps
+      setSetupSteps(prev => prev.map(step => {
+        if (step.id === 'vehicle') return { ...step, completed: true, current: false };
+        if (step.id === 'complete') return { ...step, completed: true, current: true };
+        return step;
+      }));
+      
+      // Delay navigation to show the completed progress
+      setTimeout(() => {
+        navigate('/diagnostic');
+      }, 1500);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      // Navigate anyway even if there's an error
+      navigate('/diagnostic');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-neutral-100 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
+          className="mb-8"
         >
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Vehicle Setup</h1>
-          <p className="text-neutral-600 dark:text-gray-400 mt-1">Add your vehicle details to get started</p>
+          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white text-center">Setup Your Bolt Auto</h1>
+          <p className="text-neutral-600 dark:text-gray-400 mt-1 text-center mb-8">
+            Let's get your vehicle set up for diagnostics
+          </p>
+          
+          <SetupProgressIndicator steps={setupSteps} className="mb-8" />
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-neutral-100 dark:bg-gray-800 rounded-xl shadow-sm border border-neutral-200 dark:border-gray-700 overflow-hidden"
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-neutral-200 dark:border-gray-700 overflow-hidden"
         >
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Progress indicator */}
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full">
-                <div className="h-2 bg-blue-600 dark:bg-blue-400 rounded-full w-full"></div>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white">
-                2
-              </div>
-            </div>
-
             <div className="flex items-center gap-2 mb-6">
               <input
                 type="checkbox"
@@ -313,20 +368,12 @@ const VehicleSetupPage: React.FC = () => {
               </div>
             </FormField>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 pt-4">
               <button
                 type="button"
-                onClick={() => {
-                  // Mark setup as complete even when skipping
-                  supabase
-                    .from('profiles')
-                    .update({ initial_setup_complete: true })
-                    .eq('id', supabase.auth.getUser().then(({ data }) => data.user?.id))
-                    .then(() => {
-                      navigate('/diagnostic');
-                    });
-                }}
-                className="px-4 py-2 border border-neutral-300 dark:border-gray-600 rounded-lg text-sm font-medium text-neutral-700 dark:text-gray-300 bg-neutral-100 dark:bg-gray-800 hover:bg-neutral-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                onClick={handleSkip}
+                disabled={isSubmitting}
+                className="px-4 py-2 border border-neutral-300 dark:border-gray-600 rounded-lg text-sm font-medium text-neutral-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-neutral-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Skip for Now
               </button>

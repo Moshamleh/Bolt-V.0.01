@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Loader2, ArrowRight, CheckCircle } from 'lucide-react';
+import { Camera, Loader2, User, Mail, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { updateProfile, getProfile } from '../lib/supabase';
+import { supabase, createProfile, uploadAvatar, getProfile } from '../lib/supabase';
 import { useFormValidation, ValidationRules } from '../hooks/useFormValidation';
 import FormField from '../components/FormField';
 import Input from '../components/Input';
+import Textarea from '../components/Textarea';
+import SetupProgressIndicator, { Step } from '../components/SetupProgressIndicator';
 
 const validationRules: ValidationRules = {
   fullName: {
@@ -15,23 +17,34 @@ const validationRules: ValidationRules = {
     maxLength: 100
   },
   username: {
-    required: true,
     minLength: 3,
     maxLength: 30,
     pattern: /^[a-zA-Z0-9_]+$/,
     custom: (value) => {
-      if (!/^[a-zA-Z]/.test(value)) {
-        return 'Username must start with a letter';
+      if (value && !/^[a-zA-Z0-9_]+$/.test(value)) {
+        return 'Username can only contain letters, numbers, and underscores';
       }
       return null;
     }
+  },
+  location: {
+    maxLength: 100
   }
 };
 
 const ProfileSetupPage: React.FC = () => {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [email, setEmail] = useState<string>('');
+  const [setupSteps, setSetupSteps] = useState<Step[]>([
+    { id: 'account', label: 'Account', completed: false, current: true },
+    { id: 'vehicle', label: 'Vehicle', completed: false, current: false },
+    { id: 'complete', label: 'Complete', completed: false, current: false }
+  ]);
+  
   const [formData, setFormData] = useState({
     fullName: '',
     username: '',
@@ -39,30 +52,58 @@ const ProfileSetupPage: React.FC = () => {
     location: ''
   });
 
-  const { errors, validateField, validateForm, clearError, setError } = useFormValidation(validationRules);
+  const { errors, validateField, validateForm, clearError, setError: setFieldError } = useFormValidation(validationRules);
 
   useEffect(() => {
-    const loadProfile = async () => {
+    const loadUserData = async () => {
       try {
+        // Get current user's email
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.email) {
+          setEmail(session.user.email);
+        }
+
+        // Check if profile already exists
         const profile = await getProfile();
         if (profile) {
-          // Pre-fill form with existing data if available
+          // Pre-fill form with existing data
           setFormData({
             fullName: profile.full_name || '',
             username: profile.username || '',
             bio: profile.bio || '',
             location: profile.location || ''
           });
+          
+          if (profile.avatar_url) {
+            setAvatarUrl(profile.avatar_url);
+          }
         }
-      } catch (err) {
-        console.error('Failed to load profile:', err);
-      } finally {
-        setIsLoading(false);
+      } catch (error) {
+        console.error('Error loading user data:', error);
       }
     };
 
-    loadProfile();
+    loadUserData();
   }, []);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    setAvatarFile(file);
+    
+    // Create a preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -72,32 +113,20 @@ const ProfileSetupPage: React.FC = () => {
     if (errors[name]) {
       clearError(name);
     }
-
-    // Real-time validation for username
-    if (name === 'username') {
-      const error = validateField(name, value);
-      if (error) {
-        setError(name, error);
-      }
-    }
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     const error = validateField(name, value);
     if (error) {
-      setError(name, error);
+      setFieldError(name, error);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate required fields
-    if (!validateForm({
-      fullName: formData.fullName,
-      username: formData.username
-    })) {
+    if (!validateForm(formData)) {
       toast.error('Please fix the errors below');
       return;
     }
@@ -105,164 +134,246 @@ const ProfileSetupPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      await updateProfile({
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      let finalAvatarUrl = avatarUrl;
+      
+      // Upload avatar if a new file was selected
+      if (avatarFile) {
+        try {
+          finalAvatarUrl = await uploadAvatar(avatarFile);
+        } catch (avatarError) {
+          console.error('Avatar upload failed:', avatarError);
+          toast.error('Failed to upload avatar, but continuing with profile creation');
+        }
+      }
+
+      // Create or update profile
+      await createProfile({
+        id: user.id,
         full_name: formData.fullName.trim(),
-        username: formData.username.trim(),
+        username: formData.username.trim() || null,
         bio: formData.bio.trim() || null,
-        location: formData.location.trim() || null
+        location: formData.location.trim() || null,
+        avatar_url: finalAvatarUrl,
+        kyc_verified: false,
+        push_notifications_enabled: true,
+        email_updates_enabled: true,
+        ai_repair_tips_enabled: true,
+        dark_mode_enabled: false,
+        is_admin: false,
+        initial_setup_complete: false,
+        diagnostic_suggestions_enabled: true
       });
 
-      toast.success('Profile updated successfully');
-      navigate('/vehicle-setup');
-    } catch (err: any) {
-      console.error('Failed to update profile:', err);
+      // Update progress steps
+      setSetupSteps(prev => prev.map(step => {
+        if (step.id === 'account') return { ...step, completed: true, current: false };
+        if (step.id === 'vehicle') return { ...step, current: true };
+        return step;
+      }));
+
+      // Show success message
+      toast.success('Profile created successfully');
       
-      // Handle specific errors
-      if (err.message && err.message.includes('duplicate key value')) {
-        if (err.message.includes('profiles_username_key')) {
-          setError('username', 'This username is already taken');
-          toast.error('Username is already taken');
-        } else {
-          toast.error('A unique constraint was violated');
-        }
-      } else {
-        toast.error(err.message || 'Failed to update profile');
-      }
+      // Navigate to vehicle setup
+      setTimeout(() => {
+        navigate('/vehicle-setup');
+      }, 1500);
+    } catch (err) {
+      console.error('Failed to create profile:', err);
+      toast.error('Failed to create profile');
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSkip = async () => {
+    setIsSubmitting(true);
+    try {
+      // Update progress steps
+      setSetupSteps(prev => prev.map(step => {
+        if (step.id === 'account') return { ...step, completed: true, current: false };
+        if (step.id === 'vehicle') return { ...step, current: true };
+        return step;
+      }));
+      
+      // Delay navigation to show the updated progress
+      setTimeout(() => {
+        navigate('/vehicle-setup');
+      }, 1500);
+    } catch (error) {
+      console.error('Error during skip:', error);
+      // Navigate anyway even if there's an error
+      navigate('/vehicle-setup');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin" />
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-md mx-auto">
+    <div className="min-h-screen bg-neutral-100 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-2xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 text-center"
+          className="mb-8"
         >
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900 mb-4">
-            <User className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Create Your Profile</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Tell us a bit about yourself to get started
+          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white text-center">Setup Your Profile</h1>
+          <p className="text-neutral-600 dark:text-gray-400 mt-1 text-center mb-8">
+            Tell us a bit about yourself
           </p>
+          
+          <SetupProgressIndicator steps={setupSteps} className="mb-8" />
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden"
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-neutral-200 dark:border-gray-700 overflow-hidden"
         >
-          <div className="p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {/* Avatar Upload */}
+            <div className="flex flex-col items-center mb-6">
+              <div className="relative mb-4">
+                <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
+                      <User className="h-12 w-12" />
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-0 right-0 p-1.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+                  title="Upload avatar"
+                >
+                  <Camera className="h-4 w-4" />
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
               </div>
-              <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full">
-                <div className="h-2 bg-blue-600 dark:bg-blue-400 rounded-full w-1/2"></div>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500">
-                2
-              </div>
+              
+              {email && (
+                <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                  <Mail className="h-4 w-4 mr-1" />
+                  <span>{email}</span>
+                </div>
+              )}
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <FormField
-                label="Full Name"
+            {/* Full Name */}
+            <FormField
+              label="Full Name"
+              name="fullName"
+              error={errors.fullName}
+              required
+            >
+              <Input
                 name="fullName"
-                error={errors.fullName}
-                required
-              >
+                value={formData.fullName}
+                onChange={handleInputChange}
+                onBlur={handleBlur}
+                error={!!errors.fullName}
+                placeholder="Enter your full name"
+              />
+            </FormField>
+
+            {/* Username */}
+            <FormField
+              label="Username"
+              name="username"
+              error={errors.username}
+              description="Choose a unique username for your profile"
+            >
+              <div className="relative">
+                <span className="absolute left-4 top-2 text-gray-500 dark:text-gray-400">@</span>
                 <Input
-                  name="fullName"
-                  value={formData.fullName}
+                  name="username"
+                  value={formData.username}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  error={!!errors.fullName}
-                  placeholder="Enter your full name"
-                  autoFocus
+                  error={!!errors.username}
+                  className="pl-8"
+                  placeholder="username"
                 />
-              </FormField>
+              </div>
+            </FormField>
 
-              <FormField
-                label="Username"
-                name="username"
-                error={errors.username}
-                required
-                description="Choose a unique username (letters, numbers, and underscores only)"
-              >
-                <div className="relative">
-                  <span className="absolute left-4 top-2 text-gray-500 dark:text-gray-400">@</span>
-                  <Input
-                    name="username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
-                    error={!!errors.username}
-                    className="pl-8"
-                    placeholder="username"
-                  />
-                </div>
-              </FormField>
+            {/* Bio */}
+            <FormField
+              label="Bio"
+              name="bio"
+              description="Tell us a bit about yourself (optional)"
+            >
+              <Textarea
+                name="bio"
+                value={formData.bio}
+                onChange={handleInputChange}
+                rows={3}
+                placeholder="Share your interests, expertise, or anything else you'd like others to know"
+              />
+            </FormField>
 
-              <FormField
-                label="Location"
-                name="location"
-                description="Optional - Where are you located?"
-              >
+            {/* Location */}
+            <FormField
+              label="Location"
+              name="location"
+              error={errors.location}
+              description="Where are you located? (optional)"
+            >
+              <div className="relative">
+                <MapPin className="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400 h-5 w-5" />
                 <Input
                   name="location"
                   value={formData.location}
                   onChange={handleInputChange}
-                  placeholder="e.g., Los Angeles, CA"
+                  onBlur={handleBlur}
+                  error={!!errors.location}
+                  className="pl-10"
+                  placeholder="City, State"
                 />
-              </FormField>
-
-              <FormField
-                label="Bio"
-                name="bio"
-                description="Optional - Tell us a bit about yourself"
-              >
-                <Input
-                  name="bio"
-                  value={formData.bio}
-                  onChange={handleInputChange}
-                  placeholder="I'm a car enthusiast who loves..."
-                />
-              </FormField>
-
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isSubmitting ? (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      <span>Saving...</span>
-                    </div>
-                  ) : (
-                    <>
-                      <span>Continue</span>
-                      <ArrowRight className="h-5 w-5" />
-                    </>
-                  )}
-                </button>
               </div>
-            </form>
-          </div>
+            </FormField>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <button
+                type="button"
+                onClick={handleSkip}
+                disabled={isSubmitting}
+                className="px-4 py-2 border border-neutral-300 dark:border-gray-600 rounded-lg text-sm font-medium text-neutral-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-neutral-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Skip for Now
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Saving...</span>
+                  </div>
+                ) : (
+                  'Continue'
+                )}
+              </button>
+            </div>
+          </form>
         </motion.div>
       </div>
     </div>
