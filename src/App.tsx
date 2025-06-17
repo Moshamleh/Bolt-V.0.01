@@ -30,6 +30,7 @@ const PartChatPage = lazy(() => import('./pages/PartChatPage'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminUserManagement = lazy(() => import('./pages/AdminUserManagement'));
 const AdminPartsManagement = lazy(() => import('./pages/AdminPartsManagement'));
+const AdminEditPartPage = lazy(() => import('./pages/AdminEditPartPage'));
 const AdminReportedPartsPage = lazy(() => import('./pages/AdminReportedPartsPage'));
 const AdminFeedbackPage = lazy(() => import('./pages/AdminFeedbackPage'));
 const AdminAiFeedback = lazy(() => import('./pages/AdminAiFeedback'));
@@ -45,6 +46,7 @@ const AddServiceRecordPage = lazy(() => import('./pages/AddServiceRecordPage'));
 const ServiceHistoryPage = lazy(() => import('./pages/ServiceHistoryPage'));
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const SellerProfilePage = lazy(() => import('./pages/SellerProfilePage'));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -125,6 +127,7 @@ function App() {
 
             <Route path="/sell-part" element={<ListPartPage />} />
             <Route path="/parts/:id" element={<PartDetailPage />} />
+            <Route path="/seller/:id" element={<SellerProfilePage />} />
             <Route path="/account" element={<AccountPage />} />
             <Route path="/help" element={<HelpFAQPage />} />
             <Route path="/ai-safety" element={<AIDisclaimerPage />} />
@@ -135,6 +138,7 @@ function App() {
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/users" element={<AdminUserManagement />} />
             <Route path="/admin/parts" element={<AdminPartsManagement />} />
+            <Route path="/admin/parts/:id/edit" element={<AdminEditPartPage />} />
             <Route path="/admin/reported-parts" element={<AdminReportedPartsPage />} />
             <Route path="/admin/feedback" element={<AdminFeedbackPage />} />
             <Route path="/admin/ai-feedback" element={<AdminAiFeedback />} />
