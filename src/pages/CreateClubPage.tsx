@@ -24,7 +24,7 @@ const validationRules: ValidationRules = {
     minLength: 20,
     maxLength: 500
   },
-  region: {
+  state: {
     required: true
   },
   topic: {
@@ -44,7 +44,7 @@ const CreateClubPage: React.FC = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    region: '',
+    state: '',
     topic: '',
   });
 
@@ -123,7 +123,7 @@ const CreateClubPage: React.FC = () => {
         .insert({
           name: formData.title,
           description: formData.description,
-          region: formData.region,
+          region: formData.state, // Map state to region column
           topic: formData.topic,
           image_url: publicUrl,
         })
@@ -183,6 +183,18 @@ const CreateClubPage: React.FC = () => {
       setFieldError(name, error);
     }
   };
+
+  // List of US states
+  const US_STATES = [
+    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 
+    'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 
+    'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 
+    'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 
+    'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 
+    'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 
+    'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 
+    'Wisconsin', 'Wyoming'
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
@@ -310,25 +322,24 @@ const CreateClubPage: React.FC = () => {
               />
             </FormField>
 
-            {/* Region */}
+            {/* State */}
             <FormField
-              label="Region"
-              name="region"
-              error={errors.region}
+              label="State"
+              name="state"
+              error={errors.state}
               required
             >
               <Select
-                name="region"
-                value={formData.region}
+                name="state"
+                value={formData.state}
                 onChange={handleInputChange}
                 onBlur={handleBlur}
-                error={!!errors.region}
-                placeholder="Select a region"
+                error={!!errors.state}
+                placeholder="Select a state"
               >
-                <option value="North America">North America</option>
-                <option value="Europe">Europe</option>
-                <option value="Asia">Asia</option>
-                <option value="Australia">Australia</option>
+                {US_STATES.map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
               </Select>
             </FormField>
 
