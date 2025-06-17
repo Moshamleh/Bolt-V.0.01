@@ -1395,27 +1395,36 @@ export const leaveClub = async (clubId: string): Promise<void> => {
 };
 
 export const getClubMembers = async (clubId: string): Promise<Profile[]> => {
-  const { data, error } = await supabase
+  // First get the user_ids of club members
+  const { data: memberData, error: memberError } = await supabase
     .from('club_members')
-    .select(`
-      user_id,
-      role,
-      user:user_id (
-        id,
-        full_name,
-        username,
-        avatar_url
-      )
-    `)
+    .select('user_id, role')
     .eq('club_id', clubId);
 
-  if (error) throw error;
-
-  // Process the data to include the role
-  return data?.map(member => ({
-    ...member.user,
-    role: member.role
-  })) || [];
+  if (memberError) throw memberError;
+  
+  if (!memberData || memberData.length === 0) {
+    return [];
+  }
+  
+  // Get the profile information for each member
+  const userIds = memberData.map(member => member.user_id);
+  
+  const { data: profileData, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, full_name, username, avatar_url, bio, location')
+    .in('id', userIds);
+    
+  if (profileError) throw profileError;
+  
+  // Combine the role information with the profile data
+  return (profileData || []).map(profile => {
+    const memberInfo = memberData.find(m => m.user_id === profile.id);
+    return {
+      ...profile,
+      role: memberInfo?.role || 'member'
+    };
+  });
 };
 
 export const getCurrentUserClubRole = async (clubId: string): Promise<string | null> => {
@@ -1777,7 +1786,7 @@ export const updateMechanicStatus = async (mechanicId: string, status: 'approved
 };
 
 export const getAllUserFeedback = async (page: number = 1, limit: number = 10): Promise<{
-  data: UserFeedback[];
+  data: any[];
   total: number;
 }> => {
   const from = (page - 1) * limit;
