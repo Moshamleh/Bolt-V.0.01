@@ -71,6 +71,15 @@ export interface Profile {
   is_admin: boolean;
   initial_setup_complete: boolean;
   diagnostic_suggestions_enabled: boolean;
+  notification_preferences?: NotificationPreferences;
+}
+
+export interface NotificationPreferences {
+  chat_messages: boolean;
+  ai_repair_tips: boolean;
+  club_activity: boolean;
+  service_reminders: boolean;
+  marketplace_activity: boolean;
 }
 
 export interface Part {
@@ -269,6 +278,17 @@ export interface UserEarnedBadge {
   note?: string;
 }
 
+// Notification interface
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+  link?: string;
+}
+
 // Leaderboard interfaces
 export interface LeaderboardEntry {
   id: string;
@@ -416,6 +436,14 @@ export async function awardBadge(
       };
       onEarned(earnedBadge);
     }
+
+    // Create a notification for the badge award
+    await createNotification(
+      userId,
+      'badge_earned',
+      `You earned the "${badge.name}" badge!`,
+      '/account?tab=achievements'
+    );
 
     return awardedBadge;
   } catch (error) {
@@ -719,6 +747,15 @@ export async function createServiceRecord(record: Omit<ServiceRecord, 'id' | 'us
     .single();
 
   if (error) throw error;
+
+  // Create a notification for the service record
+  await createNotification(
+    user.id,
+    'service_record_added',
+    `Service record added: ${record.service_type}`,
+    `/vehicles/${record.vehicle_id}/service-history`
+  );
+
   return data;
 }
 
@@ -985,6 +1022,15 @@ export async function createPart(part: Omit<Part, 'id' | 'created_at' | 'seller_
     .single();
 
   if (error) throw error;
+
+  // Create a notification for the new part listing
+  await createNotification(
+    user.id,
+    'part_listed',
+    `Your part "${part.title}" has been listed successfully`,
+    '/marketplace/my-listings'
+  );
+
   return data;
 }
 
@@ -1114,6 +1160,15 @@ export async function getOrCreatePartChat(partId: string, sellerId: string): Pro
     .single();
 
   if (createError) throw createError;
+
+  // Create a notification for the seller
+  await createNotification(
+    sellerId,
+    'new_chat',
+    `Someone is interested in your part listing`,
+    `/marketplace/messages/${newChat.id}`
+  );
+
   return newChat.id;
 }
 
@@ -1197,6 +1252,27 @@ export async function sendPartMessage(chatId: string, content: string): Promise<
     .single();
 
   if (error) throw error;
+
+  // Get chat details to determine the recipient
+  const { data: chatDetails } = await supabase
+    .from('part_chats')
+    .select('buyer_id, seller_id, part:parts(title)')
+    .eq('id', chatId)
+    .single();
+
+  if (chatDetails) {
+    // Determine the recipient (the other user in the chat)
+    const recipientId = chatDetails.buyer_id === user.id ? chatDetails.seller_id : chatDetails.buyer_id;
+    
+    // Create a notification for the recipient
+    await createNotification(
+      recipientId,
+      'new_message',
+      `New message about ${chatDetails.part?.title || 'a part'}`,
+      `/marketplace/messages/${chatId}`
+    );
+  }
+
   return data;
 }
 
@@ -1256,6 +1332,14 @@ export async function createClub(
     // Don't fail the club creation if badge awarding fails
   }
 
+  // Create a notification for the club creation
+  await createNotification(
+    user.id,
+    'club_created',
+    `You successfully created the club "${club.name}"`,
+    `/clubs/${data.id}`
+  );
+
   return data;
 }
 
@@ -1270,6 +1354,24 @@ export async function joinClub(clubId: string): Promise<ClubMember> {
     .single();
 
   if (error) throw error;
+
+  // Get club details for the notification
+  const { data: club } = await supabase
+    .from('clubs')
+    .select('name')
+    .eq('id', clubId)
+    .single();
+
+  // Create a notification for joining the club
+  if (club) {
+    await createNotification(
+      user.id,
+      'club_joined',
+      `You joined the club "${club.name}"`,
+      `/clubs/${clubId}`
+    );
+  }
+
   return data;
 }
 
@@ -1393,6 +1495,33 @@ export async function sendClubMessage(clubId: string, content: string): Promise<
     .single();
 
   if (error) throw error;
+
+  // Get club members to notify them
+  const { data: members } = await supabase
+    .from('club_members')
+    .select('user_id')
+    .eq('club_id', clubId)
+    .neq('user_id', user.id); // Exclude the sender
+
+  // Get club name for the notification
+  const { data: club } = await supabase
+    .from('clubs')
+    .select('name')
+    .eq('id', clubId)
+    .single();
+
+  // Create notifications for all members except the sender
+  if (members && club) {
+    for (const member of members) {
+      await createNotification(
+        member.user_id,
+        'club_message',
+        `New message in ${club.name}`,
+        `/clubs/${clubId}`
+      );
+    }
+  }
+
   return data;
 }
 
@@ -1447,6 +1576,21 @@ export async function updateMechanicStatus(mechanicId: string, status: string): 
     .single();
 
   if (error) throw error;
+
+  // Create a notification for the mechanic about their status update
+  if (data && data.user_id) {
+    const message = status === 'approved' 
+      ? 'Your mechanic application has been approved! You can now receive service requests.'
+      : 'Your mechanic application has been rejected. Please contact support for more information.';
+    
+    await createNotification(
+      data.user_id,
+      'mechanic_status_update',
+      message,
+      '/mechanic/settings'
+    );
+  }
+
   return data;
 }
 
@@ -1504,6 +1648,15 @@ export async function upsertMechanicProfile(profileData: Partial<Mechanic>): Pro
     .single();
 
   if (error) throw error;
+
+  // Create a notification for the profile update
+  await createNotification(
+    user.id,
+    'profile_updated',
+    'Your mechanic profile has been updated',
+    '/mechanic/settings'
+  );
+
   return data;
 }
 
@@ -1535,6 +1688,24 @@ export async function getOrCreateMechanicChat(userId: string, mechanicId: string
     .single();
 
   if (createError) throw createError;
+
+  // Get mechanic details to get the user_id for notification
+  const { data: mechanic } = await supabase
+    .from('mechanics')
+    .select('user_id')
+    .eq('id', mechanicId)
+    .single();
+
+  // Create a notification for the mechanic
+  if (mechanic && mechanic.user_id) {
+    await createNotification(
+      mechanic.user_id,
+      'new_mechanic_chat',
+      'Someone has started a chat with you',
+      `/mechanic-support/chat/${newChat.id}`
+    );
+  }
+
   return newChat.id;
 }
 
@@ -1648,6 +1819,19 @@ export async function updateUserAdminStatus(userId: string, isAdmin: boolean): P
     .single();
 
   if (error) throw error;
+
+  // Create a notification for the user about their admin status
+  const message = isAdmin 
+    ? 'You have been granted admin privileges'
+    : 'Your admin privileges have been revoked';
+  
+  await createNotification(
+    userId,
+    'admin_status_update',
+    message,
+    '/account'
+  );
+
   return data;
 }
 
@@ -1660,6 +1844,19 @@ export async function updateUserKycStatus(userId: string, isVerified: boolean): 
     .single();
 
   if (error) throw error;
+
+  // Create a notification for the user about their KYC status
+  const message = isVerified 
+    ? 'Your KYC verification has been approved! You can now sell parts in the marketplace.'
+    : 'Your KYC verification has been rejected. Please contact support for more information.';
+  
+  await createNotification(
+    userId,
+    'kyc_status_update',
+    message,
+    isVerified ? '/marketplace/my-listings' : '/kyc'
+  );
+
   return data;
 }
 
@@ -1714,6 +1911,7 @@ export async function updatePreferences(preferences: {
   push_notifications_enabled?: boolean;
   email_updates_enabled?: boolean;
   ai_repair_tips_enabled?: boolean;
+  notification_preferences?: NotificationPreferences;
 }): Promise<Profile> {
   const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
@@ -1810,6 +2008,128 @@ export async function getAllAiFeedback(page: number = 1, limit: number = 10): Pr
     hasNextPage: page < totalPages,
     hasPreviousPage: page > 1
   };
+}
+
+// Notification functions
+export async function createNotification(
+  userId: string,
+  type: string,
+  message: string,
+  link?: string
+): Promise<Notification> {
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert([{
+        user_id: userId,
+        type,
+        message,
+        link
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Failed to create notification:', error);
+    throw error;
+  }
+}
+
+export async function getUserNotifications(
+  limit: number = 10,
+  includeRead: boolean = false
+): Promise<Notification[]> {
+  const user = await getCurrentUser();
+  if (!user) return [];
+
+  let query = supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (!includeRead) {
+    query = query.eq('read', false);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getUnreadNotificationCount(): Promise<number> {
+  const user = await getCurrentUser();
+  if (!user) return 0;
+
+  const { count, error } = await supabase
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('read', false);
+
+  if (error) throw error;
+  return count || 0;
+}
+
+export async function markNotificationAsRead(notificationId: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('User not authenticated');
+
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read: true })
+    .eq('id', notificationId)
+    .eq('user_id', user.id);
+
+  if (error) throw error;
+}
+
+export async function markAllNotificationsAsRead(): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('User not authenticated');
+
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read: true })
+    .eq('user_id', user.id)
+    .eq('read', false);
+
+  if (error) throw error;
+}
+
+export async function deleteNotification(notificationId: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('User not authenticated');
+
+  const { error } = await supabase
+    .from('notifications')
+    .delete()
+    .eq('id', notificationId)
+    .eq('user_id', user.id);
+
+  if (error) throw error;
+}
+
+export async function updateNotificationPreferences(
+  preferences: NotificationPreferences
+): Promise<Profile> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('User not authenticated');
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({
+      notification_preferences: preferences
+    })
+    .eq('id', user.id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
 // Leaderboard functions

@@ -5,6 +5,7 @@ import OnboardingTour from './OnboardingTour';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { supabase, getProfile } from '../lib/supabase';
 import InitialSetupRedirect from './InitialSetupRedirect';
+import NotificationDropdown from './NotificationDropdown';
 
 // Lazy load components
 const ProfileCompletionBanner = lazy(() => import('./ProfileCompletionBanner'));
@@ -197,7 +198,9 @@ const Layout: React.FC = () => {
             </nav>
             
             {/* Account/Settings */}
-            <div>
+            <div className="flex items-center gap-2">
+              <NotificationDropdown />
+              
               <NavLink
                 to="/account"
                 className={({ isActive }) => `

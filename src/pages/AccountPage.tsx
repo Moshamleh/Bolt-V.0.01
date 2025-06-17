@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Settings, User, Moon, Shield, HelpCircle, Loader2, Award } from 'lucide-react';
+import { Settings, User, Moon, Shield, HelpCircle, Loader2, Award, Bell } from 'lucide-react';
 import { Profile, getProfile, getUserBadges, UserEarnedBadge, supabase } from '../lib/supabase';
 import LazyErrorBoundary from '../components/LazyErrorBoundary';
 
@@ -12,6 +12,7 @@ const SecurityLoginSection = lazy(() => import('../components/SecurityLoginSecti
 const SupportFeedbackSection = lazy(() => import('../components/SupportFeedbackSection'));
 const BadgesPanel = lazy(() => import('../components/BadgesPanel'));
 const ProfileCompletionIndicator = lazy(() => import('../components/ProfileCompletionIndicator'));
+const NotificationPreferencesSection = lazy(() => import('../components/NotificationPreferencesSection'));
 
 // Loading fallback component
 const ComponentLoader = () => (
@@ -68,6 +69,7 @@ const AccountPage = () => {
   const tabs = [
     { id: 'profile', label: 'Profile', icon: <User className="h-5 w-5" /> },
     { id: 'achievements', label: 'Achievements', icon: <Award className="h-5 w-5" /> },
+    { id: 'notifications', label: 'Notifications', icon: <Bell className="h-5 w-5" /> },
     { id: 'preferences', label: 'Preferences', icon: <Moon className="h-5 w-5" /> },
     { id: 'security', label: 'Security', icon: <Shield className="h-5 w-5" /> },
     { id: 'support', label: 'Support', icon: <HelpCircle className="h-5 w-5" /> }
@@ -106,6 +108,14 @@ const AccountPage = () => {
                 </div>
                 <BadgesPanel badges={badges} loading={badgesLoading} />
               </div>
+            </Suspense>
+          </LazyErrorBoundary>
+        );
+      case 'notifications':
+        return (
+          <LazyErrorBoundary componentName="Notifications Section">
+            <Suspense fallback={<ComponentLoader />}>
+              <NotificationPreferencesSection />
             </Suspense>
           </LazyErrorBoundary>
         );
