@@ -1,16 +1,26 @@
-import React, { useEffect, useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Zap, Store, UsersRound, Settings, Wrench, Loader2, Car, Trophy } from 'lucide-react';
 import OnboardingTour from './OnboardingTour';
 import { useOnboarding } from '../hooks/useOnboarding';
-import { supabase } from '../lib/supabase';
+import { supabase, getProfile } from '../lib/supabase';
 import InitialSetupRedirect from './InitialSetupRedirect';
+
+// Lazy load components
+const ProfileCompletionBanner = lazy(() => import('./ProfileCompletionBanner'));
 
 const Layout: React.FC = () => {
   const { showOnboarding, completeOnboarding, skipOnboarding } = useOnboarding();
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [showProfileBanner, setShowProfileBanner] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Don't show profile banner on these paths
+  const excludedPaths = ['/account', '/profile-setup', '/vehicle-setup'];
+  const shouldShowBanner = !excludedPaths.some(path => location.pathname.startsWith(path));
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -23,6 +33,28 @@ const Layout: React.FC = () => {
         }
         
         setIsAuthenticated(true);
+
+        // Load profile data
+        const profileData = await getProfile();
+        setProfile(profileData);
+
+        // Check if profile is incomplete
+        if (profileData) {
+          const fields = [
+            !!profileData.full_name,
+            !!profileData.username,
+            !!profileData.avatar_url,
+            !!profileData.bio,
+            !!profileData.location
+          ];
+          
+          const completedFields = fields.filter(Boolean).length;
+          const totalFields = fields.length;
+          const completionPercentage = Math.round((completedFields / totalFields) * 100);
+          
+          // Show banner if profile is less than 80% complete
+          setShowProfileBanner(completionPercentage < 80 && shouldShowBanner);
+        }
       } catch (error) {
         console.error('Auth check error:', error);
         navigate('/login');
@@ -43,7 +75,7 @@ const Layout: React.FC = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, shouldShowBanner]);
 
   // Show loading spinner while checking authentication
   if (isLoading) {
@@ -66,6 +98,18 @@ const Layout: React.FC = () => {
     <div className="min-h-screen bg-neutral-100 dark:bg-gray-900">
       {/* Add the InitialSetupRedirect component to handle redirects */}
       <InitialSetupRedirect />
+      
+      {/* Profile Completion Banner */}
+      {showProfileBanner && profile && (
+        <Suspense fallback={null}>
+          <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pt-4">
+            <ProfileCompletionBanner 
+              profile={profile} 
+              onDismiss={() => setShowProfileBanner(false)} 
+            />
+          </div>
+        </Suspense>
+      )}
       
       {/* Desktop Navigation Bar */}
       <header className="hidden md:block sticky top-0 z-40 bg-white dark:bg-gray-800 border-b border-neutral-200 dark:border-gray-700 shadow-sm">

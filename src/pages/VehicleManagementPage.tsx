@@ -6,14 +6,17 @@ import { Vehicle, getUserVehicles, getProfile } from '../lib/supabase';
 
 // Lazy load components
 const RepairTipsPanel = lazy(() => import('../components/RepairTipsPanel'));
+const ProfileCompletionBanner = lazy(() => import('../components/ProfileCompletionBanner'));
 
 const VehicleManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showRepairTips, setShowRepairTips] = useState(false);
   const [aiTipsEnabled, setAiTipsEnabled] = useState(true);
+  const [showProfileBanner, setShowProfileBanner] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
@@ -24,6 +27,7 @@ const VehicleManagementPage: React.FC = () => {
         ]);
         
         setVehicles(vehiclesData);
+        setProfile(profileData);
         
         // Check user preference for AI repair tips
         if (profileData) {
@@ -126,6 +130,16 @@ const VehicleManagementPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-neutral-100 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
+        {/* Profile Completion Banner */}
+        {!loading && profile && showProfileBanner && (
+          <Suspense fallback={null}>
+            <ProfileCompletionBanner 
+              profile={profile} 
+              onDismiss={() => setShowProfileBanner(false)} 
+            />
+          </Suspense>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

@@ -11,6 +11,7 @@ const PreferencesSection = lazy(() => import('../components/PreferencesSection')
 const SecurityLoginSection = lazy(() => import('../components/SecurityLoginSection'));
 const SupportFeedbackSection = lazy(() => import('../components/SupportFeedbackSection'));
 const BadgesPanel = lazy(() => import('../components/BadgesPanel'));
+const ProfileCompletionIndicator = lazy(() => import('../components/ProfileCompletionIndicator'));
 
 // Loading fallback component
 const ComponentLoader = () => (
@@ -78,11 +79,15 @@ const AccountPage = () => {
         return (
           <LazyErrorBoundary componentName="Profile Section">
             <Suspense fallback={<ComponentLoader />}>
-              <ProfileSection
-                profile={profile}
-                email={userEmail}
-                onProfileUpdate={setProfile}
-              />
+              <div className="space-y-6">
+                <ProfileCompletionIndicator profile={profile} />
+                
+                <ProfileSection
+                  profile={profile}
+                  email={userEmail}
+                  onProfileUpdate={setProfile}
+                />
+              </div>
             </Suspense>
           </LazyErrorBoundary>
         );
