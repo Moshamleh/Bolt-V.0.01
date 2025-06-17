@@ -23,6 +23,8 @@ const MarketplacePage: React.FC = () => {
   const [selectedCondition, setSelectedCondition] = useState<'new' | 'used' | 'refurbished' | ''>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [priceRange, setPriceRange] = useState<{ min?: number; max?: number }>({});
+  const [partNumber, setPartNumber] = useState<string>('');
+  const [oemNumber, setOemNumber] = useState<string>('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isMessagingLoading, setIsMessagingLoading] = useState<Record<string, boolean>>({});
   const [showFilters, setShowFilters] = useState(false);
@@ -47,6 +49,8 @@ const MarketplacePage: React.FC = () => {
           category: selectedCategory || undefined,
           minPrice: priceRange.min,
           maxPrice: priceRange.max,
+          partNumber: partNumber || undefined,
+          oemNumber: oemNumber || undefined
         };
         
         const response = await getParts(filters, currentPage, ITEMS_PER_PAGE);
@@ -71,6 +75,8 @@ const MarketplacePage: React.FC = () => {
     selectedCondition, 
     selectedCategory, 
     priceRange,
+    partNumber,
+    oemNumber,
     currentPage
   ]);
 
@@ -107,6 +113,8 @@ const MarketplacePage: React.FC = () => {
     setSelectedCondition('');
     setSelectedCategory('');
     setPriceRange({});
+    setPartNumber('');
+    setOemNumber('');
     setCurrentPage(1);
     setIsMobileMenuOpen(false);
   };
@@ -141,7 +149,7 @@ const MarketplacePage: React.FC = () => {
   );
 
   const EmptyState = () => {
-    const hasFilters = searchTerm || selectedMake || selectedModel || selectedCondition || selectedCategory || priceRange.min || priceRange.max;
+    const hasFilters = searchTerm || selectedMake || selectedModel || selectedCondition || selectedCategory || priceRange.min || priceRange.max || partNumber || oemNumber;
     
     return (
       <motion.div
@@ -359,6 +367,35 @@ const MarketplacePage: React.FC = () => {
                   className="overflow-hidden md:block hidden"
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                    {/* Part Number Search */}
+                    <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Search by Part Number"
+                          value={partNumber}
+                          onChange={(e) => {
+                            setPartNumber(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Search by OEM Number"
+                          value={oemNumber}
+                          onChange={(e) => {
+                            setOemNumber(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
                     <select
                       value={selectedMake}
                       onChange={(e) => {
@@ -503,6 +540,35 @@ const MarketplacePage: React.FC = () => {
             <h3 className="font-medium text-gray-900 dark:text-white">Filters</h3>
             
             <div className="space-y-3">
+              {/* Part Number Search */}
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Part Number</label>
+                <input
+                  type="text"
+                  placeholder="Search by part number"
+                  value={partNumber}
+                  onChange={(e) => {
+                    setPartNumber(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">OEM Number</label>
+                <input
+                  type="text"
+                  placeholder="Search by OEM number"
+                  value={oemNumber}
+                  onChange={(e) => {
+                    setOemNumber(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
               <div>
                 <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Make</label>
                 <select

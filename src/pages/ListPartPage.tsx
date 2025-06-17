@@ -85,6 +85,12 @@ const validationRules: ValidationRules = {
   },
   condition: {
     required: true
+  },
+  part_number: {
+    maxLength: 50
+  },
+  oem_number: {
+    maxLength: 50
   }
 };
 
@@ -109,7 +115,9 @@ const ListPartPage: React.FC = () => {
     condition: 'used' as 'new' | 'used' | 'refurbished',
     location: '',
     category: '',
-    vehicle_fit: ''
+    vehicle_fit: '',
+    part_number: '',
+    oem_number: ''
   });
 
   const { errors, validateField, validateForm, clearError, setError: setFieldError } = useFormValidation(validationRules);
@@ -173,7 +181,7 @@ const ListPartPage: React.FC = () => {
     }
     
     // Real-time validation for certain fields
-    if (['title', 'price', 'description'].includes(name)) {
+    if (['title', 'price', 'description', 'part_number', 'oem_number'].includes(name)) {
       const error = validateField(name, value);
       if (error) {
         setFieldError(name, error);
@@ -390,6 +398,41 @@ const ListPartPage: React.FC = () => {
                 placeholder="e.g., BMW M3 Brake Rotors"
               />
             </FormField>
+
+            {/* Part Numbers */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                label="Part Number"
+                name="part_number"
+                error={errors.part_number}
+                description="Manufacturer's part number"
+              >
+                <Input
+                  name="part_number"
+                  value={formData.part_number}
+                  onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  error={!!errors.part_number}
+                  placeholder="e.g., 34116797602"
+                />
+              </FormField>
+
+              <FormField
+                label="OEM Number"
+                name="oem_number"
+                error={errors.oem_number}
+                description="Original equipment manufacturer number"
+              >
+                <Input
+                  name="oem_number"
+                  value={formData.oem_number}
+                  onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  error={!!errors.oem_number}
+                  placeholder="e.g., LR051630"
+                />
+              </FormField>
+            </div>
 
             {/* Category */}
             <FormField

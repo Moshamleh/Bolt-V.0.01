@@ -74,6 +74,8 @@ export interface Part {
   model: string;
   year: number;
   trim: string | null;
+  part_number: string | null;
+  oem_number: string | null;
 }
 
 export interface PartFilters {
@@ -84,6 +86,8 @@ export interface PartFilters {
   category?: string;
   minPrice?: number;
   maxPrice?: number;
+  partNumber?: string;
+  oemNumber?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -563,6 +567,16 @@ export const getParts = async (
   
   if (filters.maxPrice !== undefined) {
     query = query.lte('price', filters.maxPrice);
+  }
+
+  // Add part number search
+  if (filters.partNumber) {
+    query = query.ilike('part_number', `%${filters.partNumber}%`);
+  }
+
+  // Add OEM number search
+  if (filters.oemNumber) {
+    query = query.ilike('oem_number', `%${filters.oemNumber}%`);
   }
 
   // Only show unsold parts

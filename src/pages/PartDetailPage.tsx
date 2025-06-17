@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Car, MapPin, Tag, MessageSquare, Loader2, 
   Heart, Share2, AlertCircle, ChevronLeft, ChevronRight,
-  User
+  User, FileText
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
@@ -276,6 +276,26 @@ const PartDetailPage: React.FC = () => {
                   {formatPrice(part.price)}
                 </div>
               </div>
+
+              {/* Part Numbers */}
+              {(part.part_number || part.oem_number) && (
+                <div className="flex flex-col gap-2 py-2 border-y border-gray-100 dark:border-gray-700">
+                  {part.part_number && (
+                    <div className="flex items-center text-gray-600 dark:text-gray-400">
+                      <FileText className="h-5 w-5 mr-2" />
+                      <span className="font-medium mr-2">Part Number:</span>
+                      <span>{part.part_number}</span>
+                    </div>
+                  )}
+                  {part.oem_number && (
+                    <div className="flex items-center text-gray-600 dark:text-gray-400">
+                      <FileText className="h-5 w-5 mr-2" />
+                      <span className="font-medium mr-2">OEM Number:</span>
+                      <span>{part.oem_number}</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex flex-col gap-3">
                 <div className="flex items-center text-gray-600 dark:text-gray-400">
