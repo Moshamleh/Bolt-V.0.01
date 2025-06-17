@@ -3,12 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Car, MapPin, Tag, MessageSquare, Loader2, 
   Heart, Share2, AlertCircle, ChevronLeft, ChevronRight,
-  User, FileText
+  User, FileText, Flag
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import { Part, getPartById, getOrCreatePartChat, isPartSaved, savePart, unsavePart } from '../lib/supabase';
+import ReportPartModal from '../components/ReportPartModal';
 
 const PartDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,7 @@ const PartDetailPage: React.FC = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   useEffect(() => {
     const loadPart = async () => {
@@ -91,6 +93,10 @@ const PartDetailPage: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleReportPart = () => {
+    setIsReportModalOpen(true);
   };
 
   const formatPrice = (price: number) => {
@@ -343,6 +349,13 @@ const PartDetailPage: React.FC = () => {
                 >
                   <Share2 className="h-5 w-5" />
                 </button>
+                <button
+                  onClick={handleReportPart}
+                  className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 border border-gray-200 dark:border-gray-700 rounded-lg transition-colors"
+                  title="Report this listing"
+                >
+                  <Flag className="h-5 w-5" />
+                </button>
               </div>
             </div>
 
@@ -395,6 +408,13 @@ const PartDetailPage: React.FC = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Report Modal */}
+      <ReportPartModal 
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        partId={part.id}
+      />
     </div>
   );
 };

@@ -291,6 +291,20 @@ export interface UserFeedback {
   timestamp: string;
 }
 
+export interface ReportedPart {
+  id: string;
+  part_id: string;
+  reporter_id: string;
+  reason: string;
+  created_at: string;
+  part: Part;
+  reporter: {
+    full_name: string | null;
+    email: string;
+    avatar_url: string | null;
+  };
+}
+
 // Auth functions
 export const signUp = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signUp({
@@ -807,6 +821,60 @@ export const unsavePart = async (partId: string): Promise<void> => {
     .from('saved_parts')
     .delete()
     .eq('part_id', partId);
+
+  if (error) throw error;
+};
+
+// Report parts functions
+export const reportPart = async (partId: string, reason: string, message?: string): Promise<void> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('reported_parts')
+    .insert({
+      part_id: partId,
+      reporter_id: user.id,
+      reason,
+      message: message || null
+    });
+
+  if (error) throw error;
+};
+
+export const getReportedParts = async (): Promise<ReportedPart[]> => {
+  const { data, error } = await supabase
+    .from('reported_parts')
+    .select(`
+      *,
+      part:part_id (*),
+      reporter:reporter_id (
+        full_name,
+        email:id (
+          email
+        ),
+        avatar_url
+      )
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  // Process the data to flatten the structure
+  return (data || []).map(report => ({
+    ...report,
+    reporter: {
+      ...report.reporter,
+      email: report.reporter?.email?.[0]?.email || 'Unknown'
+    }
+  }));
+};
+
+export const deleteReport = async (reportId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('reported_parts')
+    .delete()
+    .eq('id', reportId);
 
   if (error) throw error;
 };

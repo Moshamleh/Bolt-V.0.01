@@ -30,6 +30,7 @@ const PartChatPage = lazy(() => import('./pages/PartChatPage'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminUserManagement = lazy(() => import('./pages/AdminUserManagement'));
 const AdminPartsManagement = lazy(() => import('./pages/AdminPartsManagement'));
+const AdminReportedPartsPage = lazy(() => import('./pages/AdminReportedPartsPage'));
 const AdminFeedbackPage = lazy(() => import('./pages/AdminFeedbackPage'));
 const AdminAiFeedback = lazy(() => import('./pages/AdminAiFeedback'));
 const AdminAiPerformancePage = lazy(() => import('./pages/AdminAiPerformancePage'));
@@ -134,6 +135,7 @@ function App() {
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/users" element={<AdminUserManagement />} />
             <Route path="/admin/parts" element={<AdminPartsManagement />} />
+            <Route path="/admin/reported-parts" element={<AdminReportedPartsPage />} />
             <Route path="/admin/feedback" element={<AdminFeedbackPage />} />
             <Route path="/admin/ai-feedback" element={<AdminAiFeedback />} />
             <Route path="/admin/ai-performance" element={<AdminAiPerformancePage />} />
