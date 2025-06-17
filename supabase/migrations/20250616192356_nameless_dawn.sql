@@ -65,10 +65,10 @@ FROM profiles p
 -- Diagnostic statistics
 LEFT JOIN (
   SELECT 
-    user_id,
+    d.user_id,
     COUNT(*) as total_diagnoses,
-    COUNT(*) FILTER (WHERE resolved = true) as resolved_diagnoses,
-    COALESCE(feedback_stats.helpful_feedback, 0) as helpful_feedback
+    COUNT(*) FILTER (WHERE d.resolved = true) as resolved_diagnoses,
+    COALESCE(SUM(feedback_stats.helpful_feedback), 0) as helpful_feedback
   FROM diagnoses d
   LEFT JOIN (
     SELECT 
@@ -77,8 +77,9 @@ LEFT JOIN (
     FROM ai_logs
     GROUP BY diagnosis_id
   ) feedback_stats ON d.id = feedback_stats.diagnosis_id
-  GROUP BY user_id
+  GROUP BY d.user_id
 ) diag_stats ON p.id = diag_stats.user_id
+
 
 -- Marketplace statistics
 LEFT JOIN (
