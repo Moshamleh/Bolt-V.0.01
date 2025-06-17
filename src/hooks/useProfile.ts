@@ -25,7 +25,8 @@ const fetchProfile = async (): Promise<Profile | null> => {
 
     if (error) {
       // If the error is PGRST116 (no rows returned), return null instead of throwing
-      if (error.code === 'PGRST116') {
+      // Check both error.code and error.message to handle all cases
+      if (error.code === 'PGRST116' || (error.message && error.message.includes('PGRST116'))) {
         return null;
       }
       throw error;
