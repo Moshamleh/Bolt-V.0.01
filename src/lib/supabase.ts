@@ -492,7 +492,8 @@ export async function getProfile(): Promise<Profile | null> {
     .single();
 
   if (error) {
-    if (error.code === 'PGRST116') {
+    // Check for both error.code and error.message to handle PGRST116 (no rows found)
+    if (error.code === 'PGRST116' || (error.message && error.message.includes('PGRST116'))) {
       return null;
     }
     throw error;
