@@ -3,7 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { 
   ArrowLeft, Search, Filter, Loader2, Trash2, Edit, 
   ChevronDown, ChevronUp, FileText, Package, CheckCircle, 
-  XCircle, AlertCircle, ChevronLeft, ChevronRight
+  XCircle, AlertCircle, ChevronLeft, ChevronRight, Car
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
@@ -32,7 +32,8 @@ const AdminPartsManagement: React.FC = () => {
     condition: '',
     category: '',
     partNumber: '',
-    oemNumber: ''
+    oemNumber: '',
+    approvalStatus: ''
   });
 
   useEffect(() => {
@@ -76,7 +77,7 @@ const AdminPartsManagement: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const handleToggleApproval = async (partId: string, currentStatus: boolean) => {
+  const handleToggleApproval = async (partId: string, currentStatus: boolean | undefined) => {
     setProcessingId(partId);
     try {
       await updatePart(partId, { approved: !currentStatus });
@@ -130,7 +131,8 @@ const AdminPartsManagement: React.FC = () => {
       condition: '',
       category: '',
       partNumber: '',
-      oemNumber: ''
+      oemNumber: '',
+      approvalStatus: ''
     });
     setSearchTerm('');
     setCurrentPage(1);
@@ -234,6 +236,24 @@ const AdminPartsManagement: React.FC = () => {
                   className="overflow-hidden"
                 >
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Approval Status
+                      </label>
+                      <select
+                        value={filters.approvalStatus}
+                        onChange={(e) => {
+                          setFilters(prev => ({ ...prev, approvalStatus: e.target.value }));
+                          setCurrentPage(1);
+                        }}
+                        className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">All Status</option>
+                        <option value="approved">Approved</option>
+                        <option value="unapproved">Unapproved</option>
+                      </select>
+                    </div>
+                    
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Make
@@ -491,13 +511,23 @@ const AdminPartsManagement: React.FC = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            part.sold
-                              ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300'
-                              : 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
-                          }`}>
-                            {part.sold ? 'Sold' : 'Available'}
-                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              part.sold
+                                ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300'
+                                : 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
+                            }`}>
+                              {part.sold ? 'Sold' : 'Available'}
+                            </span>
+                            
+                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              part.approved
+                                ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300'
+                                : 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300'
+                            }`}>
+                              {part.approved ? 'Approved' : 'Unapproved'}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex items-center justify-end gap-2">
@@ -506,6 +536,24 @@ const AdminPartsManagement: React.FC = () => {
                               className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
                             >
                               View
+                            </button>
+                            <button
+                              onClick={() => handleToggleApproval(part.id, part.approved)}
+                              disabled={processingId === part.id}
+                              className={`p-1 rounded-full ${
+                                part.approved
+                                  ? 'text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/20'
+                                  : 'text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/20'
+                              } disabled:opacity-50 disabled:cursor-not-allowed`}
+                              title={part.approved ? 'Unapprove part' : 'Approve part'}
+                            >
+                              {processingId === part.id ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                              ) : part.approved ? (
+                                <XCircle className="h-5 w-5" />
+                              ) : (
+                                <CheckCircle className="h-5 w-5" />
+                              )}
                             </button>
                             <button
                               onClick={() => handleEditPart(part.id)}

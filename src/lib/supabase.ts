@@ -283,14 +283,6 @@ export interface AiFeedbackLog {
   };
 }
 
-export interface UserFeedback {
-  id: string;
-  user_id: string;
-  message: string;
-  sentiment: 'happy' | 'neutral' | 'angry';
-  timestamp: string;
-}
-
 export interface ReportedPart {
   id: string;
   part_id: string;
@@ -597,6 +589,9 @@ export const getParts = async (
   // Only show unsold parts
   query = query.eq('sold', false);
 
+  // Only show approved parts for regular users
+  query = query.eq('approved', true);
+
   // Calculate pagination
   const from = (page - 1) * itemsPerPage;
   const to = from + itemsPerPage - 1;
@@ -696,6 +691,7 @@ export interface AdminPartFilters {
   category?: string;
   partNumber?: string;
   oemNumber?: string;
+  approvalStatus?: string;
 }
 
 export interface AdminPartsOptions {
@@ -737,6 +733,14 @@ export const getAllParts = async (options: AdminPartsOptions): Promise<Paginated
     
     if (options.filters.oemNumber) {
       query = query.ilike('oem_number', `%${options.filters.oemNumber}%`);
+    }
+
+    if (options.filters.approvalStatus) {
+      if (options.filters.approvalStatus === 'approved') {
+        query = query.eq('approved', true);
+      } else if (options.filters.approvalStatus === 'unapproved') {
+        query = query.eq('approved', false);
+      }
     }
   }
 
