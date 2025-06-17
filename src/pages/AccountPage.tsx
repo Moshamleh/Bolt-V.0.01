@@ -203,9 +203,9 @@ const AccountPage = () => {
           <div className="p-6 max-h-[calc(100vh-16rem)] overflow-y-auto">
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.15 }}
             >
               {renderTabContent()}
             </motion.div>
