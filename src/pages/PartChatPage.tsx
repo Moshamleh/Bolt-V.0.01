@@ -28,6 +28,7 @@ const PartChatPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     const loadChatData = async () => {
@@ -55,6 +56,29 @@ const PartChatPage: React.FC = () => {
         setOtherUser(isCurrentUserBuyer ? chatDetails.seller : chatDetails.buyer);
         
         setMessages(chatMessages);
+
+        // Clean up any existing subscription
+        if (channelRef.current) {
+          await supabase.removeChannel(channelRef.current);
+          channelRef.current = null;
+        }
+
+        // Set up real-time subscription
+        const channel = supabase
+          .channel(`part_chat:${chatId}`)
+          .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'part_messages',
+            filter: `chat_id=eq.${chatId}`,
+          }, (payload) => {
+            const newMessage = payload.new as PartMessage;
+            setMessages(prev => [...prev, newMessage]);
+          })
+          .subscribe();
+
+        // Store the channel reference
+        channelRef.current = channel;
       } catch (err) {
         console.error('Failed to load chat:', err);
         setError('Failed to load chat');
@@ -65,22 +89,12 @@ const PartChatPage: React.FC = () => {
 
     loadChatData();
 
-    // Set up real-time subscription
-    const subscription = supabase
-      .channel(`part_chat:${chatId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'part_messages',
-        filter: `chat_id=eq.${chatId}`,
-      }, (payload) => {
-        const newMessage = payload.new as PartMessage;
-        setMessages(prev => [...prev, newMessage]);
-      })
-      .subscribe();
-
+    // Cleanup function
     return () => {
-      subscription.unsubscribe();
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [chatId, navigate]);
 

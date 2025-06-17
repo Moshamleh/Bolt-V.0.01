@@ -42,6 +42,7 @@ const ClubDetailPage: React.FC = () => {
   const [currentUserEmail, setCurrentUserEmail] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     const loadClubData = async () => {
@@ -85,8 +86,14 @@ const ClubDetailPage: React.FC = () => {
         const messages = await getClubMessages(id);
         setMessages(messages);
 
+        // Clean up any existing subscription
+        if (channelRef.current) {
+          await supabase.removeChannel(channelRef.current);
+          channelRef.current = null;
+        }
+
         // Set up real-time subscription
-        const subscription = supabase
+        const channel = supabase
           .channel(`club_chat:${id}`)
           .on('postgres_changes', {
             event: 'INSERT',
@@ -99,15 +106,22 @@ const ClubDetailPage: React.FC = () => {
           })
           .subscribe();
 
-        return () => {
-          subscription.unsubscribe();
-        };
+        // Store the channel reference
+        channelRef.current = channel;
       } catch (err) {
         console.error('Error loading chat:', err);
       }
     };
 
     loadChatData();
+
+    // Cleanup function
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
   }, [id]);
 
   useEffect(() => {
