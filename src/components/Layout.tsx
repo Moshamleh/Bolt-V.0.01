@@ -94,6 +94,9 @@ const Layout: React.FC = () => {
     return null;
   }
 
+  // Check if we're on the account page to determine if we should use full width
+  const isAccountPage = location.pathname === '/account';
+
   return (
     <div className="min-h-screen bg-neutral-100 dark:bg-gray-900">
       {/* Add the InitialSetupRedirect component to handle redirects */}
@@ -217,7 +220,7 @@ const Layout: React.FC = () => {
       </header>
       
       <main className="pb-20 md:pb-8 pt-4 px-4 md:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto space-y-6">
+        <div className={isAccountPage ? "w-full space-y-6" : "max-w-7xl mx-auto space-y-6"}>
           <Outlet />
         </div>
       </main>
