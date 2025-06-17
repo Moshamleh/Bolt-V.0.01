@@ -19,9 +19,8 @@ const Layout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Don't show profile banner on these paths
-  const excludedPaths = ['/account', '/profile-setup', '/vehicle-setup'];
-  const shouldShowBanner = !excludedPaths.some(path => location.pathname.startsWith(path));
+  // Only show profile banner on the account page
+  const shouldShowBanner = location.pathname === '/account';
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -53,7 +52,7 @@ const Layout: React.FC = () => {
           const totalFields = fields.length;
           const completionPercentage = Math.round((completedFields / totalFields) * 100);
           
-          // Show banner if profile is less than 80% complete
+          // Show banner if profile is less than 80% complete and we're on the account page
           setShowProfileBanner(completionPercentage < 80 && shouldShowBanner);
         }
       } catch (error) {
