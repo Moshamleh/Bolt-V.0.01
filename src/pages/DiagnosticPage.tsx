@@ -1,5 +1,5 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Car, Loader2, Lightbulb, Menu } from 'lucide-react';
+import React, { useState, useEffect, lazy, Suspense, useRef } from 'react';
+import { Car, Loader2, Lightbulb, Menu, History, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, getUserVehicles, getUserDiagnoses, Diagnosis } from '../lib/supabase';
 import { useOnboarding } from '../hooks/useOnboarding';
@@ -42,6 +42,8 @@ const DiagnosticPage: React.FC = () => {
   const [activeDiagnosisId, setActiveDiagnosisId] = useState<string | null>(null);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showRepairTips, setShowRepairTips] = useState(false);
+  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
+  const desktopHistoryRef = useRef<HTMLDivElement>(null);
   
   const { showOnboarding, completeOnboarding, isInitialized } = useOnboarding();
 
@@ -81,7 +83,7 @@ const DiagnosticPage: React.FC = () => {
 
         // Initialize chat with most recent diagnosis if available
         if (data.length > 0) {
-          const mostRecent = data[data.length - 1];
+          const mostRecent = data[0];
           const messages: ChatMessage[] = [
             {
               id: `user-${mostRecent.id}`,
@@ -113,8 +115,27 @@ const DiagnosticPage: React.FC = () => {
     loadDiagnoses();
   }, [selectedVehicleId]);
 
+  useEffect(() => {
+    // Generate suggested prompts based on selected vehicle
+    if (selectedVehicleId && vehicles.length > 0) {
+      const vehicle = vehicles.find(v => v.id === selectedVehicleId);
+      if (vehicle) {
+        const vehicleInfo = vehicle.other_vehicle_description || 
+          `${vehicle.year} ${vehicle.make} ${vehicle.model}${vehicle.trim ? ` ${vehicle.trim}` : ''}`;
+        
+        setSuggestedPrompts([
+          `Why is my ${vehicleInfo} making a grinding noise when braking?`,
+          `My ${vehicleInfo} won't start. What could be wrong?`,
+          `What's causing the check engine light on my ${vehicleInfo}?`,
+          `How often should I change the oil in my ${vehicleInfo}?`,
+          `My ${vehicleInfo} is overheating. What should I check?`
+        ]);
+      }
+    }
+  }, [selectedVehicleId, vehicles]);
+
   const handleDiagnosisAdded = (diagnosis: Diagnosis) => {
-    setDiagnoses(prev => [...prev, diagnosis]);
+    setDiagnoses(prev => [diagnosis, ...prev]);
   };
 
   const handleDiagnosisStatusChange = (diagnosisId: string, resolved: boolean) => {
@@ -181,6 +202,12 @@ const DiagnosticPage: React.FC = () => {
     );
   }
 
+  const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId);
+  const vehicleDisplayName = selectedVehicle 
+    ? (selectedVehicle.other_vehicle_description || 
+       `${selectedVehicle.year} ${selectedVehicle.make} ${selectedVehicle.model}${selectedVehicle.trim ? ` ${selectedVehicle.trim}` : ''}`)
+    : '';
+
   return (
     <div className="min-h-screen bg-neutral-100 dark:bg-gray-900">
       <Suspense fallback={<ComponentLoader />}>
@@ -208,54 +235,155 @@ const DiagnosticPage: React.FC = () => {
         </MobilePageMenu>
       </Suspense>
 
-      {/* Repair Tips Toggle Button */}
-      <div className="fixed top-[120px] right-4 z-40">
-        <button
-          onClick={() => setShowRepairTips(!showRepairTips)}
-          className="flex items-center justify-center w-10 h-10 bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 rounded-full shadow-md hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors"
-          title="Show repair tips"
-        >
-          <Lightbulb className="h-5 w-5" />
-        </button>
-      </div>
+      {/* Desktop Layout */}
+      <div className="hidden md:flex h-screen pt-16">
+        {/* Desktop History Sidebar */}
+        <div ref={desktopHistoryRef} className="w-80 border-r border-neutral-200 dark:border-gray-700 h-full overflow-y-auto">
+          <div className="p-4 border-b border-neutral-200 dark:border-gray-700">
+            <div className="flex items-center gap-2">
+              <History className="h-5 w-5 text-neutral-500 dark:text-gray-400" />
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Diagnostic History</h2>
+            </div>
+          </div>
+          <Suspense fallback={<ComponentLoader />}>
+            <ChatHistory
+              diagnoses={diagnoses}
+              loading={loading}
+              error={error}
+              onStatusChange={handleDiagnosisStatusChange}
+              onLoadDiagnosis={handleLoadDiagnosis}
+            />
+          </Suspense>
+        </div>
 
-      {/* Repair Tips Panel */}
-      <AnimatePresence>
-        {showRepairTips && (
-          <motion.div
-            initial={{ opacity: 0, x: 300 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 300 }}
-            className="fixed top-[160px] right-0 bottom-[64px] md:bottom-0 w-full max-w-md bg-white dark:bg-gray-800 shadow-lg border-l border-gray-200 dark:border-gray-700 z-30 overflow-y-auto"
-          >
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Lightbulb className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Personalized Repair Tips
-                </h2>
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col">
+          {/* Vehicle Info Bar */}
+          <div className="bg-white dark:bg-gray-800 border-b border-neutral-200 dark:border-gray-700 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                  <Car className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h2 className="font-medium text-neutral-900 dark:text-white">{vehicleDisplayName}</h2>
+                  <p className="text-sm text-neutral-500 dark:text-gray-400">
+                    {selectedVehicle?.vin ? `VIN: ${selectedVehicle.vin}` : 'No VIN provided'}
+                  </p>
+                </div>
               </div>
               <button
-                onClick={() => setShowRepairTips(false)}
-                className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 rounded-full"
+                onClick={() => setShowRepairTips(!showRepairTips)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
               >
-                &times;
+                <Lightbulb className="h-4 w-4" />
+                <span>{showRepairTips ? 'Hide Tips' : 'Show Tips'}</span>
               </button>
             </div>
-            <div className="p-4">
-              <Suspense fallback={
-                <div className="flex items-center justify-center p-8">
-                  <Loader2 className="h-6 w-6 text-blue-600 dark:text-blue-400 animate-spin" />
-                </div>
-              }>
-                <RepairTipsPanel />
+          </div>
+
+          {/* Chat Interface */}
+          <div className="flex-1 flex">
+            <div className={`flex-1 ${showRepairTips ? 'md:w-2/3' : 'w-full'}`}>
+              <Suspense fallback={<ComponentLoader />}>
+                <ChatInterface 
+                  selectedVehicleId={selectedVehicleId}
+                  onDiagnosisAdded={handleDiagnosisAdded}
+                  messages={activeChatMessages}
+                  setMessages={setActiveChatMessages}
+                  activeDiagnosisId={activeDiagnosisId}
+                  setActiveDiagnosisId={setActiveDiagnosisId}
+                  suggestedPrompts={suggestedPrompts}
+                />
               </Suspense>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      <div className="pt-[104px] pb-[64px] h-screen">
+            {/* Repair Tips Panel (Desktop) */}
+            {showRepairTips && (
+              <div className="hidden md:block md:w-1/3 border-l border-neutral-200 dark:border-gray-700 overflow-y-auto">
+                <div className="p-4 border-b border-neutral-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Lightbulb className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Repair Tips</h2>
+                    </div>
+                    <button
+                      onClick={() => setShowRepairTips(false)}
+                      className="text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-300"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                </div>
+                <Suspense fallback={<ComponentLoader />}>
+                  <RepairTipsPanel />
+                </Suspense>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Layout */}
+      <div className="md:hidden pt-[104px] pb-[64px] h-screen">
+        {/* Repair Tips Toggle Button */}
+        <div className="fixed top-[120px] right-4 z-40">
+          <button
+            onClick={() => setShowRepairTips(!showRepairTips)}
+            className="flex items-center justify-center w-10 h-10 bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 rounded-full shadow-md hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors"
+            title="Show repair tips"
+          >
+            <Lightbulb className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* History Button */}
+        <div className="fixed top-[120px] left-4 z-40">
+          <button
+            onClick={() => setIsHistoryMenuOpen(true)}
+            className="flex items-center justify-center w-10 h-10 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-full shadow-md hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors"
+            title="Show chat history"
+          >
+            <History className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Repair Tips Panel (Mobile) */}
+        <AnimatePresence>
+          {showRepairTips && (
+            <motion.div
+              initial={{ opacity: 0, x: 300 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 300 }}
+              className="fixed top-[160px] right-0 bottom-[64px] md:bottom-0 w-full max-w-md bg-white dark:bg-gray-800 shadow-lg border-l border-gray-200 dark:border-gray-700 z-30 overflow-y-auto"
+            >
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Personalized Repair Tips
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setShowRepairTips(false)}
+                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 rounded-full"
+                >
+                  &times;
+                </button>
+              </div>
+              <div className="p-4">
+                <Suspense fallback={
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="h-6 w-6 text-blue-600 dark:text-blue-400 animate-spin" />
+                  </div>
+                }>
+                  <RepairTipsPanel />
+                </Suspense>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <Suspense fallback={<ComponentLoader />}>
           <ChatInterface 
             selectedVehicleId={selectedVehicleId}
@@ -264,6 +392,7 @@ const DiagnosticPage: React.FC = () => {
             setMessages={setActiveChatMessages}
             activeDiagnosisId={activeDiagnosisId}
             setActiveDiagnosisId={setActiveDiagnosisId}
+            suggestedPrompts={suggestedPrompts}
           />
         </Suspense>
       </div>

@@ -133,3 +133,34 @@
     @apply btn bg-neutral-200 dark:bg-gray-700 text-neutral-700 dark:text-gray-300 hover:bg-neutral-300 dark:hover:bg-gray-600 focus:ring-gray-500;
   }
 }
+
+/* Prose styles for AI responses */
+.prose code {
+  @apply px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono;
+}
+
+.prose strong {
+  @apply font-semibold text-gray-900 dark:text-white;
+}
+
+.prose em {
+  @apply italic text-gray-700 dark:text-gray-300;
+}
+
+/* Half-star styling for ratings */
+.half-star {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+}
+
+.half-star:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background-color: currentColor;
+  z-index: 1;
+}

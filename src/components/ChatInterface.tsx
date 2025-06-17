@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SendHorizonal, ThumbsUp, ThumbsDown, Loader2 } from 'lucide-react';
+import { SendHorizonal, ThumbsUp, ThumbsDown, Loader2, Link as LinkIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TextareaAutosize from 'react-textarea-autosize';
 import toast from 'react-hot-toast';
@@ -24,6 +24,7 @@ interface ChatInterfaceProps {
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   activeDiagnosisId: string | null;
   setActiveDiagnosisId: React.Dispatch<React.SetStateAction<string | null>>;
+  suggestedPrompts?: string[];
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -32,7 +33,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   messages,
   setMessages,
   activeDiagnosisId,
-  setActiveDiagnosisId
+  setActiveDiagnosisId,
+  suggestedPrompts = []
 }) => {
   const [input, setInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -81,7 +83,32 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const formatAiResponse = (text: string) => {
-    const paragraphs = text.split('\n\n');
+    // Process special link formats like [PART:Brake Pads] or [REPAIR:Oil Change]
+    const processedText = text.replace(/\[(PART|REPAIR|DIAGNOSTIC):([^\]]+)\]/g, (match, type, content) => {
+      let url = '';
+      let icon = '';
+      
+      switch(type) {
+        case 'PART':
+          url = `/marketplace?search=${encodeURIComponent(content)}`;
+          icon = '🔍';
+          break;
+        case 'REPAIR':
+          url = `/help?search=${encodeURIComponent(content)}`;
+          icon = '🔧';
+          break;
+        case 'DIAGNOSTIC':
+          url = `/diagnostic?prompt=${encodeURIComponent(content)}`;
+          icon = '🔎';
+          break;
+        default:
+          return match;
+      }
+      
+      return `<a href="${url}" class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline">${icon} ${content} <span class="inline-block"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg></span></a>`;
+    });
+
+    const paragraphs = processedText.split('\n\n');
     const elements: JSX.Element[] = [];
 
     paragraphs.forEach((block, blockIndex) => {
@@ -112,9 +139,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               listItems[listItems.length - 1] += ` ${trimmedLine}`;
             } else if (trimmedLine.length > 0) {
               elements.push(
-                <p key={`p-${blockIndex}-${elements.length}`} className="mb-2 last:mb-0">
-                  {trimmedLine}
-                </p>
+                <p key={`p-${blockIndex}-${elements.length}`} className="mb-2 last:mb-0" dangerouslySetInnerHTML={{ __html: formatTextWithMarkdown(trimmedLine) }} />
               );
             }
           }
@@ -130,9 +155,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               } list-inside mb-2 space-y-1 pl-4`}
             >
               {listItems.map((item, itemIndex) => (
-                <li key={`list-item-${blockIndex}-${itemIndex}`} className="text-neutral-800 dark:text-gray-200">
-                  {item}
-                </li>
+                <li key={`list-item-${blockIndex}-${itemIndex}`} className="text-neutral-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: formatTextWithMarkdown(item) }} />
               ))}
             </ListTag>
           );
@@ -140,9 +163,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       } else {
         if (block.trim().length > 0) {
           elements.push(
-            <p key={`p-${blockIndex}`} className="mb-2 last:mb-0">
-              {block.trim()}
-            </p>
+            <p key={`p-${blockIndex}`} className="mb-2 last:mb-0" dangerouslySetInnerHTML={{ __html: formatTextWithMarkdown(block.trim()) }} />
           );
         }
       }
@@ -151,9 +172,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return <div className="prose prose-sm dark:prose-invert max-w-none">{elements}</div>;
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
+  // Helper function to format text with markdown-like syntax
+  const formatTextWithMarkdown = (text: string) => {
+    // Format bold text
+    let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    formattedText = formattedText.replace(/__(.*?)__/g, '<strong>$1</strong>');
+    
+    // Format italic text
+    formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    formattedText = formattedText.replace(/_(.*?)_/g, '<em>$1</em>');
+    
+    // Format inline code
+    formattedText = formattedText.replace(/`(.*?)`/g, '<code>$1</code>');
+    
+    return formattedText;
+  };
+
+  const handleSubmit = async (e?: React.FormEvent, promptText?: string) => {
     e?.preventDefault();
-    if (!input.trim() || isSubmitting || !selectedVehicleId) return;
+    const textToSubmit = promptText || input.trim();
+    if (!textToSubmit || isSubmitting || !selectedVehicleId) return;
 
     await provideFeedback();
     setIsSubmitting(true);
@@ -161,7 +199,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const currentTime = new Date();
     const userMessage: ChatMessage = {
       id: currentTime.getTime().toString(),
-      text: input.trim(),
+      text: textToSubmit,
       isUser: true,
       timestamp: currentTime
     };
@@ -183,7 +221,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         unsubscribeRef.current();
       }
 
-      const diagnosis = await sendDiagnosticPrompt(selectedVehicleId, input.trim());
+      const diagnosis = await sendDiagnosticPrompt(selectedVehicleId, textToSubmit);
       
       setMessages(prev => prev.map(msg => 
         msg.id === userMessage.id ? { ...msg, diagnosisId: diagnosis.id } : msg
@@ -246,7 +284,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           isUser: false,
           isError: true,
           timestamp: new Date(),
-          originalPrompt: input
+          originalPrompt: textToSubmit
         }];
       });
       setMessageVersion(prev => prev + 1);
@@ -276,6 +314,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     } finally {
       setSubmittingFeedback(null);
     }
+  };
+
+  const handleSuggestedPromptClick = (prompt: string) => {
+    handleSubmit(undefined, prompt);
   };
 
   return (
@@ -363,6 +405,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Suggested Prompts */}
+      {suggestedPrompts && suggestedPrompts.length > 0 && messages.length === 0 && (
+        <div className="px-4 pb-4">
+          <div className="text-sm font-medium text-neutral-500 dark:text-gray-400 mb-2">
+            Suggested questions:
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {suggestedPrompts.map((prompt, index) => (
+              <button
+                key={index}
+                onClick={() => handleSuggestedPromptClick(prompt)}
+                className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <form 
         onSubmit={handleSubmit} 
