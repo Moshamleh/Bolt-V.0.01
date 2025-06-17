@@ -20,6 +20,7 @@ const NotificationDropdown: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,33 +43,46 @@ const NotificationDropdown: React.FC = () => {
 
     loadNotifications();
 
-    // Set up real-time subscription for new notifications
-    const subscription = supabase
-      .channel('notifications-channel')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications',
-      }, (payload) => {
-        // Check if the notification is for the current user
-        const notification = payload.new as Notification;
-        const { data: { user } } = supabase.auth.getUser();
-        if (user && notification.user_id === user.id) {
-          setNotifications(prev => [notification, ...prev]);
-          setUnreadCount(prev => prev + 1);
-          
-          // Play notification sound
-          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
-          audio.volume = 0.2;
-          audio.play().catch(e => console.log('Audio play failed:', e));
-          
-          // Vibrate if available
-          if (navigator.vibrate) {
-            navigator.vibrate(200);
+    // Set up real-time subscription
+    const setupSubscription = async () => {
+      // Clean up any existing subscription
+      if (channelRef.current) {
+        await supabase.removeChannel(channelRef.current);
+      }
+
+      // Create new subscription
+      const channel = supabase
+        .channel('notifications-channel')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+        }, (payload) => {
+          // Check if the notification is for the current user
+          const notification = payload.new as Notification;
+          const { data: { user } } = supabase.auth.getUser();
+          if (user && notification.user_id === user.id) {
+            setNotifications(prev => [notification, ...prev]);
+            setUnreadCount(prev => prev + 1);
+            
+            // Play notification sound
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+            audio.volume = 0.2;
+            audio.play().catch(e => console.log('Audio play failed:', e));
+            
+            // Vibrate if available
+            if (navigator.vibrate) {
+              navigator.vibrate(200);
+            }
           }
-        }
-      })
-      .subscribe();
+        })
+        .subscribe();
+
+      // Store the channel reference
+      channelRef.current = channel;
+    };
+
+    setupSubscription();
 
     // Close dropdown when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
@@ -80,8 +94,12 @@ const NotificationDropdown: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
-      subscription.unsubscribe();
       document.removeEventListener('mousedown', handleClickOutside);
+      
+      // Clean up subscription on component unmount
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
     };
   }, []);
 
