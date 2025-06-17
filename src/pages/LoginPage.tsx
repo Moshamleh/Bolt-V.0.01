@@ -63,7 +63,26 @@ const LoginPage: React.FC = () => {
           .update({ initial_setup_complete: false })
           .eq('id', session?.user.id);
       } else {
-        navigate('/diagnostic');
+        // Check if profile is complete
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, username, initial_setup_complete')
+          .eq('id', session?.user.id)
+          .single();
+
+        if (!profile) {
+          // No profile exists, redirect to profile setup
+          navigate('/profile-setup');
+        } else if (!profile.full_name || !profile.username) {
+          // Profile exists but is incomplete, redirect to profile setup
+          navigate('/profile-setup');
+        } else if (profile.initial_setup_complete === false) {
+          // Profile is complete but vehicle setup is not, redirect to vehicle setup
+          navigate('/vehicle-setup');
+        } else {
+          // Everything is complete, redirect to main app
+          navigate('/diagnostic');
+        }
       }
     } catch (err: any) {
       setError('Login failed. Please check your credentials.');
@@ -120,7 +139,7 @@ const LoginPage: React.FC = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/diagnostic`
+          redirectTo: `${window.location.origin}/profile-setup`
         }
       });
       if (error) throw error;
@@ -137,7 +156,7 @@ const LoginPage: React.FC = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
-          redirectTo: `${window.location.origin}/diagnostic`
+          redirectTo: `${window.location.origin}/profile-setup`
         }
       });
       if (error) throw error;
@@ -153,7 +172,7 @@ const LoginPage: React.FC = () => {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Mark initial setup as incomplete to trigger the vehicle setup flow
+        // Mark initial setup as incomplete to trigger the profile setup flow
         await supabase
           .from('profiles')
           .update({ initial_setup_complete: false })
@@ -161,12 +180,12 @@ const LoginPage: React.FC = () => {
       }
       
       setShowDisclaimer(false);
-      navigate('/vehicle-setup');
+      navigate('/profile-setup');
     } catch (error) {
       console.error('Error updating profile:', error);
       // Navigate anyway even if there's an error
       setShowDisclaimer(false);
-      navigate('/vehicle-setup');
+      navigate('/profile-setup');
     }
   };
 

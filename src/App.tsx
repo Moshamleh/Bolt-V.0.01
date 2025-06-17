@@ -12,6 +12,7 @@ const DiagnosticPage = lazy(() => import('./pages/DiagnosticPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const VehicleManagementPage = lazy(() => import('./pages/VehicleManagementPage'));
 const VehicleSetupPage = lazy(() => import('./pages/VehicleSetupPage'));
+const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage'));
 const ClubDetailPage = lazy(() => import('./pages/ClubDetailPage'));
 const ClubListPage = lazy(() => import('./pages/ClubListPage'));
 const CreateClubPage = lazy(() => import('./pages/CreateClubPage'));
@@ -90,6 +91,7 @@ function App() {
           {/* Main app routes */}
           <Route element={<Layout />}>
             <Route index element={<Navigate to="/vehicles" replace />} />
+            <Route path="/profile-setup" element={<ProfileSetupPage />} />
             <Route path="/vehicles" element={<VehicleManagementPage />} />
             <Route path="/vehicle-setup" element={<VehicleSetupPage />} />
             <Route path="/vehicles/:vehicleId/add-service" element={<AddServiceRecordPage />} />

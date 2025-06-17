@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, AlertCircle, Loader2 } from 'lucide-react';
+import { Car, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -168,6 +168,19 @@ const VehicleSetupPage: React.FC = () => {
           className="bg-neutral-100 dark:bg-gray-800 rounded-xl shadow-sm border border-neutral-200 dark:border-gray-700 overflow-hidden"
         >
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {/* Progress indicator */}
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full">
+                <div className="h-2 bg-blue-600 dark:bg-blue-400 rounded-full w-full"></div>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white">
+                2
+              </div>
+            </div>
+
             <div className="flex items-center gap-2 mb-6">
               <input
                 type="checkbox"
@@ -323,7 +336,10 @@ const VehicleSetupPage: React.FC = () => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isSubmitting ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Saving...</span>
+                  </div>
                 ) : (
                   'Save Vehicle'
                 )}
