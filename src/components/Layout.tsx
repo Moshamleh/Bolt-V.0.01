@@ -25,6 +25,11 @@ const Layout: React.FC = () => {
   const excludedPaths = ['/account', '/profile-setup', '/vehicle-setup'];
   const shouldShowBanner = !excludedPaths.some(path => location.pathname.startsWith(path));
 
+  // Close mobile menu when location changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location]);
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -79,11 +84,6 @@ const Layout: React.FC = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate, shouldShowBanner]);
-
-  // Close mobile menu when location changes
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [location]);
 
   // Show loading spinner while checking authentication
   if (isLoading) {
@@ -224,7 +224,7 @@ const Layout: React.FC = () => {
         </div>
       </header>
       
-      <main className="pb-20 md:pb-8 pt-4 px-4 md:px-6 lg:px-8">
+      <main className="pb-8 pt-16 md:pt-4 px-4 md:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-6">
           <Outlet />
         </div>
@@ -370,69 +370,6 @@ const Layout: React.FC = () => {
           </>
         )}
       </AnimatePresence>
-
-      {/* Bottom Navigation - Mobile Only */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-neutral-100 dark:bg-gray-800 border-t border-neutral-200 dark:border-gray-700 py-2 px-4 md:hidden">
-        <div className="max-w-md mx-auto flex items-center justify-around">
-          <NavLink
-            to="/diagnostic"
-            className={({ isActive }) => `
-              flex flex-col items-center gap-1 min-w-[64px]
-              ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-600 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white'}
-            `}
-            data-tour="diagnostic"
-          >
-            <Zap className="h-6 w-6" />
-            <span className="text-[10px]">Bolt Chat</span>
-          </NavLink>
-
-          <NavLink
-            to="/vehicles"
-            className={({ isActive }) => `
-              flex flex-col items-center gap-1 min-w-[64px]
-              ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-600 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white'}
-            `}
-          >
-            <Car className="h-6 w-6" />
-            <span className="text-[10px]">Vehicles</span>
-          </NavLink>
-
-          <NavLink
-            to="/marketplace"
-            className={({ isActive }) => `
-              flex flex-col items-center gap-1 min-w-[64px]
-              ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-600 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white'}
-            `}
-            data-tour="marketplace"
-          >
-            <Store className="h-6 w-6" />
-            <span className="text-[10px]">Market</span>
-          </NavLink>
-
-          <NavLink
-            to="/clubs"
-            className={({ isActive }) => `
-              flex flex-col items-center gap-1 min-w-[64px]
-              ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-600 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white'}
-            `}
-          >
-            <UsersRound className="h-6 w-6" />
-            <span className="text-[10px]">Clubs</span>
-          </NavLink>
-
-          <NavLink
-            to="/account"
-            className={({ isActive }) => `
-              flex flex-col items-center gap-1 min-w-[64px]
-              ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-600 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white'}
-            `}
-            data-tour="account"
-          >
-            <Settings className="h-6 w-6" />
-            <span className="text-[10px]">Settings</span>
-          </NavLink>
-        </div>
-      </nav>
 
       {/* Onboarding Tour */}
       <OnboardingTour 
