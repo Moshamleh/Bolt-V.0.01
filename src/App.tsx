@@ -5,6 +5,7 @@ import { supabase } from './lib/supabase';
 import Layout from './components/Layout';
 import AuthLayout from './components/AuthLayout';
 import MarketplaceLayout from './components/MarketplaceLayout';
+import ClubLayout from './components/ClubLayout';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy load all page components
@@ -16,6 +17,10 @@ const VehicleSetupPage = lazy(() => import('./pages/VehicleSetupPage'));
 const ClubDetailPage = lazy(() => import('./pages/ClubDetailPage'));
 const ClubListPage = lazy(() => import('./pages/ClubListPage'));
 const CreateClubPage = lazy(() => import('./pages/CreateClubPage'));
+const MyClubsPage = lazy(() => import('./pages/MyClubsPage'));
+const ClubMessagesPage = lazy(() => import('./pages/ClubMessagesPage'));
+const ClubMembersPage = lazy(() => import('./pages/ClubMembersPage'));
+const ClubSettingsPage = lazy(() => import('./pages/ClubSettingsPage'));
 const MarketplacePage = lazy(() => import('./pages/MarketplacePage'));
 const ListPartPage = lazy(() => import('./pages/ListPartPage'));
 const PartDetailPage = lazy(() => import('./pages/PartDetailPage'));
@@ -108,9 +113,18 @@ function App() {
             <Route path="/mechanic-support/chat/:mechanicId" element={<MechanicChatPage />} />
             <Route path="/mechanic/settings" element={<MechanicSettingsPage />} />
             <Route path="/mechanic/:id" element={<MechanicProfilePage />} />
-            <Route path="/clubs" element={<ClubListPage />} />
-            <Route path="/clubs/create" element={<CreateClubPage />} />
-            <Route path="/clubs/:id" element={<ClubDetailPage />} />
+            
+            {/* Club Routes with ClubLayout */}
+            <Route path="/clubs" element={<ClubLayout />}>
+              <Route index element={<ClubListPage />} />
+              <Route path="create" element={<CreateClubPage />} />
+              <Route path=":id" element={<ClubDetailPage />} />
+              <Route path="my-clubs" element={<MyClubsPage />} />
+              <Route path="messages" element={<ClubMessagesPage />} />
+              <Route path="members" element={<ClubMembersPage />} />
+              <Route path="settings" element={<ClubSettingsPage />} />
+            </Route>
+            
             <Route path="/bolt-fixes" element={<BoltFixes />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
