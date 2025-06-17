@@ -58,7 +58,31 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ profile, email, onProfi
       toast.success('Profile updated successfully');
     } catch (err) {
       console.error('Failed to update profile:', err);
-      toast.error('Failed to update profile');
+      
+      // Extract more specific error message
+      let errorMessage = 'Failed to update profile';
+      
+      if (err instanceof Error) {
+        // Check for specific error types
+        if (err.message.includes('duplicate key value violates unique constraint')) {
+          if (err.message.includes('profiles_username_key')) {
+            errorMessage = 'Username is already taken. Please choose another.';
+          } else {
+            errorMessage = 'A unique constraint was violated. Please try different values.';
+          }
+        } else if (err.message.includes('violates check constraint')) {
+          errorMessage = 'One or more fields contain invalid values.';
+        } else if (err.message.includes('violates not-null constraint')) {
+          errorMessage = 'Required fields cannot be empty.';
+        } else if (err.message.includes('value too long')) {
+          errorMessage = 'One or more fields exceed the maximum length.';
+        } else {
+          // Use the actual error message if available
+          errorMessage = err.message || errorMessage;
+        }
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -176,7 +200,10 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ profile, email, onProfi
             className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {saving ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Saving...</span>
+              </div>
             ) : (
               'Save Changes'
             )}
