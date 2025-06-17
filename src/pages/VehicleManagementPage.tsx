@@ -1,8 +1,9 @@
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, Plus, Settings, Wrench, Loader2, FileText, Calendar, Lightbulb } from 'lucide-react';
+import { Car, Plus, Settings, Wrench, Loader2, FileText, Calendar, Lightbulb, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, getUserVehicles, getProfile } from '../lib/supabase';
+import MobilePageMenu from '../components/MobilePageMenu';
 
 // Lazy load components
 const RepairTipsPanel = lazy(() => import('../components/RepairTipsPanel'));
@@ -17,6 +18,7 @@ const VehicleManagementPage: React.FC = () => {
   const [showRepairTips, setShowRepairTips] = useState(false);
   const [aiTipsEnabled, setAiTipsEnabled] = useState(true);
   const [showProfileBanner, setShowProfileBanner] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -48,6 +50,7 @@ const VehicleManagementPage: React.FC = () => {
 
   const handleAddVehicle = () => {
     navigate('/vehicle-setup');
+    setIsMobileMenuOpen(false);
   };
 
   const handleEditVehicle = (vehicleId: string) => {
@@ -143,12 +146,21 @@ const VehicleManagementPage: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-8 flex justify-between items-center"
         >
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Your Vehicles</h1>
-          <p className="text-neutral-600 dark:text-gray-400 mt-1">
-            Manage your vehicles, service records, and run diagnostics
-          </p>
+          <div>
+            <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Your Vehicles</h1>
+            <p className="text-neutral-600 dark:text-gray-400 mt-1">
+              Manage your vehicles, service records, and run diagnostics
+            </p>
+          </div>
+          
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="md:hidden p-2 text-neutral-600 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
         </motion.div>
 
         {loading ? (
@@ -279,6 +291,87 @@ const VehicleManagementPage: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Mobile Menu */}
+      <MobilePageMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        title="Vehicle Options"
+      >
+        <div className="p-4 space-y-6">
+          <button
+            onClick={handleAddVehicle}
+            className="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="h-5 w-5" />
+            <span>Add New Vehicle</span>
+          </button>
+          
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <h3 className="font-medium text-gray-900 dark:text-white mb-3">Your Vehicles</h3>
+            
+            <div className="space-y-3">
+              {vehicles.map((vehicle) => (
+                <div 
+                  key={vehicle.id}
+                  className="bg-white dark:bg-gray-700 rounded-lg p-4"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-medium text-gray-900 dark:text-white">
+                      {vehicle.other_vehicle_description || `${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                    </h4>
+                    <button
+                      onClick={() => handleEditVehicle(vehicle.id)}
+                      className="p-1 text-gray-500 dark:text-gray-400"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2 mt-3">
+                    <button
+                      onClick={() => {
+                        handleRunDiagnostic(vehicle.id);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="flex items-center justify-center px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+                    >
+                      <Wrench className="h-4 w-4 mr-1" />
+                      Diagnose
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        handleViewServiceHistory(vehicle.id);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="flex items-center justify-center px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+                    >
+                      <Calendar className="h-4 w-4 mr-1" />
+                      History
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {aiTipsEnabled && (
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+              <button
+                onClick={() => {
+                  setShowRepairTips(!showRepairTips);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-lg font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+              >
+                <Lightbulb className="h-5 w-5" />
+                <span>{showRepairTips ? 'Hide Repair Tips' : 'Show Repair Tips'}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </MobilePageMenu>
     </div>
   );
 };

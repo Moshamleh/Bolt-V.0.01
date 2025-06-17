@@ -8,6 +8,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Part, getParts, getOrCreatePartChat, PaginatedResponse } from '../lib/supabase';
 import PartCard from '../components/PartCard';
+import MobilePageMenu from '../components/MobilePageMenu';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -26,6 +27,7 @@ const MarketplacePage: React.FC = () => {
   const [isMessagingLoading, setIsMessagingLoading] = useState<Record<string, boolean>>({});
   const [showFilters, setShowFilters] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -106,6 +108,7 @@ const MarketplacePage: React.FC = () => {
     setSelectedCategory('');
     setPriceRange({});
     setCurrentPage(1);
+    setIsMobileMenuOpen(false);
   };
 
   const handleReportIssue = () => {
@@ -313,18 +316,28 @@ const MarketplacePage: React.FC = () => {
             </div>
 
             <div className="flex items-center justify-between">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              >
-                <Filter className="h-5 w-5" />
-                <span>Filters</span>
-                {showFilters ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="hidden md:flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  <Filter className="h-5 w-5" />
+                  <span>Filters</span>
+                  {showFilters ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  className="md:hidden flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  <Menu className="h-5 w-5" />
+                  <span>Menu</span>
+                </button>
+              </div>
 
               {showFilters && (
                 <button
@@ -343,7 +356,7 @@ const MarketplacePage: React.FC = () => {
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
+                  className="overflow-hidden md:block hidden"
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                     <select
@@ -478,6 +491,194 @@ const MarketplacePage: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Mobile Menu */}
+      <MobilePageMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        title="Marketplace Options"
+      >
+        <div className="p-4 space-y-6">
+          <div className="space-y-4">
+            <h3 className="font-medium text-gray-900 dark:text-white">Filters</h3>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Make</label>
+                <select
+                  value={selectedMake}
+                  onChange={(e) => {
+                    setSelectedMake(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Makes</option>
+                  <option value="Toyota">Toyota</option>
+                  <option value="Honda">Honda</option>
+                  <option value="Ford">Ford</option>
+                  <option value="BMW">BMW</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Condition</label>
+                <select
+                  value={selectedCondition}
+                  onChange={(e) => {
+                    setSelectedCondition(e.target.value as any);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Conditions</option>
+                  <option value="new">New</option>
+                  <option value="used">Used</option>
+                  <option value="refurbished">Refurbished</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Category</label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Categories</option>
+                  <option value="engine">Engine Parts</option>
+                  <option value="brakes">Brakes</option>
+                  <option value="suspension">Suspension</option>
+                  <option value="transmission">Transmission</option>
+                  <option value="electrical">Electrical</option>
+                  <option value="interior">Interior</option>
+                  <option value="exterior">Exterior</option>
+                </select>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Min Price</label>
+                  <input
+                    type="number"
+                    placeholder="Min Price"
+                    value={priceRange.min || ''}
+                    onChange={(e) => {
+                      setPriceRange(prev => ({ 
+                        ...prev, 
+                        min: e.target.value ? Number(e.target.value) : undefined 
+                      }));
+                      setCurrentPage(1);
+                    }}
+                    className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    min="0"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Max Price</label>
+                  <input
+                    type="number"
+                    placeholder="Max Price"
+                    value={priceRange.max || ''}
+                    onChange={(e) => {
+                      setPriceRange(prev => ({ 
+                        ...prev, 
+                        max: e.target.value ? Number(e.target.value) : undefined 
+                      }));
+                      setCurrentPage(1);
+                    }}
+                    className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    min="0"
+                  />
+                </div>
+              </div>
+              
+              <button
+                onClick={handleClearFilters}
+                className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+          
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-4">
+            <h3 className="font-medium text-gray-900 dark:text-white">Marketplace</h3>
+            
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  navigate('/sell-part');
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                <Plus className="h-5 w-5" />
+                <span>List a Part</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  navigate('/marketplace/my-listings');
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              >
+                <Package className="h-5 w-5" />
+                <span>My Listings</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  navigate('/marketplace/messages');
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              >
+                <MessageSquare className="h-5 w-5" />
+                <span>Messages</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  navigate('/marketplace/saved');
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              >
+                <Heart className="h-5 w-5" />
+                <span>Saved Listings</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  navigate('/marketplace/seller-dashboard');
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              >
+                <Settings className="h-5 w-5" />
+                <span>Seller Dashboard</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  navigate('/help');
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              >
+                <AlertCircle className="h-5 w-5" />
+                <span>Help & FAQ</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </MobilePageMenu>
 
       {/* Floating Action Button */}
       <motion.button

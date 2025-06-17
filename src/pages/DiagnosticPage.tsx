@@ -1,5 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Car, Loader2, Lightbulb } from 'lucide-react';
+import { Car, Loader2, Lightbulb, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, getUserVehicles, getUserDiagnoses, Diagnosis } from '../lib/supabase';
 import { useOnboarding } from '../hooks/useOnboarding';
@@ -8,7 +8,8 @@ import WelcomeModal from '../components/WelcomeModal';
 // Lazy load components
 const ChatInterface = lazy(() => import('../components/ChatInterface'));
 const MobileTopNavBar = lazy(() => import('../components/MobileTopNavBar'));
-const MobileCollapsibleMenu = lazy(() => import('../components/MobileCollapsibleMenu'));
+const MobilePageMenu = lazy(() => import('../components/MobilePageMenu'));
+const ChatHistory = lazy(() => import('../components/ChatHistory'));
 const RepairTipsPanel = lazy(() => import('../components/RepairTipsPanel'));
 
 // Loading fallback component
@@ -36,7 +37,7 @@ const DiagnosticPage: React.FC = () => {
   const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isHistoryMenuOpen, setIsHistoryMenuOpen] = useState(false);
   const [activeChatMessages, setActiveChatMessages] = useState<ChatMessage[]>([]);
   const [activeDiagnosisId, setActiveDiagnosisId] = useState<string | null>(null);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
@@ -141,7 +142,7 @@ const DiagnosticPage: React.FC = () => {
     ];
     setActiveChatMessages(diagnosisMessages);
     setActiveDiagnosisId(diagnosis.id);
-    setIsMenuOpen(false);
+    setIsHistoryMenuOpen(false);
   };
 
   const handleStartTour = () => {
@@ -187,20 +188,24 @@ const DiagnosticPage: React.FC = () => {
           vehicles={vehicles}
           selectedVehicleId={selectedVehicleId}
           onVehicleChange={setSelectedVehicleId}
-          onMenuToggle={() => setIsMenuOpen(true)}
+          onMenuToggle={() => setIsHistoryMenuOpen(true)}
         />
       </Suspense>
 
       <Suspense fallback={<ComponentLoader />}>
-        <MobileCollapsibleMenu
-          isOpen={isMenuOpen}
-          onClose={() => setIsMenuOpen(false)}
-          diagnoses={diagnoses}
-          loading={loading}
-          error={error}
-          onStatusChange={handleDiagnosisStatusChange}
-          onLoadDiagnosis={handleLoadDiagnosis}
-        />
+        <MobilePageMenu
+          isOpen={isHistoryMenuOpen}
+          onClose={() => setIsHistoryMenuOpen(false)}
+          title="Diagnostic History"
+        >
+          <ChatHistory
+            diagnoses={diagnoses}
+            loading={loading}
+            error={error}
+            onStatusChange={handleDiagnosisStatusChange}
+            onLoadDiagnosis={handleLoadDiagnosis}
+          />
+        </MobilePageMenu>
       </Suspense>
 
       {/* Repair Tips Toggle Button */}
