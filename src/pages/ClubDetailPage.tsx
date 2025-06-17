@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  Users, MapPin, Tag, Loader2, Send, ArrowLeft, X, User,
-  Settings, UserMinus, Trash2, MessageSquare
+  Users, MapPin, Tag, MessageSquare, Loader2, 
+  Send, X, User, AlertCircle, CheckCircle, 
+  Settings, UserMinus, Trash2, Heart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
@@ -40,6 +41,7 @@ const ClubDetailPage: React.FC = () => {
   const [newMessage, setNewMessage] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [currentUserEmail, setCurrentUserEmail] = useState<string>('');
+  const [currentUserId, setCurrentUserId] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -81,6 +83,7 @@ const ClubDetailPage: React.FC = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user?.email) return;
         setCurrentUserEmail(session.user.email);
+        setCurrentUserId(session.user.id);
 
         // Load messages
         const messages = await getClubMessages(id);
@@ -216,8 +219,21 @@ const ClubDetailPage: React.FC = () => {
     }
   };
 
-  const getInitials = (email: string) => {
-    return email.split('@')[0].slice(0, 2).toUpperCase();
+  const getInitials = (name: string) => {
+    if (!name) return '?';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+  };
+
+  const getAvatarColor = (userId: string) => {
+    // Generate a consistent color based on the user ID
+    const colors = [
+      'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 
+      'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'
+    ];
+    
+    // Simple hash function to get a consistent index
+    const hash = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[hash % colors.length];
   };
 
   if (loading) {
@@ -260,13 +276,13 @@ const ClubDetailPage: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 -mt-16 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 -mt-16 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
         >
-          <div className="p-6 md:p-8">
+          <div className="p-6 md:p-8 border-b border-gray-100 dark:border-gray-700">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -336,13 +352,18 @@ const ClubDetailPage: React.FC = () => {
                 {club.description}
               </p>
             </div>
+          </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-gray-100 dark:divide-gray-700">
             {/* Members Section */}
-            <div className="mt-8 border-t border-gray-100 dark:border-gray-700 pt-8">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Members</h2>
-              <div className="flex flex-wrap gap-4">
-                {members.map((member) => (
-                  <div key={member.id} className="flex items-center gap-2">
+            <div className="p-6 md:col-span-1">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                Members
+              </h2>
+              <div className="space-y-4">
+                {members.slice(0, 5).map((member) => (
+                  <div key={member.id} className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700">
                       {member.avatar_url ? (
                         <img
@@ -351,27 +372,67 @@ const ClubDetailPage: React.FC = () => {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-blue-600 text-white font-medium">
-                          {(member.username || member.full_name || 'M').charAt(0).toUpperCase()}
+                        <div className={`w-full h-full flex items-center justify-center ${getAvatarColor(member.id)} text-white font-medium`}>
+                          {getInitials(member.username || member.full_name || 'M')}
                         </div>
                       )}
                     </div>
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
-                      {member.username || member.full_name || 'Anonymous'}
-                      {member.role === 'admin' && (
-                        <span className="ml-1 text-xs text-blue-600 dark:text-blue-400">(Admin)</span>
+                    <div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {member.username || member.full_name || 'Anonymous'}
+                        </span>
+                        {member.role === 'admin' && (
+                          <CheckCircle className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                        )}
+                      </div>
+                      {member.location && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {member.location}
+                        </span>
                       )}
-                    </span>
+                    </div>
                   </div>
                 ))}
+                
+                {members.length > 5 && (
+                  <button
+                    onClick={() => navigate(`/clubs/${id}/members`)}
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                  >
+                    View all {members.length} members
+                  </button>
+                )}
+                
+                {members.length === 0 && (
+                  <div className="text-center py-4">
+                    <User className="h-10 w-10 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No members yet</p>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Chat Section */}
-            <div className="mt-8 border-t border-gray-100 dark:border-gray-700 pt-8">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Club Chat</h2>
+            <div className="md:col-span-3 flex flex-col h-[600px]">
+              <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Club Chat
+                  </h2>
+                </div>
+                
+                {isMember && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {messages.length} messages
+                    </span>
+                  </div>
+                )}
+              </div>
               
-              <div className="relative">
+              <div className="relative flex-1">
                 {!isMember && (
                   <div className="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-[2px] z-10 flex items-center justify-center">
                     <div className="text-center p-6">
@@ -393,110 +454,127 @@ const ClubDetailPage: React.FC = () => {
                   </div>
                 )}
 
-                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
-                  {/* Messages Container */}
-                  <div 
-                    ref={chatContainerRef}
-                    className="h-[400px] overflow-y-auto p-4 space-y-4"
-                  >
-                    {messages.length === 0 ? (
-                      <div className="h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-                        <MessageSquare className="h-12 w-12 mb-4 opacity-50" />
-                        <p className="text-lg font-medium">No messages yet</p>
-                        <p className="text-sm">Be the first to start a conversation!</p>
-                      </div>
-                    ) : (
-                      <AnimatePresence>
-                        {messages.map((message) => (
+                <div 
+                  ref={chatContainerRef}
+                  className="h-full overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900"
+                >
+                  {messages.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                      <MessageSquare className="h-12 w-12 mb-4 opacity-50" />
+                      <p className="text-lg font-medium">No messages yet</p>
+                      <p className="text-sm">Be the first to start a conversation!</p>
+                    </div>
+                  ) : (
+                    <AnimatePresence>
+                      {messages.map((message, index) => {
+                        const isCurrentUser = message.sender_email === currentUserEmail;
+                        const showSender = index === 0 || messages[index - 1].sender_id !== message.sender_id;
+                        const senderName = message.sender_email?.split('@')[0] || 'Anonymous';
+                        
+                        return (
                           <motion.div
                             key={message.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className={`flex ${
-                              message.sender_email === currentUserEmail ? 'justify-end' : 'justify-start'
-                            }`}
+                            className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
                           >
-                            <div className="flex items-start max-w-[80%] gap-2">
-                              {message.sender_email !== currentUserEmail && (
-                                <div className="flex-shrink-0 w-8 h-8 rounded-full overflow-hidden">
+                            <div className={`flex max-w-[80%] ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'} gap-2`}>
+                              {!isCurrentUser && showSender && (
+                                <div className="flex-shrink-0 mt-1">
                                   {message.sender_avatar_url ? (
                                     <img
                                       src={message.sender_avatar_url}
-                                      alt={message.sender_email}
-                                      className="w-full h-full object-cover"
+                                      alt={senderName}
+                                      className="w-8 h-8 rounded-full object-cover"
                                     />
                                   ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-blue-600 text-white text-sm font-medium">
-                                      {message.sender_email && getInitials(message.sender_email)}
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getAvatarColor(message.sender_id)} text-white text-xs font-medium`}>
+                                      {getInitials(senderName)}
                                     </div>
                                   )}
                                 </div>
                               )}
                               
-                              <div>
-                                {message.sender_email !== currentUserEmail && (
-                                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                                    {message.sender_email?.split('@')[0]}
+                              <div className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'}`}>
+                                {showSender && !isCurrentUser && (
+                                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300 ml-1 mb-1">
+                                    {senderName}
                                   </div>
                                 )}
                                 
                                 <div className={`rounded-2xl px-4 py-2 ${
-                                  message.sender_email === currentUserEmail
-                                    ? 'bg-blue-600 text-white rounded-br-sm'
-                                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-sm'
+                                  isCurrentUser
+                                    ? 'bg-blue-600 text-white rounded-tr-sm'
+                                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-tl-sm'
                                 }`}>
                                   {message.content}
                                 </div>
                                 
-                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <div className={`text-xs text-gray-500 dark:text-gray-400 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
                                   {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
                                 </div>
                               </div>
+                              
+                              {isCurrentUser && showSender && (
+                                <div className="flex-shrink-0 mt-1">
+                                  {message.sender_avatar_url ? (
+                                    <img
+                                      src={message.sender_avatar_url}
+                                      alt={senderName}
+                                      className="w-8 h-8 rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getAvatarColor(message.sender_id)} text-white text-xs font-medium`}>
+                                      {getInitials(senderName)}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </motion.div>
-                        ))}
-                      </AnimatePresence>
-                    )}
+                        );
+                      })}
+                    </AnimatePresence>
                     <div ref={messagesEndRef} />
-                  </div>
-
-                  {/* Message Input */}
-                  <form onSubmit={handleSubmit} className="border-t border-gray-200 dark:border-gray-700 p-4">
-                    <div className="flex items-end gap-2">
-                      <TextareaAutosize
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Type your message... (Shift + Enter for new line)"
-                        className="flex-1 resize-none overflow-hidden min-h-[40px] max-h-[120px] rounded-2xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isSendingMessage || !isMember}
-                        minRows={1}
-                        maxRows={4}
-                      />
-                      <button
-                        type="submit"
-                        disabled={isSendingMessage || !newMessage.trim() || !isMember}
-                        className={`p-2 rounded-full bg-blue-600 text-white transition-colors ${
-                          isSendingMessage || !newMessage.trim() || !isMember
-                            ? 'opacity-50 cursor-not-allowed'
-                            : 'hover:bg-blue-700'
-                        }`}
-                      >
-                        {isSendingMessage ? (
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : (
-                          <Send className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
-                    {!isMember && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                        Join the club to participate in the chat
-                      </p>
-                    )}
-                  </form>
+                  )}
                 </div>
+
+                {/* Message Input */}
+                <form onSubmit={handleSubmit} className="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
+                  <div className="flex items-end gap-2">
+                    <TextareaAutosize
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Type your message... (Shift + Enter for new line)"
+                      className="flex-1 resize-none overflow-hidden min-h-[40px] max-h-[120px] rounded-2xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isSendingMessage || !isMember}
+                      minRows={1}
+                      maxRows={4}
+                    />
+                    <button
+                      type="submit"
+                      disabled={isSendingMessage || !newMessage.trim() || !isMember}
+                      className={`p-2 rounded-full bg-blue-600 text-white transition-colors ${
+                        isSendingMessage || !newMessage.trim() || !isMember
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'hover:bg-blue-700'
+                      }`}
+                    >
+                      {isSendingMessage ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <Send className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                  {!isMember && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                      Join the club to participate in the chat
+                    </p>
+                  )}
+                </form>
               </div>
             </div>
           </div>
