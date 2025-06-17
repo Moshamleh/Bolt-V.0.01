@@ -502,19 +502,60 @@ export async function getProfile(): Promise<Profile | null> {
   return data;
 }
 
-export async function updateProfile(updates: Partial<Profile>) {
+export async function updateProfile(updates: Partial<Profile>): Promise<Profile> {
   const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .update(updates)
-    .eq('id', user.id)
-    .select()
-    .single();
+  try {
+    // First, try to get the existing profile
+    const { data: existingProfile, error: fetchError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
 
-  if (error) throw error;
-  return data;
+    // If profile doesn't exist (PGRST116 error), create a new one
+    if (fetchError && (fetchError.code === 'PGRST116' || fetchError.message?.includes('PGRST116'))) {
+      // Create a new profile with the user's ID and the provided updates
+      const { data: newProfile, error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          ...updates,
+          // Set default values for required fields if not provided
+          push_notifications_enabled: updates.push_notifications_enabled ?? true,
+          email_updates_enabled: updates.email_updates_enabled ?? true,
+          ai_repair_tips_enabled: updates.ai_repair_tips_enabled ?? true,
+          dark_mode_enabled: updates.dark_mode_enabled ?? false,
+          is_admin: updates.is_admin ?? false,
+          initial_setup_complete: updates.initial_setup_complete ?? false,
+          diagnostic_suggestions_enabled: updates.diagnostic_suggestions_enabled ?? true,
+          kyc_verified: updates.kyc_verified ?? false
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+      return newProfile;
+    } else if (fetchError) {
+      // If there was a different error, throw it
+      throw fetchError;
+    }
+
+    // If profile exists, update it
+    const { data: updatedProfile, error: updateError } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', user.id)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+    return updatedProfile;
+  } catch (error) {
+    console.error('Error in updateProfile:', error);
+    throw error;
+  }
 }
 
 export async function createProfile(profile: Omit<Profile, 'created_at'>) {
