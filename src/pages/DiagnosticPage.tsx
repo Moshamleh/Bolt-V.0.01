@@ -3,6 +3,7 @@ import { Car, Loader2, Lightbulb, Menu, History, MessageSquare } from 'lucide-re
 import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, getUserVehicles, getUserDiagnoses, Diagnosis } from '../lib/supabase';
 import { useOnboarding } from '../hooks/useOnboarding';
+import { useNavigate } from 'react-router-dom';
 import WelcomeModal from '../components/WelcomeModal';
 
 // Lazy load components
@@ -32,6 +33,7 @@ interface ChatMessage {
 }
 
 const DiagnosticPage: React.FC = () => {
+  const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
   const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
@@ -64,6 +66,19 @@ const DiagnosticPage: React.FC = () => {
         }
       } catch (err) {
         console.error('Failed to load vehicles:', err);
+        
+        // Check if the error is due to JWT expiration
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        if (
+          errorMessage.includes('JWT expired') || 
+          errorMessage.includes('invalid JWT') ||
+          errorMessage.includes('PGRST301')
+        ) {
+          console.log('JWT expired, redirecting to login');
+          navigate('/login');
+          return;
+        }
+        
         setError('Failed to load vehicles');
       } finally {
         setLoading(false);
@@ -71,7 +86,7 @@ const DiagnosticPage: React.FC = () => {
     };
 
     loadVehicles();
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     const loadDiagnoses = async () => {
@@ -108,12 +123,25 @@ const DiagnosticPage: React.FC = () => {
         }
       } catch (err) {
         console.error('Failed to load diagnoses:', err);
+        
+        // Check if the error is due to JWT expiration
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        if (
+          errorMessage.includes('JWT expired') || 
+          errorMessage.includes('invalid JWT') ||
+          errorMessage.includes('PGRST301')
+        ) {
+          console.log('JWT expired, redirecting to login');
+          navigate('/login');
+          return;
+        }
+        
         setError('Failed to load diagnostic history');
       }
     };
 
     loadDiagnoses();
-  }, [selectedVehicleId]);
+  }, [selectedVehicleId, navigate]);
 
   useEffect(() => {
     // Generate suggested prompts based on selected vehicle

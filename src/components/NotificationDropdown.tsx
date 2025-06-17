@@ -36,6 +36,19 @@ const NotificationDropdown: React.FC = () => {
         setUnreadCount(count);
       } catch (err) {
         console.error('Failed to load notifications:', err);
+        
+        // Check if the error is due to JWT expiration
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        if (
+          errorMessage.includes('JWT expired') || 
+          errorMessage.includes('invalid JWT') ||
+          errorMessage.includes('PGRST301')
+        ) {
+          console.log('JWT expired, redirecting to login');
+          navigate('/login');
+          return;
+        }
+        
         setError('Failed to load notifications');
       } finally {
         setLoading(false);
@@ -102,7 +115,7 @@ const NotificationDropdown: React.FC = () => {
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, []);
+  }, [navigate]);
 
   const handleToggleDropdown = () => {
     setIsOpen(!isOpen);
