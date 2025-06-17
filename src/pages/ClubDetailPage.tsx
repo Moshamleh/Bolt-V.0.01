@@ -465,78 +465,80 @@ const ClubDetailPage: React.FC = () => {
                       <p className="text-sm">Be the first to start a conversation!</p>
                     </div>
                   ) : (
-                    <AnimatePresence>
-                      {messages.map((message, index) => {
-                        const isCurrentUser = message.sender_email === currentUserEmail;
-                        const showSender = index === 0 || messages[index - 1].sender_id !== message.sender_id;
-                        const senderName = message.sender_email?.split('@')[0] || 'Anonymous';
-                        
-                        return (
-                          <motion.div
-                            key={message.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-                          >
-                            <div className={`flex max-w-[80%] ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'} gap-2`}>
-                              {!isCurrentUser && showSender && (
-                                <div className="flex-shrink-0 mt-1">
-                                  {message.sender_avatar_url ? (
-                                    <img
-                                      src={message.sender_avatar_url}
-                                      alt={senderName}
-                                      className="w-8 h-8 rounded-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getAvatarColor(message.sender_id)} text-white text-xs font-medium`}>
-                                      {getInitials(senderName)}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                              
-                              <div className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'}`}>
-                                {showSender && !isCurrentUser && (
-                                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300 ml-1 mb-1">
-                                    {senderName}
+                    <>
+                      <AnimatePresence>
+                        {messages.map((message, index) => {
+                          const isCurrentUser = message.sender_email === currentUserEmail;
+                          const showSender = index === 0 || messages[index - 1].sender_id !== message.sender_id;
+                          const senderName = message.sender_email?.split('@')[0] || 'Anonymous';
+                          
+                          return (
+                            <motion.div
+                              key={message.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                            >
+                              <div className={`flex max-w-[80%] ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'} gap-2`}>
+                                {!isCurrentUser && showSender && (
+                                  <div className="flex-shrink-0 mt-1">
+                                    {message.sender_avatar_url ? (
+                                      <img
+                                        src={message.sender_avatar_url}
+                                        alt={senderName}
+                                        className="w-8 h-8 rounded-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getAvatarColor(message.sender_id)} text-white text-xs font-medium`}>
+                                        {getInitials(senderName)}
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                                 
-                                <div className={`rounded-2xl px-4 py-2 ${
-                                  isCurrentUser
-                                    ? 'bg-blue-600 text-white rounded-tr-sm'
-                                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-tl-sm'
-                                }`}>
-                                  {message.content}
-                                </div>
-                                
-                                <div className={`text-xs text-gray-500 dark:text-gray-400 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
-                                  {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                                </div>
-                              </div>
-                              
-                              {isCurrentUser && showSender && (
-                                <div className="flex-shrink-0 mt-1">
-                                  {message.sender_avatar_url ? (
-                                    <img
-                                      src={message.sender_avatar_url}
-                                      alt={senderName}
-                                      className="w-8 h-8 rounded-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getAvatarColor(message.sender_id)} text-white text-xs font-medium`}>
-                                      {getInitials(senderName)}
+                                <div className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'}`}>
+                                  {showSender && !isCurrentUser && (
+                                    <div className="text-xs font-medium text-gray-700 dark:text-gray-300 ml-1 mb-1">
+                                      {senderName}
                                     </div>
                                   )}
+                                  
+                                  <div className={`rounded-2xl px-4 py-2 ${
+                                    isCurrentUser
+                                      ? 'bg-blue-600 text-white rounded-tr-sm'
+                                      : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-tl-sm'
+                                  }`}>
+                                    {message.content}
+                                  </div>
+                                  
+                                  <div className={`text-xs text-gray-500 dark:text-gray-400 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
+                                    {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                                  </div>
                                 </div>
-                              )}
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </AnimatePresence>
-                    <div ref={messagesEndRef} />
+                                
+                                {isCurrentUser && showSender && (
+                                  <div className="flex-shrink-0 mt-1">
+                                    {message.sender_avatar_url ? (
+                                      <img
+                                        src={message.sender_avatar_url}
+                                        alt={senderName}
+                                        className="w-8 h-8 rounded-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getAvatarColor(message.sender_id)} text-white text-xs font-medium`}>
+                                        {getInitials(senderName)}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </AnimatePresence>
+                      <div ref={messagesEndRef} />
+                    </>
                   )}
                 </div>
 
