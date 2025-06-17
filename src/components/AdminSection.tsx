@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Users, MessageSquare, BarChart2 } from 'lucide-react';
+import { ShieldCheck, Users, MessageSquare, BarChart2, Package } from 'lucide-react';
 
 const AdminSection: React.FC = () => {
   const navigate = useNavigate();
@@ -13,9 +13,15 @@ const AdminSection: React.FC = () => {
       href: '/admin/users'
     },
     {
+      title: 'Parts Management',
+      description: 'Manage marketplace listings',
+      icon: <Package className="h-5 w-5 text-green-600 dark:text-green-400" />,
+      href: '/admin/parts'
+    },
+    {
       title: 'AI Feedback',
       description: 'Review AI diagnostic feedback',
-      icon: <MessageSquare className="h-5 w-5 text-green-600 dark:text-green-400" />,
+      icon: <MessageSquare className="h-5 w-5 text-amber-600 dark:text-amber-400" />,
       href: '/admin/ai-feedback'
     },
     {

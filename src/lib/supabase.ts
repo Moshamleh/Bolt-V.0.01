@@ -76,6 +76,7 @@ export interface Part {
   trim: string | null;
   part_number: string | null;
   oem_number: string | null;
+  approved?: boolean;
 }
 
 export interface PartFilters {
@@ -652,6 +653,18 @@ export const createPart = async (part: Partial<Part>): Promise<Part> => {
   return data;
 };
 
+export const updatePart = async (partId: string, updates: Partial<Part>): Promise<Part> => {
+  const { data, error } = await supabase
+    .from('parts')
+    .update(updates)
+    .eq('id', partId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
 export const deletePart = async (partId: string): Promise<void> => {
   const { error } = await supabase
     .from('parts')
@@ -659,6 +672,87 @@ export const deletePart = async (partId: string): Promise<void> => {
     .eq('id', partId);
 
   if (error) throw error;
+};
+
+// Admin functions for parts management
+export interface AdminPartFilters {
+  search?: string;
+  make?: string;
+  condition?: string;
+  category?: string;
+  partNumber?: string;
+  oemNumber?: string;
+}
+
+export interface AdminPartsOptions {
+  page: number;
+  itemsPerPage: number;
+  sortField: string;
+  sortDirection: 'asc' | 'desc';
+  search?: string;
+  filters?: AdminPartFilters;
+}
+
+export const getAllParts = async (options: AdminPartsOptions): Promise<PaginatedResponse<Part>> => {
+  let query = supabase
+    .from('parts')
+    .select('*', { count: 'exact' });
+
+  // Apply search
+  if (options.search) {
+    query = query.or(`title.ilike.%${options.search}%,description.ilike.%${options.search}%,part_number.ilike.%${options.search}%,oem_number.ilike.%${options.search}%`);
+  }
+
+  // Apply filters
+  if (options.filters) {
+    if (options.filters.make) {
+      query = query.eq('make', options.filters.make);
+    }
+    
+    if (options.filters.condition) {
+      query = query.eq('condition', options.filters.condition);
+    }
+    
+    if (options.filters.category) {
+      query = query.eq('category', options.filters.category);
+    }
+    
+    if (options.filters.partNumber) {
+      query = query.ilike('part_number', `%${options.filters.partNumber}%`);
+    }
+    
+    if (options.filters.oemNumber) {
+      query = query.ilike('oem_number', `%${options.filters.oemNumber}%`);
+    }
+  }
+
+  // Apply sorting
+  query = query.order(options.sortField, { 
+    ascending: options.sortDirection === 'asc'
+  });
+
+  // Calculate pagination
+  const from = (options.page - 1) * options.itemsPerPage;
+  const to = from + options.itemsPerPage - 1;
+  
+  // Apply pagination
+  query = query.range(from, to);
+
+  const { data, error, count } = await query;
+
+  if (error) throw error;
+
+  const totalPages = Math.ceil((count || 0) / options.itemsPerPage);
+
+  return {
+    data: data || [],
+    page: options.page,
+    itemsPerPage: options.itemsPerPage,
+    total: count || 0,
+    totalPages,
+    hasNextPage: options.page < totalPages,
+    hasPreviousPage: options.page > 1
+  };
 };
 
 export const checkKycStatus = async (): Promise<boolean> => {
