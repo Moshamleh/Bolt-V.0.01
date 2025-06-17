@@ -1,20 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, Plus, Settings, Wrench, Loader2, FileText, Calendar } from 'lucide-react';
+import { Car, Plus, Settings, Wrench, Loader2, FileText, Calendar, Lightbulb } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Vehicle, getUserVehicles } from '../lib/supabase';
+import { Vehicle, getUserVehicles, getProfile } from '../lib/supabase';
+
+// Lazy load components
+const RepairTipsPanel = lazy(() => import('../components/RepairTipsPanel'));
 
 const VehicleManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showRepairTips, setShowRepairTips] = useState(false);
+  const [aiTipsEnabled, setAiTipsEnabled] = useState(true);
 
   useEffect(() => {
-    const loadVehicles = async () => {
+    const loadData = async () => {
       try {
-        const data = await getUserVehicles();
-        setVehicles(data);
+        const [vehiclesData, profileData] = await Promise.all([
+          getUserVehicles(),
+          getProfile()
+        ]);
+        
+        setVehicles(vehiclesData);
+        
+        // Check user preference for AI repair tips
+        if (profileData) {
+          setAiTipsEnabled(profileData.ai_repair_tips_enabled);
+          // Show repair tips by default if enabled and there are vehicles
+          setShowRepairTips(profileData.ai_repair_tips_enabled && vehiclesData.length > 0);
+        }
       } catch (err) {
         console.error('Failed to load vehicles:', err);
         setError('Failed to load vehicles');
@@ -23,7 +39,7 @@ const VehicleManagementPage: React.FC = () => {
       }
     };
 
-    loadVehicles();
+    loadData();
   }, []);
 
   const handleAddVehicle = () => {
@@ -126,74 +142,127 @@ const VehicleManagementPage: React.FC = () => {
         ) : vehicles.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {vehicles.map((vehicle, index) => (
-              <motion.div
-                key={vehicle.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-neutral-100 dark:bg-gray-800 rounded-xl shadow-sm border border-neutral-200 dark:border-gray-700 p-6"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
-                      {vehicle.other_vehicle_description || `${vehicle.year} ${vehicle.make}`}
-                    </h3>
-                    <p className="text-neutral-600 dark:text-gray-400">
-                      {vehicle.other_vehicle_description ? '' : `${vehicle.model}${vehicle.trim ? ` ${vehicle.trim}` : ''}`}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleEditVehicle(vehicle.id)}
-                    className="p-2 text-neutral-400 dark:text-gray-500 hover:text-neutral-600 dark:hover:text-gray-300 transition-colors"
-                    aria-label="Edit vehicle"
-                  >
-                    <Settings className="h-5 w-5" />
-                  </button>
-                </div>
-
-                <div className="mt-4 space-y-3">
-                  <button
-                    onClick={() => handleRunDiagnostic(vehicle.id)}
-                    className="w-full flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                  >
-                    <Wrench className="h-5 w-5 mr-2" />
-                    Run Diagnostic
-                  </button>
-                  
-                  <div className="grid grid-cols-2 gap-3">
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {vehicles.map((vehicle, index) => (
+                <motion.div
+                  key={vehicle.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-neutral-100 dark:bg-gray-800 rounded-xl shadow-sm border border-neutral-200 dark:border-gray-700 p-6"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                        {vehicle.other_vehicle_description || `${vehicle.year} ${vehicle.make}`}
+                      </h3>
+                      <p className="text-neutral-600 dark:text-gray-400">
+                        {vehicle.other_vehicle_description ? '' : `${vehicle.model}${vehicle.trim ? ` ${vehicle.trim}` : ''}`}
+                      </p>
+                    </div>
                     <button
-                      onClick={() => handleAddServiceRecord(vehicle.id)}
-                      className="flex items-center justify-center px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium hover:bg-green-200 dark:hover:bg-green-800/50 transition-colors"
+                      onClick={() => handleEditVehicle(vehicle.id)}
+                      className="p-2 text-neutral-400 dark:text-gray-500 hover:text-neutral-600 dark:hover:text-gray-300 transition-colors"
+                      aria-label="Edit vehicle"
                     >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Add Service
+                      <Settings className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    <button
+                      onClick={() => handleRunDiagnostic(vehicle.id)}
+                      className="w-full flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                    >
+                      <Wrench className="h-5 w-5 mr-2" />
+                      Run Diagnostic
                     </button>
                     
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => handleAddServiceRecord(vehicle.id)}
+                        className="flex items-center justify-center px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium hover:bg-green-200 dark:hover:bg-green-800/50 transition-colors"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Add Service
+                      </button>
+                      
+                      <button
+                        onClick={() => handleViewServiceHistory(vehicle.id)}
+                        className="flex items-center justify-center px-3 py-2 rounded-lg bg-neutral-200 dark:bg-gray-700 text-neutral-700 dark:text-gray-300 font-medium hover:bg-neutral-300 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Service History
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: vehicles.length * 0.1 }}
+                className="bg-neutral-200 dark:bg-gray-900 rounded-xl border border-dashed border-neutral-300 dark:border-gray-700 p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-neutral-300 dark:hover:bg-gray-800 transition-colors"
+                onClick={handleAddVehicle}
+              >
+                <Plus className="h-8 w-8 text-neutral-400 dark:text-gray-500 mb-2" />
+                <span className="text-neutral-600 dark:text-gray-400 font-medium">Add Another Vehicle</span>
+              </motion.div>
+            </div>
+
+            {/* AI Repair Tips Section */}
+            {aiTipsEnabled && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-8"
+              >
+                <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg">
+                        <Lightbulb className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        Personalized Repair Tips
+                      </h2>
+                    </div>
                     <button
-                      onClick={() => handleViewServiceHistory(vehicle.id)}
-                      className="flex items-center justify-center px-3 py-2 rounded-lg bg-neutral-200 dark:bg-gray-700 text-neutral-700 dark:text-gray-300 font-medium hover:bg-neutral-300 dark:hover:bg-gray-600 transition-colors"
+                      onClick={() => setShowRepairTips(!showRepairTips)}
+                      className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                     >
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Service History
+                      {showRepairTips ? 'Hide' : 'Show'}
                     </button>
                   </div>
                 </div>
-              </motion.div>
-            ))}
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: vehicles.length * 0.1 }}
-              className="bg-neutral-200 dark:bg-gray-900 rounded-xl border border-dashed border-neutral-300 dark:border-gray-700 p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-neutral-300 dark:hover:bg-gray-800 transition-colors"
-              onClick={handleAddVehicle}
-            >
-              <Plus className="h-8 w-8 text-neutral-400 dark:text-gray-500 mb-2" />
-              <span className="text-neutral-600 dark:text-gray-400 font-medium">Add Another Vehicle</span>
-            </motion.div>
-          </div>
+                <AnimatePresence>
+                  {showRepairTips && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="p-6">
+                        <Suspense fallback={
+                          <div className="flex items-center justify-center p-8">
+                            <Loader2 className="h-6 w-6 text-blue-600 dark:text-blue-400 animate-spin" />
+                          </div>
+                        }>
+                          <RepairTipsPanel />
+                        </Suspense>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            )}
+          </>
         )}
       </div>
     </div>

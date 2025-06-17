@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Moon, Zap, Loader2, Bell, Mail } from 'lucide-react';
+import { Moon, Zap, Loader2, Bell, Mail, Lightbulb } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { updatePreferences } from '../lib/supabase';
@@ -114,6 +114,29 @@ const PreferencesSection: React.FC = () => {
         </label>
       </div>
 
+      {/* AI Repair Tips */}
+      <div className="flex items-center justify-between p-4 bg-neutral-100 dark:bg-gray-800 rounded-lg border border-neutral-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg">
+            <Lightbulb className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div>
+            <h3 className="font-medium text-neutral-900 dark:text-white">AI Repair Tips</h3>
+            <p className="text-sm text-neutral-500 dark:text-gray-400">Get personalized maintenance suggestions</p>
+          </div>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={preferences.aiRepairTips}
+            onChange={() => handleToggle('aiRepairTips')}
+            disabled={saving}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+        </label>
+      </div>
+
       {/* Notifications Section */}
       <div className="mt-8 pt-8 border-t border-neutral-200 dark:border-gray-700">
         <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-6">Notifications</h2>
@@ -126,7 +149,7 @@ const PreferencesSection: React.FC = () => {
             </div>
             <div>
               <h3 className="font-medium text-neutral-900 dark:text-white">Push Notifications</h3>
-              <p className="text-sm text-neutral-500 dark:text-gray-400">Receive important app alerts on your phone</p>
+              <p className="text-sm text-neutral-600 dark:text-gray-400">Receive important app alerts on your phone</p>
             </div>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -149,7 +172,7 @@ const PreferencesSection: React.FC = () => {
             </div>
             <div>
               <h3 className="font-medium text-neutral-900 dark:text-white">Email Updates</h3>
-              <p className="text-sm text-neutral-500 dark:text-gray-400">Get summaries and service reminders to your inbox</p>
+              <p className="text-sm text-neutral-600 dark:text-gray-400">Get summaries and service reminders to your inbox</p>
             </div>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -157,29 +180,6 @@ const PreferencesSection: React.FC = () => {
               type="checkbox"
               checked={preferences.emailUpdates}
               onChange={() => handleToggle('emailUpdates')}
-              disabled={saving}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-          </label>
-        </div>
-
-        {/* AI Repair Tips */}
-        <div className="mt-4 flex items-center justify-between p-4 bg-neutral-100 dark:bg-gray-800 rounded-lg border border-neutral-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
-              <Zap className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div>
-              <h3 className="font-medium text-neutral-900 dark:text-white">AI Repair Tips</h3>
-              <p className="text-sm text-neutral-500 dark:text-gray-400">Be notified when the AI detects recurring issues</p>
-            </div>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={preferences.aiRepairTips}
-              onChange={() => handleToggle('aiRepairTips')}
               disabled={saving}
               className="sr-only peer"
             />

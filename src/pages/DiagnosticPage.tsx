@@ -1,5 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Car, Loader2 } from 'lucide-react';
+import { Car, Loader2, Lightbulb } from 'lucide-react';
 import { Vehicle, getUserVehicles, getUserDiagnoses, Diagnosis } from '../lib/supabase';
 import { useOnboarding } from '../hooks/useOnboarding';
 import WelcomeModal from '../components/WelcomeModal';
@@ -8,6 +8,7 @@ import WelcomeModal from '../components/WelcomeModal';
 const ChatInterface = lazy(() => import('../components/ChatInterface'));
 const MobileTopNavBar = lazy(() => import('../components/MobileTopNavBar'));
 const MobileCollapsibleMenu = lazy(() => import('../components/MobileCollapsibleMenu'));
+const RepairTipsPanel = lazy(() => import('../components/RepairTipsPanel'));
 
 // Loading fallback component
 const ComponentLoader = () => (
@@ -38,6 +39,7 @@ const DiagnosticPage: React.FC = () => {
   const [activeChatMessages, setActiveChatMessages] = useState<ChatMessage[]>([]);
   const [activeDiagnosisId, setActiveDiagnosisId] = useState<string | null>(null);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showRepairTips, setShowRepairTips] = useState(false);
   
   const { showOnboarding, completeOnboarding, isInitialized } = useOnboarding();
 
@@ -199,6 +201,53 @@ const DiagnosticPage: React.FC = () => {
           onLoadDiagnosis={handleLoadDiagnosis}
         />
       </Suspense>
+
+      {/* Repair Tips Toggle Button */}
+      <div className="fixed top-[120px] right-4 z-40">
+        <button
+          onClick={() => setShowRepairTips(!showRepairTips)}
+          className="flex items-center justify-center w-10 h-10 bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 rounded-full shadow-md hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors"
+          title="Show repair tips"
+        >
+          <Lightbulb className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Repair Tips Panel */}
+      <AnimatePresence>
+        {showRepairTips && (
+          <motion.div
+            initial={{ opacity: 0, x: 300 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 300 }}
+            className="fixed top-[160px] right-0 bottom-[64px] md:bottom-0 w-full max-w-md bg-white dark:bg-gray-800 shadow-lg border-l border-gray-200 dark:border-gray-700 z-30 overflow-y-auto"
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Personalized Repair Tips
+                </h2>
+              </div>
+              <button
+                onClick={() => setShowRepairTips(false)}
+                className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 rounded-full"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="p-4">
+              <Suspense fallback={
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="h-6 w-6 text-blue-600 dark:text-blue-400 animate-spin" />
+                </div>
+              }>
+                <RepairTipsPanel />
+              </Suspense>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="pt-[104px] pb-[64px] h-screen">
         <Suspense fallback={<ComponentLoader />}>
