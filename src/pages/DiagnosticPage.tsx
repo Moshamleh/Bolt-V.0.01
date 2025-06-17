@@ -1,5 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Car, Loader2, Lightbulb } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, getUserVehicles, getUserDiagnoses, Diagnosis } from '../lib/supabase';
 import { useOnboarding } from '../hooks/useOnboarding';
 import WelcomeModal from '../components/WelcomeModal';
