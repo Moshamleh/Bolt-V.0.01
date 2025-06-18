@@ -48,6 +48,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
+  // Default prompt chips
+  const defaultPromptChips = [
+    "🔧 My engine is making a weird noise",
+    "🚨 Warning light came on",
+    "💨 Car feels sluggish when accelerating"
+  ];
+
+  // Use provided suggested prompts or default ones
+  const promptChips = suggestedPrompts.length > 0 ? suggestedPrompts : defaultPromptChips;
+
   useEffect(() => {
     audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
     audioRef.current.volume = 0.2;
@@ -382,8 +392,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
                 {!message.isUser && !message.isError && message.diagnosisId && !message.hasFeedback && (
                   <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, y: -10, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: 'auto' }}
+                    exit={{ opacity: 0, y: -10, height: 0 }}
+                    transition={{ duration: 0.2 }}
                     className="flex items-center gap-2 pl-4"
                   >
                     <span className="text-sm text-neutral-500 dark:text-gray-400">
@@ -420,18 +432,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Suggested Prompts */}
-      {suggestedPrompts && suggestedPrompts.length > 0 && messages.length === 0 && (
+      {/* Prompt Chips */}
+      {messages.length === 0 && (
         <div className="px-4 pb-4">
           <div className="text-sm font-medium text-neutral-500 dark:text-gray-400 mb-2">
-            Suggested questions:
+            Common issues:
           </div>
           <div className="flex flex-wrap gap-2">
-            {suggestedPrompts.map((prompt, index) => (
+            {promptChips.map((prompt, index) => (
               <button
                 key={index}
                 onClick={() => handleSuggestedPromptClick(prompt)}
-                className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-sm hover:shadow-md"
               >
                 {prompt}
               </button>
