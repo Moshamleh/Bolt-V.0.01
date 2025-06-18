@@ -7,6 +7,7 @@ import MobilePageMenu from '../components/MobilePageMenu';
 
 // Lazy load components
 const RepairTipsPanel = lazy(() => import('../components/RepairTipsPanel'));
+const TipCarousel = lazy(() => import('../components/TipCarousel'));
 
 const VehicleManagementPage: React.FC = () => {
   const navigate = useNavigate();
@@ -231,6 +232,15 @@ const VehicleManagementPage: React.FC = () => {
                 <span className="text-neutral-600 dark:text-gray-400 font-medium">Add Another Vehicle</span>
               </motion.div>
             </div>
+
+            {/* Tip Carousel */}
+            <Suspense fallback={
+              <div className="flex items-center justify-center p-8">
+                <Loader2 className="h-6 w-6 text-blue-600 dark:text-blue-400 animate-spin" />
+              </div>
+            }>
+              <TipCarousel className="mb-8" />
+            </Suspense>
 
             {/* AI Repair Tips Section */}
             {aiTipsEnabled && (
