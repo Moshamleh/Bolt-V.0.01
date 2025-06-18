@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Upload, Loader2, ArrowLeft, AlertCircle, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { createPart, checkKycStatus, updateProfile, awardBadge } from '../lib/supabase';
+import { createPart, checkKycStatus, updateProfile, awardBadge, supabase } from '../lib/supabase';
 import { useFormValidation, ValidationRules } from '../hooks/useFormValidation';
 import FormField from '../components/FormField';
 import Input from '../components/Input';
@@ -105,6 +105,7 @@ const ListPartPage: React.FC = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -168,6 +169,52 @@ const ListPartPage: React.FC = () => {
       setImagePreview(reader.result as string);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleGenerateDescription = async () => {
+    setIsGeneratingDescription(true);
+    setError(null); // Clear any previous errors
+
+    const { title, category, condition } = formData;
+
+    if (!title.trim()) {
+      toast.error('Please enter a part title first.');
+      setIsGeneratingDescription(false);
+      return;
+    }
+
+    const prompt = `Write a short product listing description for a "${title}" ${category ? `(${category})` : ''} part, including its condition (${condition}), common use, and selling point.`;
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('User not authenticated.');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-part-description`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionData.session.access_token}`
+        },
+        body: JSON.stringify({ prompt })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate description.');
+      }
+
+      const data = await response.json();
+      setFormData(prev => ({ ...prev, description: data.generatedDescription }));
+      toast.success('Description generated successfully!');
+    } catch (err: any) {
+      console.error('Error generating description:', err);
+      setError(err.message || 'Failed to generate description.');
+      toast.error(err.message || 'Failed to generate description.');
+    } finally {
+      setIsGeneratingDescription(false);
+    }
   };
 
   const handleInputChange = (
@@ -417,6 +464,26 @@ const ListPartPage: React.FC = () => {
                 placeholder="e.g., BMW M3 Brake Rotors"
               />
             </FormField>
+
+            {/* Auto-Generate Description Button */}
+            <button
+              type="button"
+              onClick={handleGenerateDescription}
+              disabled={isGeneratingDescription || !formData.title.trim()}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isGeneratingDescription ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-5 w-5" />
+                  Auto-Generate Description
+                </>
+              )}
+            </button>
 
             {/* Part Numbers */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
