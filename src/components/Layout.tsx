@@ -6,6 +6,7 @@ import { useOnboarding } from '../hooks/useOnboarding';
 import { supabase, getProfile } from '../lib/supabase';
 import InitialSetupRedirect from './InitialSetupRedirect';
 import NotificationDropdown from './NotificationDropdown';
+import WeeklyRecapManager from './WeeklyRecapManager';
 
 // Lazy load components
 const ProfileCompletionBanner = lazy(() => import('./ProfileCompletionBanner'));
@@ -101,6 +102,9 @@ const Layout: React.FC = () => {
     <div className="min-h-screen bg-neutral-100 dark:bg-gray-900">
       {/* Add the InitialSetupRedirect component to handle redirects */}
       <InitialSetupRedirect />
+      
+      {/* Weekly Recap Manager */}
+      <WeeklyRecapManager />
       
       {/* Profile Completion Banner */}
       {showProfileBanner && profile && (

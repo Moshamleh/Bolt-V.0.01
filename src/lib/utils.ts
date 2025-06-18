@@ -70,3 +70,23 @@ export const hasJoinedFirstClub = (): boolean => {
 export const markFirstClubJoined = (): void => {
   localStorage.setItem('hasJoinedFirstClub', 'true');
 };
+
+// Weekly recap helpers
+export const getLastWeeklyRecapDate = (): Date | null => {
+  const lastRecapStr = localStorage.getItem('lastWeeklyRecapDate');
+  return lastRecapStr ? new Date(lastRecapStr) : null;
+};
+
+export const setLastWeeklyRecapDate = (date: Date = new Date()): void => {
+  localStorage.setItem('lastWeeklyRecapDate', date.toISOString());
+};
+
+export const shouldShowWeeklyRecap = (): boolean => {
+  const lastRecap = getLastWeeklyRecapDate();
+  if (!lastRecap) return true;
+  
+  const now = new Date();
+  const daysSinceLastRecap = Math.floor((now.getTime() - lastRecap.getTime()) / (1000 * 60 * 60 * 24));
+  
+  return daysSinceLastRecap >= 7;
+};
