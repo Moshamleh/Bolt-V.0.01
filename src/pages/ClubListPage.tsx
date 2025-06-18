@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Users, Plus, Heart, Loader2, MapPin, Tag, Menu, ChevronDown, ChevronUp, Search, Filter
+  Users, Plus, Heart, Loader2, MapPin, Tag, Menu, ChevronDown, ChevronUp, Search, Filter,
+  Globe, CheckCircle, Car
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -9,6 +10,14 @@ import { Club, getClubs, getUserClubMemberships, joinClub, leaveClub } from '../
 import supabase from '../lib/supabase';
 
 type TabType = 'all' | 'joined' | 'regional' | 'vehicle';
+
+// Define filter chips
+const filterChips = [
+  { id: 'all', label: 'All', icon: <Globe className="h-4 w-4" /> },
+  { id: 'joined', label: 'Joined', icon: <CheckCircle className="h-4 w-4" /> },
+  { id: 'regional', label: 'Regional', icon: <MapPin className="h-4 w-4" /> },
+  { id: 'vehicle', label: 'Vehicle-Specific', icon: <Car className="h-4 w-4" /> }
+];
 
 const ClubListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -241,7 +250,7 @@ const ClubListPage: React.FC = () => {
                 )}
               </button>
 
-              {showFilters && (
+              {(showFilters || selectedRegion || searchTerm || activeTab !== 'all') && (
                 <button
                   onClick={handleClearFilters}
                   className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
@@ -251,48 +260,22 @@ const ClubListPage: React.FC = () => {
               )}
             </div>
 
-            {/* Tabs */}
-            <div className="flex space-x-1 mt-4">
-              <button
-                onClick={() => setActiveTab('all')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'all'
-                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                All Clubs
-              </button>
-              <button
-                onClick={() => setActiveTab('joined')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'joined'
-                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                Joined
-              </button>
-              <button
-                onClick={() => setActiveTab('regional')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'regional'
-                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                Regional
-              </button>
-              <button
-                onClick={() => setActiveTab('vehicle')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'vehicle'
-                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                Vehicle-Specific
-              </button>
+            {/* Filter Chips */}
+            <div className="flex flex-wrap gap-2 mt-4">
+              {filterChips.map((chip) => (
+                <button
+                  key={chip.id}
+                  onClick={() => setActiveTab(chip.id as TabType)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                    activeTab === chip.id
+                      ? 'bg-blue-600 text-white shadow-glow'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {chip.icon}
+                  {chip.label}
+                </button>
+              ))}
             </div>
 
             <AnimatePresence>
