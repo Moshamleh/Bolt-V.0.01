@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { sendDiagnosticPrompt, recordAiFeedback, subscribeToDiagnosisUpdates, Diagnosis } from '../lib/supabase';
 import { playPopSound, hasCompletedFirstDiagnostic, markFirstDiagnosticCompleted } from '../lib/utils';
 import Confetti from './Confetti';
+import { awardXp, XP_VALUES } from '../lib/xpSystem';
 
 interface ChatMessage {
   id: string;
@@ -290,6 +291,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             setShowConfetti(true);
             markFirstDiagnosticCompleted();
           }
+          
+          // Award XP for completing a diagnostic
+          try {
+            awardXp(undefined, XP_VALUES.RUN_DIAGNOSTIC, "Completed AI diagnostic");
+          } catch (xpError) {
+            console.error('Failed to award XP:', xpError);
+            // Don't fail the diagnostic if XP awarding fails
+          }
         }
       });
     } catch (err) {
@@ -330,6 +339,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       // Play sound effect
       playPopSound();
+      
+      // Award XP for providing feedback
+      try {
+        awardXp(undefined, XP_VALUES.PROVIDE_FEEDBACK, "Provided feedback on AI diagnostic");
+      } catch (xpError) {
+        console.error('Failed to award XP for feedback:', xpError);
+        // Don't fail the feedback if XP awarding fails
+      }
     } catch (err) {
       console.error('Failed to record feedback:', err);
       toast.error('Failed to record feedback');
