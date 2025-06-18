@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Search, Filter, Plus, ChevronDown, ChevronUp, Loader2,
   Menu, X, ShoppingBag, MessageSquare, Settings, Heart,
-  AlertCircle, Package, ChevronLeft, ChevronRight
+  AlertCircle, Package, ChevronLeft, ChevronRight, Toolbox, Wrench
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Part, getParts, getOrCreatePartChat, PaginatedResponse } from '../lib/supabase';
@@ -157,11 +157,14 @@ const MarketplacePage: React.FC = () => {
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 text-center"
       >
-        <div className="flex justify-center mb-4">
-          <Plus className="h-16 w-16 text-gray-400 dark:text-gray-500" />
+        <div className="flex justify-center mb-6">
+          <div className="relative">
+            <Toolbox className="h-20 w-20 text-blue-500 dark:text-blue-400" />
+            <Wrench className="h-10 w-10 text-amber-500 dark:text-amber-400 absolute -bottom-2 -right-2 transform rotate-45" />
+          </div>
         </div>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-          {hasFilters ? 'No parts match your search' : 'No parts listed yet'}
+          It's quiet in here… Time to spark some life! 🧰
         </h2>
         <p className="text-gray-600 dark:text-gray-400 mb-6">
           {hasFilters 
@@ -178,10 +181,10 @@ const MarketplacePage: React.FC = () => {
         ) : (
           <button
             onClick={handleSellPart}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center px-6 py-3 bg-glowing-gradient text-white rounded-lg font-medium hover:shadow-glow transition-all duration-300"
           >
             <Plus className="h-5 w-5 mr-2" />
-            List a Part
+            ⚡ List Your First Part
           </button>
         )}
       </motion.div>
