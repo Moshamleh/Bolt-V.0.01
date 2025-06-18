@@ -8,6 +8,7 @@ import { useFormValidation, ValidationRules } from '../../hooks/useFormValidatio
 import FormField from '../../components/FormField';
 import Input from '../../components/Input';
 import { formatFileSize, isValidFileType } from '../../lib/utils';
+import { moderateContent } from '../../lib/aiModeration';
 
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -140,16 +141,10 @@ const SellerKYC: React.FC = () => {
 
       // Send to content moderation
       try {
-        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/moderate-content`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            type: "kyc",
-            content: formData.fullName + "\n" + (formData.businessName || ""),
-            user_id: userId,
-          }),
+        await moderateContent({
+          type: "kyc",
+          content: formData.fullName + "\n" + (formData.businessName || ""),
+          user_id: userId,
         });
         
         toast.success("⚡ Sent to Agents for review. You'll be notified once approved!");

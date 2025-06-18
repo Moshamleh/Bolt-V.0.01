@@ -11,6 +11,7 @@ import Textarea from '../components/Textarea';
 import Select from '../components/Select';
 import { formatFileSize, isValidFileType } from '../lib/utils';
 import Confetti from '../components/Confetti';
+import { moderateContent } from '../lib/aiModeration';
 
 const YEARS = Array.from({ length: 75 }, (_, i) => new Date().getFullYear() - i);
 const MAKES = [
@@ -285,17 +286,11 @@ const ListPartPage: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         try {
-          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/moderate-content`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              type: "part",
-              content: partData.title + "\n" + partData.description,
-              user_id: user.id,
-              part_id: createdPart.id,
-            }),
+          await moderateContent({
+            type: "part",
+            content: partData.title + "\n" + partData.description,
+            user_id: user.id,
+            part_id: createdPart.id,
           });
           
           toast.success("⚡ Sent to Agents for review. You'll be notified once approved!");
