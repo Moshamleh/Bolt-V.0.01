@@ -452,39 +452,62 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </div>
 
                 {!message.isUser && !message.isError && message.diagnosisId && !message.hasFeedback && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10, height: 0 }}
-                    animate={{ opacity: 1, y: 0, height: 'auto' }}
-                    exit={{ opacity: 0, y: -10, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex items-center gap-2 pl-4"
-                  >
-                    <span className="text-sm text-neutral-500 dark:text-gray-400">
-                      Was this helpful?
-                    </span>
-                    <button
-                      onClick={() => handleFeedback(message.id, message.diagnosisId!, true)}
-                      disabled={!!submittingFeedback}
-                      className={`p-1 rounded hover:bg-neutral-200 dark:hover:bg-gray-700 transition-colors ${
-                        submittingFeedback === message.id ? 'opacity-50' : ''
-                      }`}
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: 'auto' }}
+                      exit={{ opacity: 0, y: -10, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex items-center gap-2 pl-4"
                     >
-                      {submittingFeedback === message.id ? (
-                        <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
-                      ) : (
-                        <ThumbsUp className="h-5 w-5 text-neutral-400" />
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleFeedback(message.id, message.diagnosisId!, false)}
-                      disabled={!!submittingFeedback}
-                      className={`p-1 rounded hover:bg-neutral-200 dark:hover:bg-gray-700 transition-colors ${
-                        submittingFeedback === message.id ? 'opacity-50' : ''
-                      }`}
+                      <span className="text-sm text-neutral-500 dark:text-gray-400">
+                        Was this helpful?
+                      </span>
+                      <button
+                        onClick={() => handleFeedback(message.id, message.diagnosisId!, true)}
+                        disabled={!!submittingFeedback}
+                        className={`p-1 rounded hover:bg-neutral-200 dark:hover:bg-gray-700 transition-colors ${
+                          submittingFeedback === message.id ? 'opacity-50' : ''
+                        }`}
+                      >
+                        {submittingFeedback === message.id ? (
+                          <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
+                        ) : (
+                          <ThumbsUp className="h-5 w-5 text-neutral-400" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleFeedback(message.id, message.diagnosisId!, false)}
+                        disabled={!!submittingFeedback}
+                        className={`p-1 rounded hover:bg-neutral-200 dark:hover:bg-gray-700 transition-colors ${
+                          submittingFeedback === message.id ? 'opacity-50' : ''
+                        }`}
+                      >
+                        <ThumbsDown className="h-5 w-5 text-neutral-400" />
+                      </button>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: 'auto' }}
+                      exit={{ opacity: 0, y: -10, height: 0 }}
+                      transition={{ duration: 0.2, delay: 0.1 }}
+                      className="flex flex-wrap gap-2 pl-4 mt-2"
                     >
-                      <ThumbsDown className="h-5 w-5 text-neutral-400" />
-                    </button>
-                  </motion.div>
+                      <button
+                        onClick={() => handleSubmit(undefined, "🧰 Can you walk me through steps to fix it?")}
+                        className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-sm hover:shadow-md"
+                      >
+                        🧰 Can you walk me through steps to fix it?
+                      </button>
+                      <button
+                        onClick={() => handleSubmit(undefined, "🛒 What part do I need?")}
+                        className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-sm hover:shadow-md"
+                      >
+                        🛒 What part do I need?
+                      </button>
+                    </motion.div>
+                  </>
                 )}
               </motion.div>
             ))}
