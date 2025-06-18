@@ -1,10 +1,11 @@
 import React, { useState, useEffect, lazy, Suspense, useRef } from 'react';
-import { Car, Loader2, Lightbulb, Menu, History, MessageSquare } from 'lucide-react';
+import { Car, Loader2, Lightbulb, Menu, History, MessageSquare, Wrench } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, getUserVehicles, getUserDiagnoses, Diagnosis } from '../lib/supabase';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { useNavigate } from 'react-router-dom';
 import WelcomeModal from '../components/WelcomeModal';
+import { useProfile } from '../hooks/useProfile';
 
 // Lazy load components
 const ChatInterface = lazy(() => import('../components/ChatInterface'));
@@ -48,6 +49,7 @@ const DiagnosticPage: React.FC = () => {
   const desktopHistoryRef = useRef<HTMLDivElement>(null);
   
   const { showOnboarding, completeOnboarding, isInitialized } = useOnboarding();
+  const { profile } = useProfile();
 
   useEffect(() => {
     // Show welcome modal for new users when onboarding is initialized
@@ -199,6 +201,17 @@ const DiagnosticPage: React.FC = () => {
     // The tour will automatically start since showOnboarding is true
   };
 
+  // Get user's first name
+  const getFirstName = () => {
+    if (!profile) return 'there';
+    
+    if (profile.full_name) {
+      return profile.full_name.split(' ')[0];
+    }
+    
+    return profile.username || 'there';
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-neutral-100 dark:bg-gray-900 p-4">
@@ -310,6 +323,27 @@ const DiagnosticPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Welcome Message */}
+          <div className="bg-white dark:bg-gray-800 border-b border-neutral-200 dark:border-gray-700 p-4">
+            <div className="max-w-3xl mx-auto rounded-xl bg-blue-50 dark:bg-blue-900/20 p-4 animate-chat-bubble-glow">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-1">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                    <Wrench className="h-5 w-5 text-blue-600 dark:text-blue-400 animate-blink-wrench" />
+                  </div>
+                </div>
+                <div>
+                  <p className="font-medium text-blue-800 dark:text-blue-200">
+                    👋 Hey {getFirstName()}! I'm Bolt, your personal AI mechanic.
+                  </p>
+                  <p className="text-blue-700 dark:text-blue-300 mt-1">
+                    Ask me anything about your car — I've got you covered.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Chat Interface */}
           <div className="flex-1 flex">
             <div className={`flex-1 ${showRepairTips ? 'md:w-2/3' : 'w-full'}`}>
@@ -374,6 +408,27 @@ const DiagnosticPage: React.FC = () => {
           >
             <History className="h-5 w-5" />
           </button>
+        </div>
+
+        {/* Welcome Message (Mobile) */}
+        <div className="px-4 mb-4">
+          <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 p-4 animate-chat-bubble-glow">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-1">
+                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                  <Wrench className="h-5 w-5 text-blue-600 dark:text-blue-400 animate-blink-wrench" />
+                </div>
+              </div>
+              <div>
+                <p className="font-medium text-blue-800 dark:text-blue-200">
+                  👋 Hey {getFirstName()}! I'm Bolt, your personal AI mechanic.
+                </p>
+                <p className="text-blue-700 dark:text-blue-300 mt-1">
+                  Ask me anything about your car — I've got you covered.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Repair Tips Panel (Mobile) */}

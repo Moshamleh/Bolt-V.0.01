@@ -118,6 +118,36 @@
   animation: spin-slow 20s linear infinite;
 }
 
+/* Blinking wrench animation */
+@keyframes blink-wrench {
+  0%, 100% {
+    opacity: 1;
+    transform: rotate(0deg);
+  }
+  50% {
+    opacity: 0.5;
+    transform: rotate(20deg);
+  }
+}
+
+.animate-blink-wrench {
+  animation: blink-wrench 2s ease-in-out infinite;
+}
+
+/* Chat bubble glow animation */
+@keyframes chat-bubble-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px 0px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px 5px rgba(59, 130, 246, 0.5);
+  }
+}
+
+.animate-chat-bubble-glow {
+  animation: chat-bubble-glow 3s ease-in-out infinite;
+}
+
 /* Common component styles */
 @layer components {
   .page-container {
