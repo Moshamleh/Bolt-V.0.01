@@ -1,6 +1,6 @@
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, Plus, Settings, Wrench, Loader2, FileText, Calendar, Lightbulb, Menu } from 'lucide-react';
+import { Car, Plus, Settings, Wrench, Loader2, FileText, Calendar, Lightbulb, Menu, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, getUserVehicles, getProfile } from '../lib/supabase';
 import MobilePageMenu from '../components/MobilePageMenu';
@@ -187,9 +187,9 @@ const VehicleManagementPage: React.FC = () => {
                   <div className="mt-4 space-y-3">
                     <button
                       onClick={() => handleRunDiagnostic(vehicle.id)}
-                      className="w-full flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                      className="w-full flex items-center justify-center px-4 py-2 rounded-lg bg-glowing-gradient text-white font-medium hover:scale-105 transition-all duration-300 shadow-lg"
                     >
-                      <Wrench className="h-5 w-5 mr-2" />
+                      <Zap className="h-5 w-5 mr-2" />
                       Run Diagnostic
                     </button>
                     
@@ -322,9 +322,9 @@ const VehicleManagementPage: React.FC = () => {
                         handleRunDiagnostic(vehicle.id);
                         setIsMobileMenuOpen(false);
                       }}
-                      className="flex items-center justify-center px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+                      className="flex items-center justify-center px-3 py-2 rounded-lg bg-glowing-gradient text-white text-sm font-medium hover:scale-105 transition-all duration-300 shadow-lg"
                     >
-                      <Wrench className="h-4 w-4 mr-1" />
+                      <Zap className="h-4 w-4 mr-1" />
                       Diagnose
                     </button>
                     
