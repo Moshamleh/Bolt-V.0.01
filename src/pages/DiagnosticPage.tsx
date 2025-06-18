@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense, useRef } from 'react';
+import React, { useEffect, useState, lazy, Suspense, useRef } from 'react';
 import { Car, Loader2, Lightbulb, Menu, History, MessageSquare, Wrench, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, getUserVehicles, getUserDiagnoses, Diagnosis, updateProfile, awardBadge, sendDiagnosticPrompt, subscribeToDiagnosisUpdates } from '../lib/supabase';
