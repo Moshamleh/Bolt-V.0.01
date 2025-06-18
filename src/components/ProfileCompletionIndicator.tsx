@@ -97,6 +97,10 @@ const ProfileCompletionIndicator: React.FC<ProfileCompletionIndicatorProps> = ({
             }`}
           />
         </div>
+        
+        <p className="mt-3 text-sm text-blue-600 dark:text-blue-400 font-medium">
+          Want a badge? Complete your profile to unlock your first reward ⚡
+        </p>
       </div>
       
       <div className="p-4">
