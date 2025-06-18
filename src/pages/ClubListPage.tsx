@@ -149,35 +149,43 @@ const ClubListPage: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 text-center"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-dashed border-blue-300 dark:border-blue-700 p-8 text-center relative overflow-hidden"
       >
-        <div className="flex justify-center mb-4">
-          <Users className="h-16 w-16 text-gray-400 dark:text-gray-500" />
+        {/* Background animation elements */}
+        <div className="absolute inset-0 overflow-hidden opacity-10">
+          <div className="absolute top-10 left-10 w-20 h-20 border-t-4 border-l-4 border-blue-500 rounded-full animate-spin-slow"></div>
+          <div className="absolute bottom-10 right-10 w-16 h-16 border-b-4 border-r-4 border-blue-500 rounded-full animate-spin-slow"></div>
+          <div className="absolute top-1/2 left-1/4 w-40 h-1 bg-blue-500 rotate-45 animate-pulse-slow"></div>
+          <div className="absolute top-1/4 right-1/3 w-40 h-1 bg-blue-500 -rotate-45 animate-pulse-slow"></div>
         </div>
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-          {hasFilters ? 'No clubs match your criteria' : 'No clubs found'}
-        </h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          {hasFilters 
-            ? 'Try adjusting your filters or search terms'
-            : 'Be the first to create a club and start building a community'}
-        </p>
-        {hasFilters ? (
-          <button
-            onClick={handleClearFilters}
-            className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-          >
-            Clear Filters
-          </button>
-        ) : (
-          <button
-            onClick={handleCreateClub}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            Create Club
-          </button>
-        )}
+        
+        <div className="relative z-10">
+          <div className="flex justify-center mb-6">
+            <Users className="h-20 w-20 text-blue-500 dark:text-blue-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            🚘 No car clubs yet? That's your sign to start one.
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg max-w-md mx-auto">
+            Rally your crew and build something legendary.
+          </p>
+          {hasFilters ? (
+            <button
+              onClick={handleClearFilters}
+              className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            >
+              Clear Filters
+            </button>
+          ) : (
+            <button
+              onClick={handleCreateClub}
+              className="inline-flex items-center px-6 py-3 bg-glowing-gradient text-white rounded-lg font-medium shadow-lg hover:shadow-glow transition-all duration-300 animate-pulse-slow"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              + Create a Club
+            </button>
+          )}
+        </div>
       </motion.div>
     );
   };
