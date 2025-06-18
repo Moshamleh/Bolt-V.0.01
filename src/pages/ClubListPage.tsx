@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Search, Filter, Plus, ChevronDown, ChevronUp, Loader2,
-  Users, MapPin, Tag
+  Users, Plus, Heart, Loader2, MapPin, Tag, Menu, ChevronDown, ChevronUp, Search, Filter
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -355,17 +354,17 @@ const ClubListPage: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                   onClick={() => handleClubClick(club.id)}
-                  className="group bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer"
+                  className="group bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-lg hover:shadow-blue-500/20 transition-all duration-300 cursor-pointer"
                 >
-                  <div className="relative aspect-video overflow-hidden">
+                  <div className="relative aspect-[16/9] overflow-hidden">
                     <img
                       src={club.image_url}
                       alt={club.name}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                     <div className="absolute bottom-4 left-4 right-4">
-                      <h3 className="text-xl font-semibold text-white mb-1">
+                      <h3 className="text-xl font-bold text-white mb-1 drop-shadow-md">
                         {club.name}
                       </h3>
                       <div className="flex items-center text-sm text-white/90">
@@ -376,17 +375,17 @@ const ClubListPage: React.FC = () => {
                   </div>
 
                   <div className="p-4">
-                    <p className="text-gray-600 dark:text-gray-400 line-clamp-2 mb-4">
+                    <p className="text-gray-600 dark:text-gray-400 line-clamp-2 mb-4 h-10">
                       {club.description}
                     </p>
 
-                    <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mb-4">
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 mr-1" />
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      <div className="flex items-center px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
+                        <MapPin className="h-3 w-3 mr-1" />
                         {club.region}
                       </div>
-                      <div className="flex items-center">
-                        <Tag className="h-4 w-4 mr-1" />
+                      <div className="flex items-center px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full">
+                        <Tag className="h-3 w-3 mr-1" />
                         {club.topic}
                       </div>
                     </div>
