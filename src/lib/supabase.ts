@@ -45,6 +45,8 @@ export interface Vehicle {
   vin: string | null;
   other_vehicle_description: string | null;
   created_at: string;
+  nickname?: string | null;
+  mileage?: number | null;
 }
 
 export interface Diagnosis {
