@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, AlertCircle, User, MapPin, FileText, Camera } from 'lucide-react';
+import { CheckCircle, AlertCircle, User, Tag, Camera, FileText, MapPin } from 'lucide-react';
 import { Profile } from '../lib/supabase';
 
 interface ProfileCompletionIndicatorProps {
@@ -34,7 +34,7 @@ const ProfileCompletionIndicator: React.FC<ProfileCompletionIndicatorProps> = ({
       id: 'username',
       label: 'Username',
       description: 'Choose a unique username for your profile',
-      icon: <User className="h-5 w-5 text-green-600 dark:text-green-400" />,
+      icon: <Tag className="h-5 w-5 text-green-600 dark:text-green-400" />,
       completed: !!profile.username
     },
     {
@@ -104,7 +104,7 @@ const ProfileCompletionIndicator: React.FC<ProfileCompletionIndicatorProps> = ({
           {profileFields.map(field => (
             <div 
               key={field.id}
-              className={`flex items-center gap-3 p-3 rounded-lg ${
+              className={`flex items-center gap-3 p-3 rounded-lg shadow-md cursor-pointer transition-all duration-300 hover:shadow-glow hover:border-blue-500 dark:hover:border-blue-400 ${
                 field.completed 
                   ? 'bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800'
                   : 'bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700'
