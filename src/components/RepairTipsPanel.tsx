@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lightbulb, Loader2, ThumbsUp, ThumbsDown, ChevronRight, AlertCircle } from 'lucide-react';
+import { Lightbulb, Loader2, ThumbsUp, ThumbsDown, ChevronRight, AlertCircle, Battery, Droplet } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, ServiceRecord, getUserVehicles, getAllServiceRecords } from '../lib/supabase';
 
@@ -68,7 +68,7 @@ const RepairTipsPanel: React.FC = () => {
         if (monthsSinceOilChange >= 5) {
           tips.push({
             id: `oil-${vehicle.id}`,
-            title: 'Oil Change Due',
+            title: '🛢️ Oil Refresh',
             description: `Your ${vehicleName} is due for an oil change. It's been ${monthsSinceOilChange} months since your last oil change.`,
             priority: monthsSinceOilChange >= 7 ? 'high' : 'medium',
             vehicleId: vehicle.id,
@@ -80,7 +80,7 @@ const RepairTipsPanel: React.FC = () => {
         // If no oil change record exists, suggest one for vehicles with year data
         tips.push({
           id: `first-oil-${vehicle.id}`,
-          title: 'Regular Oil Change',
+          title: '🛢️ Oil Refresh',
           description: `We recommend regular oil changes for your ${vehicleName} to maintain optimal engine performance.`,
           priority: 'medium',
           vehicleId: vehicle.id,
@@ -175,7 +175,7 @@ const RepairTipsPanel: React.FC = () => {
         if (vehicleAge >= 3) {
           tips.push({
             id: `battery-${vehicle.id}`,
-            title: 'Battery Health Check',
+            title: '🔋 Battery Checkup',
             description: `Your ${vehicleName} is ${vehicleAge} years old. Car batteries typically last 3-5 years. Consider having your battery tested.`,
             priority: vehicleAge >= 4 ? 'high' : 'low',
             vehicleId: vehicle.id,
@@ -216,6 +216,19 @@ const RepairTipsPanel: React.FC = () => {
         return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';
       default:
         return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
+    }
+  };
+
+  const getPriorityBarColor = (priority: 'high' | 'medium' | 'low') => {
+    switch (priority) {
+      case 'high':
+        return 'bg-red-500 dark:bg-red-600';
+      case 'medium':
+        return 'bg-amber-500 dark:bg-amber-600';
+      case 'low':
+        return 'bg-green-500 dark:bg-green-600';
+      default:
+        return 'bg-gray-400 dark:bg-gray-500';
     }
   };
 
@@ -263,8 +276,13 @@ const RepairTipsPanel: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
             layout
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden"
+            className="relative bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden pl-3"
           >
+            {/* Colored vertical bar based on priority */}
+            <div 
+              className={`absolute left-0 top-0 bottom-0 w-3 ${getPriorityBarColor(tip.priority)}`}
+            />
+            
             <div className="p-4">
               <div className="flex items-start gap-4">
                 <div className={`p-2 rounded-lg ${getPriorityStyles(tip.priority)}`}>
@@ -349,6 +367,13 @@ const RepairTipsPanel: React.FC = () => {
                     )}
                   </AnimatePresence>
                 </div>
+              </div>
+              
+              {/* AI Suggested tag */}
+              <div className="absolute bottom-2 right-2">
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                  AI Suggested
+                </span>
               </div>
             </div>
           </motion.div>
