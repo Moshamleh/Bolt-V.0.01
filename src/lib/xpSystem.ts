@@ -36,15 +36,24 @@ export const XP_VALUES = {
  * @param userId User ID to award XP to
  * @param amount Amount of XP to award
  * @param reason Optional reason for the XP award
- * @returns The updated user XP and level
+ * @returns The updated user XP and level, and whether a level-up occurred
  */
 export async function awardXp(
-  userId: string, 
+  userId: string | undefined, 
   amount: number, 
   reason?: string
-): Promise<{ xp: number; level: number }> {
+): Promise<{ xp: number; level: number; levelUpOccurred: boolean }> {
   try {
-    // First get current XP
+    // Get current user if userId is not provided
+    if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      userId = user.id;
+    }
+
+    // First get current XP and level
     const { data: userData, error: fetchError } = await supabase
       .from('users')
       .select('xp, level')
@@ -54,17 +63,20 @@ export async function awardXp(
     if (fetchError) throw fetchError;
     
     const currentXp = userData?.xp || 0;
-    const newXp = currentXp + amount;
+    const currentLevel = userData?.level || 1;
     
     // Update the user's XP
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
-      .update({ xp: newXp })
+      .update({ xp: currentXp + amount })
       .eq('id', userId)
       .select('xp, level')
       .single();
     
     if (updateError) throw updateError;
+    
+    // Check if level up occurred
+    const levelUpOccurred = updatedUser.level > currentLevel;
     
     // Log the XP award
     if (reason) {
@@ -75,15 +87,16 @@ export async function awardXp(
           amount,
           reason,
           previous_xp: currentXp,
-          new_xp: newXp,
-          previous_level: userData?.level || 1,
+          new_xp: updatedUser.xp,
+          previous_level: currentLevel,
           new_level: updatedUser.level
         });
     }
     
     return {
       xp: updatedUser.xp,
-      level: updatedUser.level
+      level: updatedUser.level,
+      levelUpOccurred
     };
   } catch (error) {
     console.error('Error awarding XP:', error);

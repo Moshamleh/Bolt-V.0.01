@@ -369,7 +369,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       // Award XP for providing feedback
       try {
-        awardXp(undefined, XP_VALUES.PROVIDE_FEEDBACK, "Provided feedback on AI diagnostic");
+        await awardXp(undefined, XP_VALUES.PROVIDE_FEEDBACK, "Provided feedback on AI diagnostic");
       } catch (xpError) {
         console.error('Failed to award XP for feedback:', xpError);
         // Don't fail the feedback if XP awarding fails

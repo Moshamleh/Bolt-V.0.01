@@ -8,6 +8,7 @@ import WelcomeModal from '../components/WelcomeModal';
 import { useProfile } from '../hooks/useProfile';
 import { hasCompletedFirstDiagnostic, markFirstDiagnosticCompleted } from '../lib/utils';
 import { awardXp, XP_VALUES } from '../lib/xpSystem';
+import Confetti from '../components/Confetti';
 
 // Lazy load components
 const ChatInterface = lazy(() => import('../components/ChatInterface'));
@@ -51,6 +52,7 @@ const DiagnosticPage: React.FC = () => {
   const [urgentTipContent, setUrgentTipContent] = useState<string | null>(null);
   const [urgentTipLoading, setUrgentTipLoading] = useState(false);
   const [urgentTipVisible, setUrgentTipVisible] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   const desktopHistoryRef = useRef<HTMLDivElement>(null);
   
   const { showOnboarding, completeOnboarding, isInitialized } = useOnboarding();
@@ -188,6 +190,9 @@ const DiagnosticPage: React.FC = () => {
         
         // Show XP toast notification
         toast.success(`🎉 +${XP_VALUES.RUN_DIAGNOSTIC} XP added to your profile!`);
+        
+        // Show confetti animation
+        setShowConfetti(true);
       } catch (badgeError) {
         console.error('Failed to award First Diagnosis badge:', badgeError);
         // Don't fail the diagnostic if badge awarding fails
@@ -212,8 +217,13 @@ const DiagnosticPage: React.FC = () => {
     // Award XP for resolving a diagnostic
     if (resolved) {
       try {
-        await awardXp(undefined, XP_VALUES.RESOLVE_DIAGNOSTIC, "Resolved a diagnostic issue");
+        const { levelUpOccurred } = await awardXp(undefined, XP_VALUES.RESOLVE_DIAGNOSTIC, "Resolved a diagnostic issue");
         toast.success(`🎉 +${XP_VALUES.RESOLVE_DIAGNOSTIC} XP added for resolving the issue!`);
+        
+        // Show confetti if level up occurred
+        if (levelUpOccurred) {
+          setShowConfetti(true);
+        }
       } catch (xpError) {
         console.error('Failed to award XP for resolving diagnostic:', xpError);
       }
@@ -338,6 +348,8 @@ const DiagnosticPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-neutral-100 dark:bg-gray-900">
+      {showConfetti && <Confetti duration={3000} onComplete={() => setShowConfetti(false)} />}
+      
       <Suspense fallback={<ComponentLoader />}>
         <MobileTopNavBar
           vehicles={vehicles}
