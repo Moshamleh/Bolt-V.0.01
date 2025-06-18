@@ -274,9 +274,9 @@ const VehicleSetupPage: React.FC = () => {
       // Show success message
       toast.success('Vehicle added successfully');
       
-      // Delay navigation to show the completed progress and confetti
+      // Navigate to the all-set page
       setTimeout(() => {
-        navigate('/diagnostic');
+        navigate('/all-set');
       }, 2000);
     } catch (err) {
       console.error('Failed to save vehicle:', err);
@@ -339,14 +339,12 @@ const VehicleSetupPage: React.FC = () => {
           current: false
         })));
         
-        // Delay navigation to show the completed progress
-        setTimeout(() => {
-          navigate('/diagnostic');
-        }, 1500);
+        // Navigate to the all-set page
+        navigate('/all-set');
       } catch (error) {
         console.error('Error updating profile:', error);
         // Navigate anyway even if there's an error
-        navigate('/diagnostic');
+        navigate('/all-set');
       } finally {
         setIsSubmitting(false);
       }

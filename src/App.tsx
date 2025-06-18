@@ -14,6 +14,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage'));
 const VehicleManagementPage = lazy(() => import('./pages/VehicleManagementPage'));
 const VehicleSetupPage = lazy(() => import('./pages/VehicleSetupPage'));
+const AllSetPage = lazy(() => import('./pages/AllSetPage'));
 const ClubDetailPage = lazy(() => import('./pages/ClubDetailPage'));
 const ClubListPage = lazy(() => import('./pages/ClubListPage'));
 const CreateClubPage = lazy(() => import('./pages/CreateClubPage'));
@@ -101,6 +102,7 @@ function App() {
           {/* Setup routes */}
           <Route path="/profile-setup" element={<ProfileSetupPage />} />
           <Route path="/vehicle-setup" element={<VehicleSetupPage />} />
+          <Route path="/all-set" element={<AllSetPage />} />
 
           {/* Main app routes */}
           <Route element={<Layout />}>
