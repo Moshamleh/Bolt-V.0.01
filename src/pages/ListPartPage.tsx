@@ -312,6 +312,9 @@ const ListPartPage: React.FC = () => {
         // Award XP for listing a part
         await awardXp(undefined, XP_VALUES.LIST_PART, "Listed a part in the marketplace");
         
+        // Show XP toast notification
+        toast.success("🎉 +30 XP added to your profile!");
+        
         // Show confetti animation
         setShowConfetti(true);
       } catch (badgeError) {
