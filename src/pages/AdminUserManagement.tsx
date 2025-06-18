@@ -10,6 +10,7 @@ import useSWR from 'swr';
 import toast from 'react-hot-toast';
 import { useProfile } from '../hooks/useProfile';
 import { UserProfile, getAllProfiles, updateUserAdminStatus, updateUserKycStatus } from '../lib/supabase';
+import ModerationStatusDisplay from '../components/ModerationStatusDisplay';
 
 const AdminUserManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -188,29 +189,7 @@ const AdminUserManagement: React.FC = () => {
                           <div className="text-sm text-gray-900 dark:text-white">{user.email}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <button
-                            onClick={() => handleStatusToggle(user.id, 'kyc', !user.kyc_verified)}
-                            disabled={updatingUser === user.id}
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                              user.kyc_verified
-                                ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-                            } hover:bg-opacity-75 transition-colors`}
-                          >
-                            {updatingUser === user.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : user.kyc_verified ? (
-                              <>
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Verified
-                              </>
-                            ) : (
-                              <>
-                                <XCircle className="h-4 w-4 mr-1" />
-                                Unverified
-                              </>
-                            )}
-                          </button>
+                          <ModerationStatusDisplay type="kyc" userId={user.id} />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <button

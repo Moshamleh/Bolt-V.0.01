@@ -10,6 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import { useProfile } from '../hooks/useProfile';
 import { Part, getAllParts, updatePart, deletePart } from '../lib/supabase';
+import ModerationStatusDisplay from '../components/ModerationStatusDisplay';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -520,13 +521,7 @@ const AdminPartsManagement: React.FC = () => {
                               {part.sold ? 'Sold' : 'Available'}
                             </span>
                             
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              part.approved
-                                ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300'
-                                : 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300'
-                            }`}>
-                              {part.approved ? 'Approved' : 'Unapproved'}
-                            </span>
+                            <ModerationStatusDisplay type="part" partId={part.id} />
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
