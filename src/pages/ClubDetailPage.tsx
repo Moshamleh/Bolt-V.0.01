@@ -23,6 +23,8 @@ import {
   getCurrentUserClubRole,
   supabase
 } from '../lib/supabase';
+import { playPopSound, hasJoinedFirstClub, markFirstClubJoined } from '../lib/utils';
+import Confetti from '../components/Confetti';
 
 const ClubDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +37,7 @@ const ClubDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   
   // Chat state
   const [messages, setMessages] = useState<ClubMessage[]>([]);
@@ -154,6 +157,15 @@ const ClubDetailPage: React.FC = () => {
         setMemberCount(prev => prev + 1);
         setIsMember(true);
         toast.success('Joined the club successfully');
+        
+        // Play sound effect
+        playPopSound();
+        
+        // Check if this is the first club joined
+        if (!hasJoinedFirstClub()) {
+          setShowConfetti(true);
+          markFirstClubJoined();
+        }
       }
     } catch (err) {
       console.error('Membership action failed:', err);
@@ -204,6 +216,9 @@ const ClubDetailPage: React.FC = () => {
     try {
       await sendClubMessage(id, newMessage.trim());
       setNewMessage('');
+      
+      // Play sound effect
+      playPopSound();
     } catch (err) {
       console.error('Failed to send message:', err);
       toast.error('Failed to send message');
@@ -264,6 +279,8 @@ const ClubDetailPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {showConfetti && <Confetti duration={3000} onComplete={() => setShowConfetti(false)} />}
+      
       <div className="relative h-64 md:h-80 overflow-hidden">
         <motion.img
           initial={{ scale: 1.1, opacity: 0 }}

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
+import { playPopSound } from './utils';
 
 // Initialize Supabase client
 export const supabase = createClient(
@@ -1690,6 +1691,9 @@ export const awardBadge = async (userId: string, badgeName: string, note?: strin
     }
     throw error;
   }
+  
+  // Play sound effect
+  playPopSound();
 };
 
 // Leaderboard functions

@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import TextareaAutosize from 'react-textarea-autosize';
 import toast from 'react-hot-toast';
 import { sendDiagnosticPrompt, recordAiFeedback, subscribeToDiagnosisUpdates, Diagnosis } from '../lib/supabase';
+import { playPopSound, hasCompletedFirstDiagnostic, markFirstDiagnosticCompleted } from '../lib/utils';
+import Confetti from './Confetti';
 
 interface ChatMessage {
   id: string;
@@ -40,6 +42,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittingFeedback, setSubmittingFeedback] = useState<string | null>(null);
   const [messageVersion, setMessageVersion] = useState(0);
+  const [showConfetti, setShowConfetti] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -271,6 +274,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           }
 
           window.dispatchEvent(new Event('resize'));
+          
+          // Check if this is the first diagnostic and show confetti
+          if (!hasCompletedFirstDiagnostic()) {
+            setShowConfetti(true);
+            markFirstDiagnosticCompleted();
+          }
         }
       });
     } catch (err) {
@@ -308,6 +317,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       ));
       setMessageVersion(prev => prev + 1);
       toast.success('Thanks for your feedback!');
+      
+      // Play sound effect
+      playPopSound();
     } catch (err) {
       console.error('Failed to record feedback:', err);
       toast.error('Failed to record feedback');
@@ -322,6 +334,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <div className="flex-1 flex flex-col bg-chat-gradient">
+      {showConfetti && <Confetti duration={3000} onComplete={() => setShowConfetti(false)} />}
+      
       <div 
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto p-4 space-y-4"

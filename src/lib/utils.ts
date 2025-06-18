@@ -32,3 +32,41 @@ export function isValidFileType(file: File, allowedTypes: string[]): boolean {
     return file.type === type;
   });
 }
+
+// Sound effects
+export function playPopSound() {
+  try {
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+    audio.volume = 0.2;
+    audio.currentTime = 0;
+    
+    // Add vibration if supported
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+    
+    return audio.play().catch(e => {
+      console.log('Audio play failed:', e);
+    });
+  } catch (error) {
+    console.error('Error playing sound:', error);
+    return Promise.resolve();
+  }
+}
+
+// Local storage helpers
+export const hasCompletedFirstDiagnostic = (): boolean => {
+  return localStorage.getItem('hasCompletedFirstDiagnostic') === 'true';
+};
+
+export const markFirstDiagnosticCompleted = (): void => {
+  localStorage.setItem('hasCompletedFirstDiagnostic', 'true');
+};
+
+export const hasJoinedFirstClub = (): boolean => {
+  return localStorage.getItem('hasJoinedFirstClub') === 'true';
+};
+
+export const markFirstClubJoined = (): void => {
+  localStorage.setItem('hasJoinedFirstClub', 'true');
+};

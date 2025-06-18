@@ -14,6 +14,7 @@ import {
   getPartChatDetails,
   supabase
 } from '../lib/supabase';
+import { playPopSound } from '../lib/utils';
 
 const PartChatPage: React.FC = () => {
   const { chatId } = useParams<{ chatId: string }>();
@@ -117,6 +118,9 @@ const PartChatPage: React.FC = () => {
     try {
       await sendPartMessage(chatId, input.trim());
       setInput('');
+      
+      // Play sound effect
+      playPopSound();
     } catch (err) {
       console.error('Failed to send message:', err);
       toast.error('Failed to send message');

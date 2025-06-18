@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { Camera, Loader2, User, Mail, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { supabase, createProfile, uploadAvatar, getProfile } from '../lib/supabase';
+import { supabase, createProfile, uploadAvatar, getProfile, awardBadge } from '../lib/supabase';
 import { useFormValidation, ValidationRules } from '../hooks/useFormValidation';
 import FormField from '../components/FormField';
 import Input from '../components/Input';
 import Textarea from '../components/Textarea';
 import SetupProgressIndicator, { Step } from '../components/SetupProgressIndicator';
+import { playPopSound } from '../lib/utils';
+import Confetti from '../components/Confetti';
 
 const validationRules: ValidationRules = {
   fullName: {
@@ -39,6 +41,8 @@ const ProfileSetupPage: React.FC = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [email, setEmail] = useState<string>('');
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [completedFields, setCompletedFields] = useState<string[]>([]);
   const [setupSteps, setSetupSteps] = useState<Step[]>([
     { id: 'account', label: 'Account', completed: false, current: true },
     { id: 'vehicle', label: 'Vehicle', completed: false, current: false },
@@ -77,6 +81,15 @@ const ProfileSetupPage: React.FC = () => {
           if (profile.avatar_url) {
             setAvatarUrl(profile.avatar_url);
           }
+          
+          // Track completed fields
+          const completed = [];
+          if (profile.full_name) completed.push('fullName');
+          if (profile.username) completed.push('username');
+          if (profile.bio) completed.push('bio');
+          if (profile.location) completed.push('location');
+          if (profile.avatar_url) completed.push('avatar');
+          setCompletedFields(completed);
         }
       } catch (error) {
         console.error('Error loading user data:', error);
@@ -101,17 +114,30 @@ const ProfileSetupPage: React.FC = () => {
     const reader = new FileReader();
     reader.onloadend = () => {
       setAvatarUrl(reader.result as string);
+      
+      // Play sound effect for completing a field
+      if (!completedFields.includes('avatar')) {
+        playPopSound();
+        setCompletedFields(prev => [...prev, 'avatar']);
+      }
     };
     reader.readAsDataURL(file);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    const prevValue = formData[name as keyof typeof formData];
     setFormData(prev => ({ ...prev, [name]: value }));
 
     // Clear error when user starts typing
     if (errors[name]) {
       clearError(name);
+    }
+    
+    // Play sound effect when a field is filled for the first time
+    if (value && !prevValue && !completedFields.includes(name)) {
+      playPopSound();
+      setCompletedFields(prev => [...prev, name]);
     }
   };
 
@@ -174,6 +200,30 @@ const ProfileSetupPage: React.FC = () => {
         return step;
       }));
 
+      // Check if profile is complete enough to award badge
+      const isProfileComplete = 
+        formData.fullName && 
+        formData.username && 
+        formData.bio && 
+        formData.location && 
+        finalAvatarUrl;
+      
+      if (isProfileComplete) {
+        try {
+          // Award "Profile Complete" badge
+          await awardBadge(user.id, "Profile Complete", "Completed your user profile");
+          
+          // Show confetti animation
+          setShowConfetti(true);
+          
+          // Play sound effect
+          playPopSound();
+        } catch (badgeError) {
+          console.error('Failed to award Profile Complete badge:', badgeError);
+          // Don't fail the profile creation if badge awarding fails
+        }
+      }
+
       // Show success message
       toast.success('Profile created successfully');
       
@@ -213,6 +263,8 @@ const ProfileSetupPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-neutral-100 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+      {showConfetti && <Confetti duration={3000} onComplete={() => setShowConfetti(false)} />}
+      
       <div className="max-w-2xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
