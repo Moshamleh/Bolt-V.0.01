@@ -1,14 +1,21 @@
 import React from 'react';
-import { Award } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Award, Lock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { UserEarnedBadge } from '../lib/supabase';
 
 interface BadgesPanelProps {
   badges: UserEarnedBadge[];
   loading?: boolean;
+  unlockedBadges?: UserEarnedBadge[];
+  lockedBadges?: UserEarnedBadge[];
 }
 
-const BadgesPanel: React.FC<BadgesPanelProps> = ({ badges, loading = false }) => {
+const BadgesPanel: React.FC<BadgesPanelProps> = ({ 
+  badges, 
+  loading = false,
+  unlockedBadges,
+  lockedBadges
+}) => {
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
       case 'common':
@@ -37,6 +44,15 @@ const BadgesPanel: React.FC<BadgesPanelProps> = ({ badges, loading = false }) =>
       default:
         return { label: 'Common', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' };
     }
+  };
+
+  // Function to add emojis to badge names
+  const getBadgeNameWithEmoji = (name: string) => {
+    if (name.includes('First Diagnosis')) return '🧪 First Diagnosis';
+    if (name.includes('Profile Complete')) return '🙌 Profile Complete';
+    if (name.includes('Sold a Part')) return '💸 Sold a Part';
+    if (name.includes('Club Founder')) return '🏁 Club Founder';
+    return name;
   };
 
   if (loading) {
@@ -70,10 +86,12 @@ const BadgesPanel: React.FC<BadgesPanelProps> = ({ badges, loading = false }) =>
     );
   }
 
+  // Render all badges, both unlocked and locked
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
       {badges.map((badge, index) => {
         const rarityTag = getRarityTag(badge.rarity);
+        const isLocked = !badge.awarded_at;
         
         return (
           <motion.div
@@ -85,10 +103,24 @@ const BadgesPanel: React.FC<BadgesPanelProps> = ({ badges, loading = false }) =>
               duration: 0.4,
               ease: "easeOut"
             }}
-            className="group relative flex flex-col items-center p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 hover:shadow-lg hover:border-gray-200 dark:hover:border-gray-600 transition-all duration-300 cursor-pointer"
+            className={`group relative flex flex-col items-center p-4 bg-white dark:bg-gray-800 rounded-xl border ${
+              isLocked 
+                ? 'border-gray-200 dark:border-gray-600 opacity-60 grayscale' 
+                : 'border-gray-100 dark:border-gray-700 hover:shadow-lg hover:border-gray-200 dark:hover:border-gray-600'
+            } transition-all duration-300 cursor-pointer overflow-hidden`}
           >
+            {/* Sparkle background for unlocked badges */}
+            {!isLocked && (
+              <div className="absolute inset-0 overflow-hidden opacity-10">
+                <div className="absolute top-5 left-5 w-10 h-10 border-t-2 border-l-2 border-blue-500 rounded-full animate-spin-slow"></div>
+                <div className="absolute bottom-5 right-5 w-8 h-8 border-b-2 border-r-2 border-blue-500 rounded-full animate-spin-slow"></div>
+              </div>
+            )}
+            
             {/* Badge Icon */}
-            <div className={`w-14 h-14 mb-3 bg-gradient-to-br ${getRarityColor(badge.rarity)} rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+            <div className={`relative w-14 h-14 mb-3 bg-gradient-to-br ${getRarityColor(badge.rarity)} rounded-full flex items-center justify-center shadow-lg ${
+              isLocked ? '' : 'group-hover:scale-110 transition-transform duration-300'
+            }`}>
               {badge.icon_url ? (
                 <img
                   src={badge.icon_url}
@@ -103,11 +135,18 @@ const BadgesPanel: React.FC<BadgesPanelProps> = ({ badges, loading = false }) =>
                 />
               ) : null}
               <Award className={`h-8 w-8 text-white ${badge.icon_url ? 'hidden' : ''}`} />
+              
+              {/* Lock overlay for locked badges */}
+              {isLocked && (
+                <div className="absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center">
+                  <Lock className="h-6 w-6 text-white" />
+                </div>
+              )}
             </div>
 
             {/* Badge Name */}
             <h4 className="text-sm font-semibold text-gray-900 dark:text-white text-center mb-1 line-clamp-2">
-              {badge.name}
+              {getBadgeNameWithEmoji(badge.name)}
             </h4>
 
             {/* Badge Description */}
@@ -123,12 +162,14 @@ const BadgesPanel: React.FC<BadgesPanelProps> = ({ badges, loading = false }) =>
             </span>
 
             {/* Awarded Date (on hover) */}
-            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap">
-              Earned {new Date(badge.awarded_at).toLocaleDateString()}
-            </div>
+            {!isLocked && (
+              <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap">
+                Earned {new Date(badge.awarded_at).toLocaleDateString()}
+              </div>
+            )}
 
             {/* Note (if available) */}
-            {badge.note && (
+            {badge.note && !isLocked && (
               <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap max-w-48 truncate">
                 {badge.note}
               </div>

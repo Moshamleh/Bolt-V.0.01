@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Settings, User, Moon, Shield, HelpCircle, Loader2, Award, Bell } from 'lucide-react';
-import { Profile, getProfile, getUserBadges, UserEarnedBadge, supabase } from '../lib/supabase';
+import { Profile, getProfile, getUserBadges, getAllBadges, UserEarnedBadge, Badge, supabase } from '../lib/supabase';
 import LazyErrorBoundary from '../components/LazyErrorBoundary';
 
 // Lazy load components
@@ -26,6 +26,8 @@ const AccountPage = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userEmail, setUserEmail] = useState('');
   const [badges, setBadges] = useState<UserEarnedBadge[]>([]);
+  const [allBadges, setAllBadges] = useState<Badge[]>([]);
+  const [displayBadges, setDisplayBadges] = useState<UserEarnedBadge[]>([]);
   const [loading, setLoading] = useState(true);
   const [badgesLoading, setBadgesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,11 +46,39 @@ const AccountPage = () => {
         const profileData = await getProfile();
         setProfile(profileData);
 
-        // Load user badges
+        // Load user badges and all available badges
         try {
           setBadgesLoading(true);
-          const userBadges = await getUserBadges(session.user.id);
+          const [userBadges, availableBadges] = await Promise.all([
+            getUserBadges(session.user.id),
+            getAllBadges()
+          ]);
+          
           setBadges(userBadges);
+          setAllBadges(availableBadges);
+          
+          // Create a combined list of all badges, marking which ones are earned
+          const combinedBadges: UserEarnedBadge[] = availableBadges.map(badge => {
+            const earnedBadge = userBadges.find(ub => ub.badge_id === badge.id);
+            if (earnedBadge) {
+              return earnedBadge; // User has earned this badge
+            } else {
+              // Create a locked badge entry
+              return {
+                id: `locked-${badge.id}`,
+                user_id: session.user.id,
+                badge_id: badge.id,
+                name: badge.name,
+                description: badge.description,
+                icon_url: badge.icon_url,
+                rarity: badge.rarity,
+                awarded_at: '', // Empty string indicates it's not earned yet
+                note: ''
+              };
+            }
+          });
+          
+          setDisplayBadges(combinedBadges);
         } catch (badgeError) {
           console.error('Failed to load badges:', badgeError);
           // Don't set error state for badges, just log it
@@ -106,7 +136,7 @@ const AccountPage = () => {
                     Badges you've earned by using Bolt Auto and participating in the community
                   </p>
                 </div>
-                <BadgesPanel badges={badges} loading={badgesLoading} />
+                <BadgesPanel badges={displayBadges} loading={badgesLoading} />
               </div>
             </Suspense>
           </LazyErrorBoundary>

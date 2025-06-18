@@ -218,6 +218,15 @@ export interface UserEarnedBadge {
   note?: string;
 }
 
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon_url: string;
+  rarity: string;
+  created_at: string;
+}
+
 export interface LeaderboardEntry {
   id: string;
   full_name: string;
@@ -1643,6 +1652,16 @@ export const getUserBadges = async (userId?: string): Promise<UserEarnedBadge[]>
     awarded_at: item.awarded_at,
     note: item.note
   }));
+};
+
+export const getAllBadges = async (): Promise<Badge[]> => {
+  const { data, error } = await supabase
+    .from('badges')
+    .select('*')
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
 };
 
 export const awardBadge = async (userId: string, badgeName: string, note?: string): Promise<void> => {
