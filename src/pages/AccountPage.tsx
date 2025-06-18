@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Settings, User, Moon, Shield, HelpCircle, Loader2, Award, Bell } from 'lucide-react';
+import { Settings, User, Moon, Shield, HelpCircle, Loader2, Award, Bell, Share2 } from 'lucide-react';
 import { Profile, getProfile, getUserBadges, getAllBadges, UserEarnedBadge, Badge, supabase } from '../lib/supabase';
 import LazyErrorBoundary from '../components/LazyErrorBoundary';
 
@@ -13,6 +13,7 @@ const SupportFeedbackSection = lazy(() => import('../components/SupportFeedbackS
 const BadgesPanel = lazy(() => import('../components/BadgesPanel'));
 const ProfileCompletionIndicator = lazy(() => import('../components/ProfileCompletionIndicator'));
 const NotificationPreferencesSection = lazy(() => import('../components/NotificationPreferencesSection'));
+const ReferralSection = lazy(() => import('../components/ReferralSection'));
 
 // Loading fallback component
 const ComponentLoader = () => (
@@ -99,6 +100,7 @@ const AccountPage = () => {
   const tabs = [
     { id: 'profile', label: 'Profile', icon: <User className="h-5 w-5" /> },
     { id: 'achievements', label: 'Achievements', icon: <Award className="h-5 w-5" /> },
+    { id: 'referrals', label: 'Referrals', icon: <Share2 className="h-5 w-5" /> },
     { id: 'notifications', label: 'Notifications', icon: <Bell className="h-5 w-5" /> },
     { id: 'preferences', label: 'Preferences', icon: <Moon className="h-5 w-5" /> },
     { id: 'security', label: 'Security', icon: <Shield className="h-5 w-5" /> },
@@ -138,6 +140,14 @@ const AccountPage = () => {
                 </div>
                 <BadgesPanel badges={displayBadges} loading={badgesLoading} />
               </div>
+            </Suspense>
+          </LazyErrorBoundary>
+        );
+      case 'referrals':
+        return (
+          <LazyErrorBoundary componentName="Referrals Section">
+            <Suspense fallback={<ComponentLoader />}>
+              <ReferralSection />
             </Suspense>
           </LazyErrorBoundary>
         );
@@ -192,7 +202,7 @@ const AccountPage = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-8 pt-8 border-t border-gray-200 dark:border-gray-700"
         >
           <div className="flex items-center gap-3">
             <Settings className="h-8 w-8 text-blue-600 dark:text-blue-400" />
@@ -211,11 +221,12 @@ const AccountPage = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors ${
-                    activeTab === tab.id
-                      ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
+                  className={`
+                    flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors ${
+                      activeTab === tab.id
+                        ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
                 >
                   {tab.icon}
                   {tab.label}

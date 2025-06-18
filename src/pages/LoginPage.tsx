@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { KeyRound, Mail, Loader2, Zap, X, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { supabase } from '../lib/supabase';
+import { supabase, signUp } from '../lib/supabase';
 import WelcomeModal from '../components/WelcomeModal';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -19,6 +20,25 @@ const LoginPage: React.FC = () => {
   const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [invitedBy, setInvitedBy] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check for referral in URL
+    const params = new URLSearchParams(location.search);
+    const referrerId = params.get('invited_by');
+    
+    if (referrerId) {
+      // Store the referrer ID in session storage
+      sessionStorage.setItem('invitedBy', referrerId);
+      setInvitedBy(referrerId);
+    } else {
+      // Check if we have a stored referrer ID
+      const storedReferrerId = sessionStorage.getItem('invitedBy');
+      if (storedReferrerId) {
+        setInvitedBy(storedReferrerId);
+      }
+    }
+  }, [location]);
 
   useEffect(() => {
     let timeoutId: number;
@@ -104,15 +124,8 @@ const LoginPage: React.FC = () => {
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            initial_setup_complete: false // Set this for new users
-          }
-        }
-      });
+      // Use the signUp function with the invitedBy parameter
+      const { error } = await signUp(email, password, invitedBy || undefined);
 
       if (error) throw error;
       setError('Check your email for the confirmation link.');
@@ -147,7 +160,8 @@ const LoginPage: React.FC = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/profile-setup`
+          redirectTo: `${window.location.origin}/profile-setup`,
+          queryParams: invitedBy ? { invited_by: invitedBy } : undefined
         }
       });
       if (error) throw error;
@@ -164,7 +178,8 @@ const LoginPage: React.FC = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
-          redirectTo: `${window.location.origin}/profile-setup`
+          redirectTo: `${window.location.origin}/profile-setup`,
+          queryParams: invitedBy ? { invited_by: invitedBy } : undefined
         }
       });
       if (error) throw error;
@@ -199,6 +214,14 @@ const LoginPage: React.FC = () => {
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">Bolt Auto</h1>
           <p className="text-lg text-blue-100 dark:text-gray-300">Your Personal AI Mechanic</p>
+          
+          {invitedBy && (
+            <div className="mt-4 bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block">
+              <p className="text-white text-sm">
+                You've been invited to join Bolt Auto! 🎉
+              </p>
+            </div>
+          )}
         </motion.div>
 
         <motion.div

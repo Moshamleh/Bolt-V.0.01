@@ -25,6 +25,8 @@ export interface Profile {
   initial_setup_complete: boolean;
   diagnostic_suggestions_enabled: boolean;
   notification_preferences?: NotificationPreferences;
+  invited_by?: string | null;
+  listing_boost_until?: string | null;
 }
 
 export interface NotificationPreferences {
@@ -336,10 +338,16 @@ export interface SellerRatingStats {
 }
 
 // Auth functions
-export const signUp = async (email: string, password: string) => {
+export const signUp = async (email: string, password: string, invitedBy?: string) => {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      data: {
+        initial_setup_complete: false,
+        invited_by: invitedBy // Include the referrer's ID if available
+      }
+    }
   });
   
   if (error) throw error;
@@ -583,7 +591,7 @@ export const getParts = async (
 ): Promise<PaginatedResponse<Part>> => {
   let query = supabase
     .from('parts')
-    .select('*', { count: 'exact' });
+    .select('*, seller:profiles!seller_id(listing_boost_until)', { count: 'exact' });
 
   // Apply search
   if (filters.search) {
@@ -638,17 +646,28 @@ export const getParts = async (
   // Apply pagination
   query = query.range(from, to);
   
-  // Order by most recent
-  query = query.order('created_at', { ascending: false });
+  // Order by boosted listings first, then by creation date
+  query = query.order('seller.listing_boost_until', { 
+    ascending: false, 
+    nullsLast: true 
+  }).order('created_at', { 
+    ascending: false 
+  });
 
   const { data, error, count } = await query;
 
   if (error) throw error;
 
+  // Process the data to remove the seller profile info
+  const processedData = data?.map(item => {
+    const { seller, ...partData } = item;
+    return partData as Part;
+  }) || [];
+
   const totalPages = Math.ceil((count || 0) / itemsPerPage);
 
   return {
-    data: data || [],
+    data: processedData,
     page,
     itemsPerPage,
     total: count || 0,
