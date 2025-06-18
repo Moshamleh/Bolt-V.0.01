@@ -1,6 +1,6 @@
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, Plus, Settings, Wrench, Loader2, FileText, Calendar, Lightbulb, Menu, Zap } from 'lucide-react';
+import { Car, Plus, Settings, Wrench, Loader2, FileText, Calendar, Lightbulb, Menu, Zap, Tool } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, getUserVehicles, getProfile } from '../lib/supabase';
 import MobilePageMenu from '../components/MobilePageMenu';
@@ -89,23 +89,26 @@ const VehicleManagementPage: React.FC = () => {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-neutral-100 dark:bg-gray-800 rounded-xl shadow-sm border border-neutral-200 dark:border-gray-700 p-8 text-center"
+      className="bg-neutral-100 dark:bg-gray-800 rounded-xl shadow-lg border border-neutral-200 dark:border-gray-700 p-8 text-center"
     >
-      <div className="flex justify-center mb-4">
-        <Car className="h-16 w-16 text-neutral-400 dark:text-gray-500" />
+      <div className="flex justify-center items-center mb-6">
+        <div className="relative">
+          <Car className="h-20 w-20 text-blue-500 dark:text-blue-400" />
+          <Tool className="h-10 w-10 text-amber-500 dark:text-amber-400 absolute -bottom-2 -right-2 transform rotate-45" />
+        </div>
       </div>
-      <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
-        No vehicles added yet
+      <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-3">
+        Let's get your garage started 🛠️
       </h2>
-      <p className="text-neutral-600 dark:text-gray-400 mb-6">
-        Add your first vehicle to get started with diagnostics
+      <p className="text-neutral-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+        Add your first car to unlock diagnostics and smart repair tips!
       </p>
       <button
         onClick={handleAddVehicle}
-        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+        className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors shadow-lg hover:shadow-blue-500/20"
       >
         <Plus className="h-5 w-5 mr-2" />
-        Add Vehicle
+        Add Your First Vehicle
       </button>
     </motion.div>
   );
