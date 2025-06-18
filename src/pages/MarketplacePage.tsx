@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Plus, ChevronDown, ChevronUp, Loader2, Menu, X, ShoppingBag, MessageSquare, Settings, Heart, AlertCircle, Package, ChevronLeft, ChevronRight, Mailbox as Toolbox, Wrench } from 'lucide-react';
+import { 
+  Search, Filter, Plus, ChevronDown, ChevronUp, Loader2, Menu, X, ShoppingBag, 
+  MessageSquare, Settings, Heart, AlertCircle, Package, ChevronLeft, ChevronRight, 
+  Mailbox as Toolbox, Wrench, ListFilter, MapPin, Engine, Disc, CarFront
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Part, getParts, getOrCreatePartChat, PaginatedResponse } from '../lib/supabase';
 import PartCard from '../components/PartCard';
@@ -8,17 +12,21 @@ import MobilePageMenu from '../components/MobilePageMenu';
 
 const ITEMS_PER_PAGE = 12;
 
+// Define filter chips
+const filterChips = [
+  { id: 'all', label: 'All', icon: <ListFilter className="h-4 w-4" />, filters: {} },
+  { id: 'nearby', label: 'Nearby', icon: <MapPin className="h-4 w-4" />, filters: {} },
+  { id: 'engine', label: 'Engine', icon: <Engine className="h-4 w-4" />, filters: { category: 'engine' } },
+  { id: 'interior', label: 'Interior', icon: <CarFront className="h-4 w-4" />, filters: { category: 'interior' } },
+  { id: 'tires', label: 'Tires', icon: <Disc className="h-4 w-4" />, filters: { search: 'tire' } }
+];
+
 const MarketplacePage: React.FC = () => {
   const navigate = useNavigate();
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMake, setSelectedMake] = useState<string>('');
-  const [selectedModel, setSelectedModel] = useState<string>('');
-  const [selectedCondition, setSelectedCondition] = useState<'new' | 'used' | 'refurbished' | ''>('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [priceRange, setPriceRange] = useState<{ min?: number; max?: number }>({});
   const [partNumber, setPartNumber] = useState<string>('');
   const [oemNumber, setOemNumber] = useState<string>('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -26,6 +34,7 @@ const MarketplacePage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeFilterChipId, setActiveFilterChipId] = useState('all');
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -37,14 +46,14 @@ const MarketplacePage: React.FC = () => {
     const loadParts = async () => {
       try {
         setLoading(true);
+        
+        // Get the active filter chip
+        const activeChip = filterChips.find(chip => chip.id === activeFilterChipId) || filterChips[0];
+        
+        // Combine the chip filters with other filters
         const filters = {
+          ...activeChip.filters,
           search: searchTerm || undefined,
-          make: selectedMake || undefined,
-          model: selectedModel || undefined,
-          condition: selectedCondition || undefined,
-          category: selectedCategory || undefined,
-          minPrice: priceRange.min,
-          maxPrice: priceRange.max,
           partNumber: partNumber || undefined,
           oemNumber: oemNumber || undefined
         };
@@ -66,14 +75,10 @@ const MarketplacePage: React.FC = () => {
     return () => clearTimeout(debounceTimeout);
   }, [
     searchTerm, 
-    selectedMake, 
-    selectedModel, 
-    selectedCondition, 
-    selectedCategory, 
-    priceRange,
     partNumber,
     oemNumber,
-    currentPage
+    currentPage,
+    activeFilterChipId
   ]);
 
   const handleSellPart = () => {
@@ -104,11 +109,8 @@ const MarketplacePage: React.FC = () => {
   };
 
   const handleClearFilters = () => {
-    setSelectedMake('');
-    setSelectedModel('');
-    setSelectedCondition('');
-    setSelectedCategory('');
-    setPriceRange({});
+    setActiveFilterChipId('all');
+    setSearchTerm('');
     setPartNumber('');
     setOemNumber('');
     setCurrentPage(1);
@@ -124,6 +126,11 @@ const MarketplacePage: React.FC = () => {
     setCurrentPage(page);
     // Scroll to top when changing pages
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleFilterChipClick = (chipId: string) => {
+    setActiveFilterChipId(chipId);
+    setCurrentPage(1); // Reset to first page when changing filters
   };
 
   const LoadingSkeleton = () => (
@@ -145,7 +152,7 @@ const MarketplacePage: React.FC = () => {
   );
 
   const EmptyState = () => {
-    const hasFilters = searchTerm || selectedMake || selectedModel || selectedCondition || selectedCategory || priceRange.min || priceRange.max || partNumber || oemNumber;
+    const hasFilters = searchTerm || partNumber || oemNumber || activeFilterChipId !== 'all';
     
     return (
       <motion.div
@@ -324,6 +331,24 @@ const MarketplacePage: React.FC = () => {
               />
             </div>
 
+            {/* Filter Chips */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {filterChips.map((chip) => (
+                <button
+                  key={chip.id}
+                  onClick={() => handleFilterChipClick(chip.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                    activeFilterChipId === chip.id
+                      ? 'bg-blue-600 text-white shadow-glow'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {chip.icon}
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <button
@@ -331,7 +356,7 @@ const MarketplacePage: React.FC = () => {
                   className="hidden md:flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 >
                   <Filter className="h-5 w-5" />
-                  <span>Filters</span>
+                  <span>Advanced Filters</span>
                   {showFilters ? (
                     <ChevronUp className="h-4 w-4" />
                   ) : (
@@ -348,7 +373,7 @@ const MarketplacePage: React.FC = () => {
                 </button>
               </div>
 
-              {showFilters && (
+              {(showFilters || searchTerm || partNumber || oemNumber || activeFilterChipId !== 'all') && (
                 <button
                   onClick={handleClearFilters}
                   className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
@@ -367,114 +392,31 @@ const MarketplacePage: React.FC = () => {
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden md:block hidden"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                     {/* Part Number Search */}
-                    <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          placeholder="Search by Part Number"
-                          value={partNumber}
-                          onChange={(e) => {
-                            setPartNumber(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      
-                      <div className="relative">
-                        <input
-                          type="text"
-                          placeholder="Search by OEM Number"
-                          value={oemNumber}
-                          onChange={(e) => {
-                            setOemNumber(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-
-                    <select
-                      value={selectedMake}
-                      onChange={(e) => {
-                        setSelectedMake(e.target.value);
-                        setCurrentPage(1); // Reset to first page on filter change
-                      }}
-                      className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">All Makes</option>
-                      <option value="Toyota">Toyota</option>
-                      <option value="Honda">Honda</option>
-                      <option value="Ford">Ford</option>
-                      <option value="BMW">BMW</option>
-                    </select>
-
-                    <select
-                      value={selectedCondition}
-                      onChange={(e) => {
-                        setSelectedCondition(e.target.value as any);
-                        setCurrentPage(1); // Reset to first page on filter change
-                      }}
-                      className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">All Conditions</option>
-                      <option value="new">New</option>
-                      <option value="used">Used</option>
-                      <option value="refurbished">Refurbished</option>
-                    </select>
-
-                    <select
-                      value={selectedCategory}
-                      onChange={(e) => {
-                        setSelectedCategory(e.target.value);
-                        setCurrentPage(1); // Reset to first page on filter change
-                      }}
-                      className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">All Categories</option>
-                      <option value="engine">Engine Parts</option>
-                      <option value="brakes">Brakes</option>
-                      <option value="suspension">Suspension</option>
-                      <option value="transmission">Transmission</option>
-                      <option value="electrical">Electrical</option>
-                      <option value="interior">Interior</option>
-                      <option value="exterior">Exterior</option>
-                    </select>
-
                     <div className="relative">
                       <input
-                        type="number"
-                        placeholder="Min Price"
-                        value={priceRange.min || ''}
+                        type="text"
+                        placeholder="Search by Part Number"
+                        value={partNumber}
                         onChange={(e) => {
-                          setPriceRange(prev => ({ 
-                            ...prev, 
-                            min: e.target.value ? Number(e.target.value) : undefined 
-                          }));
-                          setCurrentPage(1); // Reset to first page on filter change
+                          setPartNumber(e.target.value);
+                          setCurrentPage(1);
                         }}
-                        className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        min="0"
+                        className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
-
+                    
                     <div className="relative">
                       <input
-                        type="number"
-                        placeholder="Max Price"
-                        value={priceRange.max || ''}
+                        type="text"
+                        placeholder="Search by OEM Number"
+                        value={oemNumber}
                         onChange={(e) => {
-                          setPriceRange(prev => ({ 
-                            ...prev, 
-                            max: e.target.value ? Number(e.target.value) : undefined 
-                          }));
-                          setCurrentPage(1); // Reset to first page on filter change
+                          setOemNumber(e.target.value);
+                          setCurrentPage(1);
                         }}
-                        className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        min="0"
+                        className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -541,6 +483,27 @@ const MarketplacePage: React.FC = () => {
             <h3 className="font-medium text-gray-900 dark:text-white">Filters</h3>
             
             <div className="space-y-3">
+              {/* Filter Chips for Mobile */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {filterChips.map((chip) => (
+                  <button
+                    key={chip.id}
+                    onClick={() => {
+                      handleFilterChipClick(chip.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                      activeFilterChipId === chip.id
+                        ? 'bg-blue-600 text-white shadow-glow'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {chip.icon}
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+              
               {/* Part Number Search */}
               <div>
                 <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Part Number</label>
@@ -568,100 +531,6 @@ const MarketplacePage: React.FC = () => {
                   }}
                   className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-              </div>
-              
-              <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Make</label>
-                <select
-                  value={selectedMake}
-                  onChange={(e) => {
-                    setSelectedMake(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">All Makes</option>
-                  <option value="Toyota">Toyota</option>
-                  <option value="Honda">Honda</option>
-                  <option value="Ford">Ford</option>
-                  <option value="BMW">BMW</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Condition</label>
-                <select
-                  value={selectedCondition}
-                  onChange={(e) => {
-                    setSelectedCondition(e.target.value as any);
-                    setCurrentPage(1);
-                  }}
-                  className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">All Conditions</option>
-                  <option value="new">New</option>
-                  <option value="used">Used</option>
-                  <option value="refurbished">Refurbished</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Category</label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => {
-                    setSelectedCategory(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">All Categories</option>
-                  <option value="engine">Engine Parts</option>
-                  <option value="brakes">Brakes</option>
-                  <option value="suspension">Suspension</option>
-                  <option value="transmission">Transmission</option>
-                  <option value="electrical">Electrical</option>
-                  <option value="interior">Interior</option>
-                  <option value="exterior">Exterior</option>
-                </select>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Min Price</label>
-                  <input
-                    type="number"
-                    placeholder="Min Price"
-                    value={priceRange.min || ''}
-                    onChange={(e) => {
-                      setPriceRange(prev => ({ 
-                        ...prev, 
-                        min: e.target.value ? Number(e.target.value) : undefined 
-                      }));
-                      setCurrentPage(1);
-                    }}
-                    className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    min="0"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Max Price</label>
-                  <input
-                    type="number"
-                    placeholder="Max Price"
-                    value={priceRange.max || ''}
-                    onChange={(e) => {
-                      setPriceRange(prev => ({ 
-                        ...prev, 
-                        max: e.target.value ? Number(e.target.value) : undefined 
-                      }));
-                      setCurrentPage(1);
-                    }}
-                    className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    min="0"
-                  />
-                </div>
               </div>
               
               <button

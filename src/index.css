@@ -99,6 +99,11 @@
   animation: pulse-slow 10s infinite;
 }
 
+/* Filter chip glow effect */
+.shadow-glow {
+  box-shadow: 0 0 15px 2px rgba(59, 130, 246, 0.5);
+}
+
 /* Common component styles */
 @layer components {
   .page-container {
