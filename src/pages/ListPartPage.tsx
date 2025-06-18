@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Loader2, ArrowLeft, AlertCircle, Sparkles } from 'lucide-react';
+import { ArrowLeft, Upload, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { createPart, checkKycStatus, updateProfile, awardBadge, supabase } from '../lib/supabase';
@@ -140,7 +140,7 @@ const ListPartPage: React.FC = () => {
     checkKyc();
   }, []);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     setImageError(null);
     
@@ -271,13 +271,39 @@ const ListPartPage: React.FC = () => {
         throw new Error('Please enter a valid price');
       }
 
-      await createPart({
+      const partData = {
         ...formData,
         price,
         year: Number(formData.year),
         condition: formData.condition,
         image_url: '',
-      });
+      };
+
+      const createdPart = await createPart(partData);
+
+      // Send to content moderation
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        try {
+          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/moderate-content`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              type: "part",
+              content: partData.title + "\n" + partData.description,
+              user_id: user.id,
+              part_id: createdPart.id,
+            }),
+          });
+          
+          toast.success("⚡ Sent to Agents for review. You'll be notified once approved!");
+        } catch (moderationError) {
+          console.error('Content moderation request failed:', moderationError);
+          // Continue with the flow even if moderation request fails
+        }
+      }
 
       // Check if this is the user's first listing and award badge
       try {

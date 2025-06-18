@@ -138,6 +138,26 @@ const SellerKYC: React.FC = () => {
 
       if (insertError) throw insertError;
 
+      // Send to content moderation
+      try {
+        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/moderate-content`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "kyc",
+            content: formData.fullName + "\n" + (formData.businessName || ""),
+            user_id: userId,
+          }),
+        });
+        
+        toast.success("⚡ Sent to Agents for review. You'll be notified once approved!");
+      } catch (moderationError) {
+        console.error('Content moderation request failed:', moderationError);
+        // Continue with the flow even if moderation request fails
+      }
+
       // Update user's profile to reflect KYC submission
       await supabase
         .from('profiles')
