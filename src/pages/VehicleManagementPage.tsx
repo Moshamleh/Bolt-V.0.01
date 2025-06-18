@@ -164,16 +164,19 @@ const VehicleManagementPage: React.FC = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-neutral-100 dark:bg-gray-800 rounded-xl shadow-sm border border-neutral-200 dark:border-gray-700 p-6"
+                  className="bg-neutral-100 dark:bg-gray-800 rounded-xl shadow-lg border border-neutral-200 dark:border-gray-700 p-6 hover:shadow-glow hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-300"
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                      <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">
                         {vehicle.other_vehicle_description || `${vehicle.year} ${vehicle.make}`}
                       </h3>
-                      <p className="text-neutral-600 dark:text-gray-400">
-                        {vehicle.other_vehicle_description ? '' : `${vehicle.model}${vehicle.trim ? ` ${vehicle.trim}` : ''}`}
-                      </p>
+                      {!vehicle.other_vehicle_description && (
+                        <div className="flex items-center text-neutral-600 dark:text-gray-400">
+                          <Car className="h-4 w-4 mr-1" />
+                          <span>{vehicle.model}{vehicle.trim ? ` ${vehicle.trim}` : ''}</span>
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={() => handleEditVehicle(vehicle.id)}
