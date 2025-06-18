@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import WelcomeModal from '../components/WelcomeModal';
 import { useProfile } from '../hooks/useProfile';
 import { hasCompletedFirstDiagnostic, markFirstDiagnosticCompleted } from '../lib/utils';
+import { awardXp, XP_VALUES } from '../lib/xpSystem';
 
 // Lazy load components
 const ChatInterface = lazy(() => import('../components/ChatInterface'));
@@ -181,17 +182,42 @@ const DiagnosticPage: React.FC = () => {
         
         // Award the badge
         await awardBadge(undefined, "First Diagnosis", "Completed your first AI diagnostic");
+        
+        // Award XP for completing first diagnostic
+        await awardXp(undefined, XP_VALUES.RUN_DIAGNOSTIC, "Completed first AI diagnostic");
+        
+        // Show XP toast notification
+        toast.success(`🎉 +${XP_VALUES.RUN_DIAGNOSTIC} XP added to your profile!`);
       } catch (badgeError) {
         console.error('Failed to award First Diagnosis badge:', badgeError);
         // Don't fail the diagnostic if badge awarding fails
       }
+    } else {
+      // Award XP for regular diagnostics
+      try {
+        await awardXp(undefined, XP_VALUES.RUN_DIAGNOSTIC, "Completed AI diagnostic");
+        toast.success(`🎉 +${XP_VALUES.RUN_DIAGNOSTIC} XP added to your profile!`);
+      } catch (xpError) {
+        console.error('Failed to award XP:', xpError);
+        // Don't fail the diagnostic if XP awarding fails
+      }
     }
   };
 
-  const handleDiagnosisStatusChange = (diagnosisId: string, resolved: boolean) => {
+  const handleDiagnosisStatusChange = async (diagnosisId: string, resolved: boolean) => {
     setDiagnoses(prev => prev.map(d => 
       d.id === diagnosisId ? { ...d, resolved } : d
     ));
+    
+    // Award XP for resolving a diagnostic
+    if (resolved) {
+      try {
+        await awardXp(undefined, XP_VALUES.RESOLVE_DIAGNOSTIC, "Resolved a diagnostic issue");
+        toast.success(`🎉 +${XP_VALUES.RESOLVE_DIAGNOSTIC} XP added for resolving the issue!`);
+      } catch (xpError) {
+        console.error('Failed to award XP for resolving diagnostic:', xpError);
+      }
+    }
   };
 
   const handleLoadDiagnosis = (diagnosis: Diagnosis) => {

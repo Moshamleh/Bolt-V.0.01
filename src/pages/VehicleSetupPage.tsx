@@ -12,6 +12,7 @@ import Select from '../components/Select';
 import SetupProgressIndicator, { Step } from '../components/SetupProgressIndicator';
 import { playPopSound } from '../lib/utils';
 import Confetti from '../components/Confetti';
+import { awardXp, XP_VALUES } from '../lib/xpSystem';
 
 const YEARS = Array.from({ length: 75 }, (_, i) => new Date().getFullYear() - i);
 const MAKES = [
@@ -264,6 +265,13 @@ const VehicleSetupPage: React.FC = () => {
       // Award "First Vehicle" badge
       try {
         await awardBadge(session.user.id, "First Vehicle", "Added your first vehicle to Bolt Auto");
+        
+        // Award XP for adding a vehicle
+        await awardXp(session.user.id, XP_VALUES.ADD_VEHICLE, "Added a vehicle to your garage");
+        
+        // Show XP toast notification
+        toast.success(`🎉 +${XP_VALUES.ADD_VEHICLE} XP added to your profile!`);
+        
         // Show confetti animation
         setShowConfetti(true);
       } catch (badgeError) {

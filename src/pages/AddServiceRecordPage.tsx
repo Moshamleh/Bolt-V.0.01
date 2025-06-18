@@ -10,6 +10,7 @@ import Input from '../components/Input';
 import Textarea from '../components/Textarea';
 import Select from '../components/Select';
 import { formatFileSize, isValidFileType } from '../lib/utils';
+import { awardXp, XP_VALUES } from '../lib/xpSystem';
 
 const SERVICE_TYPES = [
   'Oil Change',
@@ -196,6 +197,15 @@ const AddServiceRecordPage: React.FC = () => {
         notes: formData.notes || undefined,
         invoice_url: invoiceUrl || undefined
       });
+
+      // Award XP for adding a service record
+      try {
+        await awardXp(undefined, XP_VALUES.ADD_SERVICE_RECORD, "Added a service record");
+        toast.success(`🎉 +${XP_VALUES.ADD_SERVICE_RECORD} XP added to your profile!`);
+      } catch (xpError) {
+        console.error('Failed to award XP for service record:', xpError);
+        // Don't fail the service record creation if XP awarding fails
+      }
 
       toast.success('Service record added successfully');
       navigate('/vehicles');

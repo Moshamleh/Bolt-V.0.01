@@ -9,6 +9,7 @@ import Input from '../components/Input';
 import Textarea from '../components/Textarea';
 import Select from '../components/Select';
 import { formatFileSize, isValidFileType } from '../lib/utils';
+import { awardXp, XP_VALUES } from '../lib/xpSystem';
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -144,6 +145,12 @@ const CreateClubPage: React.FC = () => {
       // Award "Club Founder" badge
       try {
         await awardBadge(session.user.id, "Club Founder", "Founded a new club");
+        
+        // Award XP for creating a club
+        await awardXp(session.user.id, XP_VALUES.CREATE_CLUB, "Created a new club");
+        
+        // Show XP toast notification
+        toast.success(`🎉 +${XP_VALUES.CREATE_CLUB} XP added to your profile!`);
       } catch (badgeError) {
         console.error('Failed to award Club Founder badge:', badgeError);
         // Don't fail the club creation if badge awarding fails

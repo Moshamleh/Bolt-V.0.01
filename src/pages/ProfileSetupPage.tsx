@@ -11,6 +11,7 @@ import Textarea from '../components/Textarea';
 import SetupProgressIndicator, { Step } from '../components/SetupProgressIndicator';
 import { playPopSound } from '../lib/utils';
 import Confetti from '../components/Confetti';
+import { awardXp, XP_VALUES } from '../lib/xpSystem';
 
 const validationRules: ValidationRules = {
   fullName: {
@@ -212,6 +213,12 @@ const ProfileSetupPage: React.FC = () => {
         try {
           // Award "Profile Complete" badge
           await awardBadge(user.id, "Profile Complete", "Completed your user profile");
+          
+          // Award XP for completing profile
+          await awardXp(user.id, XP_VALUES.COMPLETE_PROFILE, "Completed your user profile");
+          
+          // Show XP toast notification
+          toast.success(`🎉 +${XP_VALUES.COMPLETE_PROFILE} XP added to your profile!`);
           
           // Show confetti animation
           setShowConfetti(true);

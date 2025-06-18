@@ -27,6 +27,7 @@ import {
 } from '../lib/supabase';
 import { playPopSound, hasJoinedFirstClub, markFirstClubJoined } from '../lib/utils';
 import Confetti from '../components/Confetti';
+import { awardXp, XP_VALUES } from '../lib/xpSystem';
 
 const ClubDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -160,6 +161,15 @@ const ClubDetailPage: React.FC = () => {
         setIsMember(true);
         toast.success('Joined the club successfully');
         
+        // Award XP for joining a club
+        try {
+          await awardXp(undefined, XP_VALUES.JOIN_CLUB, "Joined a club");
+          toast.success(`🎉 +${XP_VALUES.JOIN_CLUB} XP added to your profile!`);
+        } catch (xpError) {
+          console.error('Failed to award XP for joining club:', xpError);
+          // Don't fail the club join if XP awarding fails
+        }
+        
         // Play sound effect
         playPopSound();
         
@@ -224,6 +234,14 @@ const ClubDetailPage: React.FC = () => {
     try {
       await sendClubMessage(id, newMessage.trim());
       setNewMessage('');
+      
+      // Award XP for sending a club message
+      try {
+        await awardXp(undefined, XP_VALUES.SEND_CLUB_MESSAGE, "Sent a message in a club");
+      } catch (xpError) {
+        console.error('Failed to award XP for club message:', xpError);
+        // Don't fail the message send if XP awarding fails
+      }
       
       // Play sound effect
       playPopSound();

@@ -12,6 +12,7 @@ import {
   getMechanicMessages,
   MechanicMessage 
 } from '../lib/supabase';
+import { awardXp, XP_VALUES } from '../lib/xpSystem';
 
 const MechanicChatPage: React.FC = () => {
   const { mechanicId: chatId } = useParams<{ mechanicId: string }>();
@@ -118,6 +119,15 @@ const MechanicChatPage: React.FC = () => {
         });
 
       if (error) throw error;
+      
+      // Award XP for sending a message
+      try {
+        await awardXp(undefined, XP_VALUES.SEND_CLUB_MESSAGE, "Sent a message to a mechanic");
+      } catch (xpError) {
+        console.error('Failed to award XP for mechanic message:', xpError);
+        // Don't fail the message send if XP awarding fails
+      }
+      
       setInput('');
     } catch (err) {
       console.error('Failed to send message:', err);

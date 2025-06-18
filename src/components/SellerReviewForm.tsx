@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { createSellerReview, updateSellerReview } from '../lib/supabase';
 import SellerRatingStars from './SellerRatingStars';
 import Textarea from './Textarea';
+import { awardXp, XP_VALUES } from '../lib/xpSystem';
 
 interface SellerReviewFormProps {
   sellerId: string;
@@ -56,6 +57,15 @@ const SellerReviewForm: React.FC<SellerReviewFormProps> = ({
           comment: comment.trim() || null
         });
         toast.success('Review submitted successfully');
+        
+        // Award XP for submitting a review (only for new reviews, not edits)
+        try {
+          await awardXp(undefined, XP_VALUES.REVIEW_SELLER, "Submitted a seller review");
+          toast.success(`🎉 +${XP_VALUES.REVIEW_SELLER} XP added to your profile!`);
+        } catch (xpError) {
+          console.error('Failed to award XP for review:', xpError);
+          // Don't fail the review submission if XP awarding fails
+        }
       }
       
       onReviewSubmitted();

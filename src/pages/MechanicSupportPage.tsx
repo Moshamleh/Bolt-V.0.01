@@ -5,6 +5,7 @@ import { getApprovedMechanics, getOrCreateMechanicChat, Mechanic } from '../lib/
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
+import { awardXp, XP_VALUES } from '../lib/xpSystem';
 
 // Define expertise areas for filtering
 const EXPERTISE_AREAS = [
@@ -68,6 +69,15 @@ const MechanicSupportPage: React.FC = () => {
 
       // Create or get existing chat
       const chatId = await getOrCreateMechanicChat(user.id, mechanic.id);
+      
+      // Award XP for starting a chat with a mechanic
+      try {
+        await awardXp(user.id, XP_VALUES.SEND_CLUB_MESSAGE, "Started a chat with a mechanic");
+        toast.success(`🎉 +${XP_VALUES.SEND_CLUB_MESSAGE} XP added to your profile!`);
+      } catch (xpError) {
+        console.error('Failed to award XP for starting mechanic chat:', xpError);
+        // Don't fail the chat creation if XP awarding fails
+      }
       
       // Navigate to the chat page
       navigate(`/mechanic-support/chat/${chatId}`);
