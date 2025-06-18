@@ -233,12 +233,12 @@ const CreateClubPage: React.FC = () => {
               required
             >
               <div
-                className={`relative border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors bg-blue-50 dark:bg-blue-900/20 ${
                   imagePreview 
                     ? 'border-green-400 dark:border-green-500' 
                     : imageError 
                     ? 'border-red-300 dark:border-red-500' 
-                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                    : 'border-blue-300 dark:border-blue-600 hover:border-blue-400 dark:hover:border-blue-500'
                 }`}
               >
                 {imagePreview ? (
@@ -246,7 +246,7 @@ const CreateClubPage: React.FC = () => {
                     <img
                       src={imagePreview}
                       alt="Preview"
-                      className="mx-auto max-h-48 rounded-lg"
+                      className="mx-auto max-h-48 rounded-lg shadow-md"
                     />
                     <button
                       type="button"
@@ -258,21 +258,21 @@ const CreateClubPage: React.FC = () => {
                           fileInputRef.current.value = '';
                         }
                       }}
-                      className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 transition-colors"
+                      className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 transition-colors shadow-md"
                     >
                       ×
                     </button>
                   </div>
                 ) : (
                   <div
-                    className="cursor-pointer"
+                    className="cursor-pointer group"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                      Click to upload or drag and drop
+                    <Upload className="mx-auto h-16 w-16 text-blue-400 dark:text-blue-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors" />
+                    <p className="mt-4 text-sm text-blue-600 dark:text-blue-400 font-medium">
+                      Click to upload your club banner 🖼️
                     </p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                    <p className="text-xs text-blue-500 dark:text-blue-300 mt-1">
                       PNG, JPG, GIF, WebP up to {formatFileSize(MAX_FILE_SIZE)}
                     </p>
                   </div>
@@ -300,7 +300,8 @@ const CreateClubPage: React.FC = () => {
                 onChange={handleInputChange}
                 onBlur={handleBlur}
                 error={!!errors.title}
-                placeholder="e.g., BMW M Performance Enthusiasts"
+                placeholder="e.g., BMW M Legends 🏁"
+                className="transition-all duration-300 focus:shadow-glow"
               />
             </FormField>
 
@@ -318,7 +319,8 @@ const CreateClubPage: React.FC = () => {
                 onBlur={handleBlur}
                 error={!!errors.description}
                 rows={4}
-                placeholder="Describe what your club is about..."
+                placeholder="What's your club all about? 💬"
+                className="transition-all duration-300 focus:shadow-glow"
               />
             </FormField>
 
@@ -335,7 +337,8 @@ const CreateClubPage: React.FC = () => {
                 onChange={handleInputChange}
                 onBlur={handleBlur}
                 error={!!errors.state}
-                placeholder="Select a state"
+                placeholder="Select a state 📍"
+                className="transition-all duration-300 focus:shadow-glow"
               >
                 {US_STATES.map(state => (
                   <option key={state} value={state}>{state}</option>
@@ -356,13 +359,14 @@ const CreateClubPage: React.FC = () => {
                 onChange={handleInputChange}
                 onBlur={handleBlur}
                 error={!!errors.topic}
-                placeholder="Select a topic"
+                placeholder="Select a topic 🔖"
+                className="transition-all duration-300 focus:shadow-glow"
               >
-                <option value="Performance">Performance</option>
-                <option value="Classic">Classic</option>
-                <option value="Restoration">Restoration</option>
-                <option value="Racing">Racing</option>
-                <option value="Off-Road">Off-Road</option>
+                <option value="Performance">Performance 🚀</option>
+                <option value="Classic">Classic 🏆</option>
+                <option value="Restoration">Restoration 🔧</option>
+                <option value="Racing">Racing 🏎️</option>
+                <option value="Off-Road">Off-Road 🏞️</option>
               </Select>
             </FormField>
 
@@ -376,7 +380,7 @@ const CreateClubPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg hover:shadow-blue-500/20"
               >
                 {isSubmitting ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
