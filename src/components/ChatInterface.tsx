@@ -97,8 +97,35 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const formatAiResponse = (text: string) => {
+    // Replace keywords with emojis
+    const emojiReplacements = {
+      'battery': '🔋 battery',
+      'engine': '🛠️ engine',
+      'oil': '🛢 oil',
+      'brake': '🛑 brake',
+      'warning light': '⚠️ warning light',
+      'replace': '🔁 replace',
+      'check': '✅ check',
+      'transmission': '⚙️ transmission',
+      'coolant': '🧊 coolant',
+      'temperature': '🌡️ temperature',
+      'tire': '🛞 tire',
+      'spark plug': '⚡ spark plug',
+      'filter': '🧹 filter',
+      'steering': '🎮 steering',
+      'exhaust': '💨 exhaust',
+      'fuel': '⛽ fuel'
+    };
+
+    // Process text with emoji replacements (case-insensitive)
+    let processedText = text;
+    Object.entries(emojiReplacements).forEach(([keyword, replacement]) => {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+      processedText = processedText.replace(regex, replacement);
+    });
+
     // Process special link formats like [PART:Brake Pads] or [REPAIR:Oil Change]
-    const processedText = text.replace(/\[(PART|REPAIR|DIAGNOSTIC):([^\]]+)\]/g, (match, type, content) => {
+    processedText = processedText.replace(/\[(PART|REPAIR|DIAGNOSTIC):([^\]]+)\]/g, (match, type, content) => {
       let url = '';
       let icon = '';
       
