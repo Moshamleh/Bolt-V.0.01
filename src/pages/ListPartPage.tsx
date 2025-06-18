@@ -12,6 +12,7 @@ import Select from '../components/Select';
 import { formatFileSize, isValidFileType } from '../lib/utils';
 import Confetti from '../components/Confetti';
 import { moderateContent } from '../lib/aiModeration';
+import { awardXp, XP_VALUES } from '../lib/xpSystem';
 
 const YEARS = Array.from({ length: 75 }, (_, i) => new Date().getFullYear() - i);
 const MAKES = [
@@ -307,6 +308,9 @@ const ListPartPage: React.FC = () => {
         
         // Award the badge
         await awardBadge(undefined, "First Listing", "Listed your first part in the marketplace");
+        
+        // Award XP for listing a part
+        await awardXp(undefined, XP_VALUES.LIST_PART, "Listed a part in the marketplace");
         
         // Show confetti animation
         setShowConfetti(true);
