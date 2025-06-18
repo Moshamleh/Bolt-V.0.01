@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, AlertCircle, Loader2, CheckCircle, Info, Zap, Tool, Gauge, FileText } from 'lucide-react';
+import { Car, AlertCircle, Loader2, CheckCircle, Info, Zap, PenTool as Tool, Gauge, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { supabase, createVehicle, getProfile, awardBadge } from '../lib/supabase';
