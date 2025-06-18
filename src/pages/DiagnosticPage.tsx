@@ -1,11 +1,12 @@
 import React, { useState, useEffect, lazy, Suspense, useRef } from 'react';
 import { Car, Loader2, Lightbulb, Menu, History, MessageSquare, Wrench } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Vehicle, getUserVehicles, getUserDiagnoses, Diagnosis } from '../lib/supabase';
+import { Vehicle, getUserVehicles, getUserDiagnoses, Diagnosis, updateProfile, awardBadge } from '../lib/supabase';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { useNavigate } from 'react-router-dom';
 import WelcomeModal from '../components/WelcomeModal';
 import { useProfile } from '../hooks/useProfile';
+import { hasCompletedFirstDiagnostic, markFirstDiagnosticCompleted } from '../lib/utils';
 
 // Lazy load components
 const ChatInterface = lazy(() => import('../components/ChatInterface'));
@@ -164,8 +165,24 @@ const DiagnosticPage: React.FC = () => {
     }
   }, [selectedVehicleId, vehicles]);
 
-  const handleDiagnosisAdded = (diagnosis: Diagnosis) => {
+  const handleDiagnosisAdded = async (diagnosis: Diagnosis) => {
     setDiagnoses(prev => [diagnosis, ...prev]);
+    
+    // Check if this is the first diagnostic and award badge
+    if (!hasCompletedFirstDiagnostic()) {
+      markFirstDiagnosticCompleted();
+      
+      try {
+        // Update the profile to mark first_diagnostic_completed as true
+        await updateProfile({ first_diagnostic_completed: true });
+        
+        // Award the badge
+        await awardBadge(undefined, "First Diagnosis", "Completed your first AI diagnostic");
+      } catch (badgeError) {
+        console.error('Failed to award First Diagnosis badge:', badgeError);
+        // Don't fail the diagnostic if badge awarding fails
+      }
+    }
   };
 
   const handleDiagnosisStatusChange = (diagnosisId: string, resolved: boolean) => {
@@ -488,6 +505,7 @@ const DiagnosticPage: React.FC = () => {
           completeOnboarding();
         }}
         onStartTour={handleStartTour}
+        userName={getFirstName()}
       />
     </div>
   );

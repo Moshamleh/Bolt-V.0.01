@@ -1,15 +1,16 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { createPart, checkKycStatus } from '../lib/supabase';
+import { createPart, checkKycStatus, updateProfile, awardBadge } from '../lib/supabase';
 import { useFormValidation, ValidationRules } from '../hooks/useFormValidation';
 import FormField from '../components/FormField';
 import Input from '../components/Input';
 import Textarea from '../components/Textarea';
 import Select from '../components/Select';
 import { formatFileSize, isValidFileType } from '../lib/utils';
+import Confetti from '../components/Confetti';
 
 const YEARS = Array.from({ length: 75 }, (_, i) => new Date().getFullYear() - i);
 const MAKES = [
@@ -103,6 +104,7 @@ const ListPartPage: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -122,7 +124,7 @@ const ListPartPage: React.FC = () => {
 
   const { errors, validateField, validateForm, clearError, setError: setFieldError } = useFormValidation(validationRules);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const checkKyc = async () => {
       try {
         const verified = await checkKycStatus();
@@ -230,6 +232,21 @@ const ListPartPage: React.FC = () => {
         image_url: '',
       });
 
+      // Check if this is the user's first listing and award badge
+      try {
+        // Update the profile to mark first_part_listed as true
+        await updateProfile({ first_part_listed: true });
+        
+        // Award the badge
+        await awardBadge(undefined, "First Listing", "Listed your first part in the marketplace");
+        
+        // Show confetti animation
+        setShowConfetti(true);
+      } catch (badgeError) {
+        console.error('Failed to award First Listing badge:', badgeError);
+        // Don't fail the part creation if badge awarding fails
+      }
+
       toast.success('Part listed successfully');
       navigate('/marketplace');
     } catch (err: any) {
@@ -292,6 +309,8 @@ const ListPartPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+      {showConfetti && <Confetti duration={3000} onComplete={() => setShowConfetti(false)} />}
+      
       <div className="max-w-2xl mx-auto">
         <motion.button
           initial={{ opacity: 0, x: -20 }}

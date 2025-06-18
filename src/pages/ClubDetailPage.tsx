@@ -21,7 +21,9 @@ import {
   sendClubMessage,
   getClubMembers,
   getCurrentUserClubRole,
-  supabase
+  supabase,
+  updateProfile,
+  awardBadge
 } from '../lib/supabase';
 import { playPopSound, hasJoinedFirstClub, markFirstClubJoined } from '../lib/utils';
 import Confetti from '../components/Confetti';
@@ -165,6 +167,12 @@ const ClubDetailPage: React.FC = () => {
         if (!hasJoinedFirstClub()) {
           setShowConfetti(true);
           markFirstClubJoined();
+          
+          // Update the profile to mark first_club_joined as true
+          await updateProfile({ first_club_joined: true });
+          
+          // Award the badge
+          await awardBadge(undefined, "Club Member", "Joined your first car club");
         }
       }
     } catch (err) {
@@ -560,7 +568,7 @@ const ClubDetailPage: React.FC = () => {
                 </div>
 
                 {/* Message Input */}
-                <form onSubmit={handleSubmit} className="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
+                <form onSubmit={handleSubmit} className="border-t border-gray-100 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
                   <div className="flex items-end gap-2">
                     <TextareaAutosize
                       value={newMessage}

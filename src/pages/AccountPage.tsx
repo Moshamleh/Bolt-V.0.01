@@ -14,6 +14,7 @@ const BadgesPanel = lazy(() => import('../components/BadgesPanel'));
 const ProfileCompletionIndicator = lazy(() => import('../components/ProfileCompletionIndicator'));
 const NotificationPreferencesSection = lazy(() => import('../components/NotificationPreferencesSection'));
 const ReferralSection = lazy(() => import('../components/ReferralSection'));
+const AchievementTracker = lazy(() => import('../components/AchievementTracker'));
 
 // Loading fallback component
 const ComponentLoader = () => (
@@ -129,10 +130,12 @@ const AccountPage = () => {
         return (
           <LazyErrorBoundary componentName="Achievements Section">
             <Suspense fallback={<ComponentLoader />}>
-              <div>
+              <div className="space-y-6">
+                <AchievementTracker profile={profile} className="mb-8" />
+                
                 <div className="mb-6">
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    Your Achievements
+                    Your Badges
                   </h2>
                   <p className="text-gray-600 dark:text-gray-400">
                     Badges you've earned by using Bolt Auto and participating in the community
