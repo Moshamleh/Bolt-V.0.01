@@ -1,7 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense, useRef } from 'react';
-import { Car, Loader2, Lightbulb, Menu, History, MessageSquare, Wrench } from 'lucide-react';
+import { Car, Loader2, Lightbulb, Menu, History, MessageSquare, Wrench, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Vehicle, getUserVehicles, getUserDiagnoses, Diagnosis, updateProfile, awardBadge } from '../lib/supabase';
+import { Vehicle, getUserVehicles, getUserDiagnoses, Diagnosis, updateProfile, awardBadge, sendDiagnosticPrompt, subscribeToDiagnosisUpdates } from '../lib/supabase';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { useNavigate } from 'react-router-dom';
 import WelcomeModal from '../components/WelcomeModal';
@@ -47,6 +47,9 @@ const DiagnosticPage: React.FC = () => {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showRepairTips, setShowRepairTips] = useState(false);
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
+  const [urgentTipContent, setUrgentTipContent] = useState<string | null>(null);
+  const [urgentTipLoading, setUrgentTipLoading] = useState(false);
+  const [urgentTipVisible, setUrgentTipVisible] = useState(false);
   const desktopHistoryRef = useRef<HTMLDivElement>(null);
   
   const { showOnboarding, completeOnboarding, isInitialized } = useOnboarding();
@@ -229,6 +232,47 @@ const DiagnosticPage: React.FC = () => {
     return profile.username || 'there';
   };
 
+  const handleUrgentTipRequest = async () => {
+    if (!selectedVehicleId) return;
+    
+    setUrgentTipLoading(true);
+    setUrgentTipVisible(true);
+    
+    try {
+      const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId);
+      if (!selectedVehicle) throw new Error('Vehicle not found');
+      
+      // Construct a specific prompt for the urgent maintenance tip
+      const vehicleInfo = selectedVehicle.other_vehicle_description || 
+        `${selectedVehicle.year} ${selectedVehicle.make} ${selectedVehicle.model}${selectedVehicle.trim ? ` ${selectedVehicle.trim}` : ''}`;
+      
+      const mileageInfo = selectedVehicle.mileage 
+        ? `with ${selectedVehicle.mileage} miles` 
+        : '';
+      
+      const prompt = `Based on this ${vehicleInfo} ${mileageInfo}, what is the single most urgent maintenance task I should prioritize right now? Please be specific and explain why it's important. Keep your answer concise.`;
+      
+      // Send the diagnostic prompt
+      const diagnosis = await sendDiagnosticPrompt(selectedVehicleId, prompt);
+      
+      // Subscribe to updates for the diagnosis
+      const unsubscribe = subscribeToDiagnosisUpdates(diagnosis.id, (updatedDiagnosis) => {
+        if (updatedDiagnosis.response) {
+          setUrgentTipContent(updatedDiagnosis.response);
+          setUrgentTipLoading(false);
+          
+          // Clean up subscription
+          unsubscribe();
+        }
+      });
+      
+    } catch (err) {
+      console.error('Failed to get urgent maintenance tip:', err);
+      setUrgentTipContent('Sorry, I was unable to determine the most urgent maintenance task. Please try again later.');
+      setUrgentTipLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-neutral-100 dark:bg-gray-900 p-4">
@@ -330,13 +374,27 @@ const DiagnosticPage: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setShowRepairTips(!showRepairTips)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
-              >
-                <Lightbulb className="h-4 w-4" />
-                <span>{showRepairTips ? 'Hide Tips' : 'Show Tips'}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleUrgentTipRequest}
+                  disabled={urgentTipLoading}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {urgentTipLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  <span>🔮 What should I fix first?</span>
+                </button>
+                <button
+                  onClick={() => setShowRepairTips(!showRepairTips)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                >
+                  <Lightbulb className="h-4 w-4" />
+                  <span>{showRepairTips ? 'Hide Tips' : 'Show Tips'}</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -360,6 +418,55 @@ const DiagnosticPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Urgent Maintenance Tip */}
+          <AnimatePresence>
+            {urgentTipVisible && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="bg-white dark:bg-gray-800 border-b border-neutral-200 dark:border-gray-700 p-4 overflow-hidden"
+              >
+                <div className="max-w-3xl mx-auto rounded-xl bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 p-4 shadow-glow border border-amber-200 dark:border-amber-800">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                        <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-medium text-amber-800 dark:text-amber-200">
+                          Priority Maintenance Task
+                        </h3>
+                        <div className="px-2 py-0.5 bg-amber-200/50 dark:bg-amber-800/50 rounded text-xs font-medium text-amber-700 dark:text-amber-300 animate-pulse">
+                          AI Suggested
+                        </div>
+                      </div>
+                      {urgentTipLoading ? (
+                        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          <span>Analyzing your vehicle data...</span>
+                        </div>
+                      ) : (
+                        <p className="text-amber-700 dark:text-amber-300">
+                          {urgentTipContent}
+                        </p>
+                      )}
+                      <button
+                        onClick={() => setUrgentTipVisible(false)}
+                        className="mt-2 text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Chat Interface */}
           <div className="flex-1 flex">
@@ -427,6 +534,18 @@ const DiagnosticPage: React.FC = () => {
           </button>
         </div>
 
+        {/* Urgent Maintenance Button */}
+        <div className="fixed top-[180px] right-4 z-40">
+          <button
+            onClick={handleUrgentTipRequest}
+            disabled={urgentTipLoading}
+            className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-amber-400 to-yellow-400 dark:from-amber-600 dark:to-yellow-600 text-white rounded-full shadow-md hover:from-amber-500 hover:to-yellow-500 dark:hover:from-amber-700 dark:hover:to-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="What should I fix first?"
+          >
+            <Sparkles className="h-5 w-5" />
+          </button>
+        </div>
+
         {/* Welcome Message (Mobile) */}
         <div className="px-4 mb-4">
           <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 p-4 animate-chat-bubble-glow">
@@ -447,6 +566,55 @@ const DiagnosticPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Urgent Maintenance Tip (Mobile) */}
+        <AnimatePresence>
+          {urgentTipVisible && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="px-4 mb-4"
+            >
+              <div className="rounded-xl bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 p-4 shadow-glow border border-amber-200 dark:border-amber-800">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 mt-1">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                      <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium text-amber-800 dark:text-amber-200">
+                        Priority Maintenance Task
+                      </h3>
+                      <div className="px-2 py-0.5 bg-amber-200/50 dark:bg-amber-800/50 rounded text-xs font-medium text-amber-700 dark:text-amber-300 animate-pulse">
+                        AI Suggested
+                      </div>
+                    </div>
+                    {urgentTipLoading ? (
+                      <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span>Analyzing your vehicle data...</span>
+                      </div>
+                    ) : (
+                      <p className="text-amber-700 dark:text-amber-300">
+                        {urgentTipContent}
+                      </p>
+                    )}
+                    <button
+                      onClick={() => setUrgentTipVisible(false)}
+                      className="mt-2 text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Repair Tips Panel (Mobile) */}
         <AnimatePresence>
