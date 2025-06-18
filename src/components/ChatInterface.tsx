@@ -368,8 +368,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         className="flex-1 overflow-y-auto p-4 space-y-4"
       >
         {messages.length === 0 ? (
-          <div className="text-center text-neutral-400 dark:text-gray-500 py-8">
-            Describe your car issue to get started
+          <div className="h-full flex flex-col items-center justify-center">
+            <div className="max-w-md w-full rounded-xl bg-blue-50 dark:bg-blue-900/20 p-4 animate-chat-bubble-glow shadow-lg">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-1">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                    <svg className="h-5 w-5 text-blue-600 dark:text-blue-400 animate-blink-wrench" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                  </div>
+                </div>
+                <div>
+                  <p className="font-medium text-blue-800 dark:text-blue-200">
+                    👋 Hey there, I'm Bolt — your personal AI mechanic.
+                  </p>
+                  <p className="text-blue-700 dark:text-blue-300 mt-1">
+                    I'm here to help with anything under the hood.<br />
+                    Try saying: "My car makes a weird clicking sound when I turn."
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           <AnimatePresence mode="wait" key={messageVersion}>
