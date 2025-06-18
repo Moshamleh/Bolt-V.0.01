@@ -1,6 +1,6 @@
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, Plus, Settings, Wrench, Loader2, FileText, Calendar, Lightbulb, Menu, Zap, Tool } from 'lucide-react';
+import { Car, Plus, Settings, Wrench, Loader2, FileText, Calendar, Lightbulb, Menu, Zap, PenTool as Tool } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, getUserVehicles, getProfile } from '../lib/supabase';
 import MobilePageMenu from '../components/MobilePageMenu';
