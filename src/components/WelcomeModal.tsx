@@ -6,9 +6,10 @@ interface WelcomeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onStartTour: () => void;
+  userName?: string;
 }
 
-const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, onStartTour }) => {
+const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, onStartTour, userName = '' }) => {
   if (!isOpen) return null;
 
   return (
@@ -16,13 +17,13 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, onStartTou
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 backdrop-blur-sm"
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-md w-full overflow-hidden"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full overflow-hidden"
       >
         {/* Header with gradient background */}
         <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
@@ -34,14 +35,17 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, onStartTou
           </button>
           
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-              <Zap className="h-6 w-6" />
+            <div className="relative">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Zap className="h-6 w-6 animate-pulse" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
             </div>
-            <h2 className="text-2xl font-bold">Welcome to Bolt Auto!</h2>
+            <h2 className="text-2xl font-bold">Welcome to Bolt Auto{userName ? `, ${userName}` : ''}!</h2>
           </div>
           
           <p className="text-white/90">
-            Your personal AI mechanic is ready to help you diagnose and fix car issues.
+            Your personal AI-powered garage is ready to roll.
           </p>
         </div>
 
@@ -106,7 +110,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, onStartTou
               onClick={onStartTour}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
             >
-              Take a Quick Tour
+              Let's Set Up My Vehicle
             </button>
             
             <button

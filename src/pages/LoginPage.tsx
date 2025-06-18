@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { KeyRound, Mail, Loader2, Zap, X, CheckCircle } from 'lucide-react';
+import { KeyRound, Mail, Loader2, Zap, X, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
+import WelcomeModal from '../components/WelcomeModal';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -11,7 +12,8 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [userName, setUserName] = useState('');
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
@@ -53,11 +55,24 @@ const LoginPage: React.FC = () => {
         .limit(1);
 
       if (!loginHistory?.length) {
-        setShowDisclaimer(true);
         // Record the login
         await supabase
           .from('user_logins')
           .insert({ user_id: session?.user.id });
+          
+        // Get user's name if available
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, username')
+          .eq('id', session?.user.id)
+          .single();
+          
+        if (profile) {
+          setUserName(profile.full_name || profile.username || '');
+        }
+        
+        // Show welcome modal instead of disclaimer
+        setShowWelcomeModal(true);
       } else {
         // Check if user has completed initial setup
         const { data: profile } = await supabase
@@ -160,19 +175,9 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const handleAcceptDisclaimer = async () => {
-    try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Navigate to profile setup
-        navigate('/profile-setup');
-      }
-    } catch (error) {
-      console.error('Error during disclaimer acceptance:', error);
-      // Navigate anyway even if there's an error
-      navigate('/profile-setup');
-    }
+  const handleStartVehicleSetup = () => {
+    setShowWelcomeModal(false);
+    navigate('/vehicle-setup');
   };
 
   const toggleMode = () => {
@@ -400,65 +405,16 @@ const LoginPage: React.FC = () => {
         </motion.p>
       </div>
 
-      {/* First Login Disclaimer Modal */}
-      <AnimatePresence>
-        {showDisclaimer && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-6"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
-                    <Zap className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Welcome to Bolt Auto
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setShowDisclaimer(false)}
-                  className="text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="mb-6">
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  By using Bolt Auto, you accept our Terms and understand that
-                  AI-generated responses may not always be accurate. Always verify
-                  critical information with a certified mechanic.
-                </p>
-                
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    Your safety is our priority. For critical vehicle issues, always consult with a professional mechanic.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  onClick={handleAcceptDisclaimer}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm"
-                >
-                  I Understand
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Welcome Modal for new users */}
+      <WelcomeModal 
+        isOpen={showWelcomeModal}
+        onClose={() => {
+          setShowWelcomeModal(false);
+          navigate('/diagnostic');
+        }}
+        onStartTour={handleStartVehicleSetup}
+        userName={userName}
+      />
     </div>
   );
 };
