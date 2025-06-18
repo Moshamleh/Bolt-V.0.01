@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Plus, ChevronDown, ChevronUp, Loader2, Menu, X, ShoppingBag, MessageSquare, Settings, Heart, AlertCircle, Package, ChevronLeft, ChevronRight, Mailbox as Toolbox, Wrench } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -177,7 +177,8 @@ const MarketplacePage: React.FC = () => {
         ) : (
           <button
             onClick={handleSellPart}
-            className="inline-flex items-center px-6 py-3 bg-glowing-gradient text-white rounded-lg font-medium hover:shadow-glow transition-all duration-300"
+            className="inline-flex items-center px-6 py-3 bg-glowing-gradient text-white rounded-lg font-medium hover:shadow-glow transition-all duration-300 animate-pulse-slow"
+            title="Got something to sell? Let the community know!"
           >
             <Plus className="h-5 w-5 mr-2" />
             ⚡ List Your First Part
@@ -299,7 +300,8 @@ const MarketplacePage: React.FC = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             onClick={handleSellPart}
-            className="hidden md:flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            className="hidden md:flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors animate-pulse-slow"
+            title="Got something to sell? Let the community know!"
           >
             <Plus className="h-5 w-5 mr-2" />
             List a Part
@@ -680,7 +682,8 @@ const MarketplacePage: React.FC = () => {
                   navigate('/sell-part');
                   setIsMobileMenuOpen(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors animate-pulse-slow"
+                title="Got something to sell? Let the community know!"
               >
                 <Plus className="h-5 w-5" />
                 <span>List a Part</span>
@@ -750,7 +753,8 @@ const MarketplacePage: React.FC = () => {
         initial={{ opacity: 0, scale: 0.8, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         onClick={handleSellPart}
-        className="md:hidden fixed bottom-6 right-6 flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300 z-50"
+        className="md:hidden fixed bottom-6 right-6 flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300 z-50 animate-pulse-slow"
+        title="Got something to sell? Let the community know!"
       >
         <Plus className="h-5 w-5" />
         <span className="font-medium">Post a Part</span>
