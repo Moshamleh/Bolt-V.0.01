@@ -51,9 +51,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Default prompt chips
   const defaultPromptChips = [
-    "🔧 My engine is making a weird noise",
-    "🚨 Warning light came on",
-    "💨 Car feels sluggish when accelerating"
+    "🚨 I got a warning light on",
+    "🔊 Weird noise when braking",
+    "💨 My car feels sluggish"
   ];
 
   // Use provided suggested prompts or default ones
