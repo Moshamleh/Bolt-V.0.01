@@ -61,19 +61,22 @@ const ProfileCompletionIndicator: React.FC<ProfileCompletionIndicatorProps> = ({
   ];
 
   const completedFields = profileFields.filter(field => field.completed).length;
-  const completionPercentage = Math.round((completedFields / profileFields.length) * 100);
+  const totalFields = profileFields.length;
+  const completionPercentage = Math.round((completedFields / totalFields) * 100);
+  
+  // Get first name from full_name or username
+  const firstName = profile.full_name 
+    ? profile.full_name.split(' ')[0]
+    : profile.username || 'there';
   
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden ${className}`}>
       <div className="p-6 border-b border-gray-100 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Profile Completion
+            You're {completionPercentage}% tuned up, {firstName}! 🔧 Just a few tweaks away from full power.
           </h3>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {completionPercentage}%
-            </span>
             {completionPercentage === 100 ? (
               <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
             ) : (
@@ -87,10 +90,10 @@ const ProfileCompletionIndicator: React.FC<ProfileCompletionIndicatorProps> = ({
             initial={{ width: 0 }}
             animate={{ width: `${completionPercentage}%` }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className={`h-full rounded-full ${
+            className={`h-full rounded-full bg-glowing-gradient shadow-glow ${
               completionPercentage === 100 
                 ? 'bg-green-600 dark:bg-green-500' 
-                : 'bg-blue-600 dark:bg-blue-500'
+                : ''
             }`}
           />
         </div>
