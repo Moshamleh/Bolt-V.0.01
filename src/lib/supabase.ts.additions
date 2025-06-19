@@ -1,31 +1,5 @@
-// These functions should be added to your existing src/lib/supabase.ts file
-
 /**
- * Create a boost order for a part
- * @param partId The ID of the part to boost
- * @returns The created boost order
- */
-export async function createBoostOrder(partId: string) {
-  try {
-    const { data, error } = await supabase
-      .from('boost_orders')
-      .insert({
-        part_id: partId,
-        status: 'pending'
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Error creating boost order:', error);
-    throw error;
-  }
-}
-
-/**
- * Boost a part for a specified duration
+ * Boost a part listing for a specified number of days
  * @param partId The ID of the part to boost
  * @param durationInDays The duration of the boost in days
  * @param boostOrderId The ID of the boost order
@@ -53,7 +27,10 @@ export async function boostPart(partId: string, durationInDays: number = 7, boos
     // Update the part to be boosted
     const { data, error } = await supabase
       .from('parts')
-      .update({ is_boosted: true })
+      .update({ 
+        is_boosted: true,
+        boost_expires_at: expiresAt.toISOString()
+      })
       .eq('id', partId)
       .select()
       .single();
