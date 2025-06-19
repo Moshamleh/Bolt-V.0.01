@@ -224,7 +224,7 @@ export async function incrementChallengeProgress(
     .from('challenges')
     .select('id')
     .eq('name', challengeName)
-    .single();
+    .maybeSingle(); // Use maybeSingle instead of single to handle case where no record is found
 
   if (challengeError) throw challengeError;
   if (!challenge) throw new Error(`Challenge not found: ${challengeName}`);
