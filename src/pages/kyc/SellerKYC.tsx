@@ -9,6 +9,7 @@ import FormField from '../../components/FormField';
 import Input from '../../components/Input';
 import { formatFileSize, isValidFileType } from '../../lib/utils';
 import { moderateContent } from '../../lib/aiModeration';
+import { extractErrorMessage } from '../../lib/errorHandling';
 
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -108,14 +109,15 @@ const SellerKYC: React.FC = () => {
 
     // Validate form
     if (!validateForm(formData)) {
+      toast.error('Please fix the errors below');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('User not authenticated.');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) throw new Error('User not authenticated.');
 
       const userId = session.user.id;
 
@@ -163,8 +165,9 @@ const SellerKYC: React.FC = () => {
       navigate('/kyc/success');
     } catch (err: any) {
       console.error('KYC submission failed:', err);
-      setError(err.message || 'Failed to submit KYC request.');
-      toast.error(err.message || 'Failed to submit KYC request.');
+      const errorMessage = extractErrorMessage(err);
+      setError(`Failed to submit KYC request: ${errorMessage}`);
+      toast.error(`Failed to submit KYC request: ${errorMessage}`);
       setIsSubmitting(false);
     }
   };

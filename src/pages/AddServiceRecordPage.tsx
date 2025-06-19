@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Calendar, Wrench, Upload, DollarSign, Loader2, Building, FileText } from 'lucide-react';
+import { ArrowLeft, Upload, Loader2, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { createServiceRecord, uploadServiceInvoice, Vehicle, getUserVehicles } from '../lib/supabase';
+import { Vehicle, getUserVehicles, createServiceRecord, uploadServiceInvoice } from '../lib/supabase';
 import { useFormValidation, ValidationRules } from '../hooks/useFormValidation';
 import FormField from '../components/FormField';
 import Input from '../components/Input';
@@ -11,6 +11,7 @@ import Textarea from '../components/Textarea';
 import Select from '../components/Select';
 import { formatFileSize, isValidFileType } from '../lib/utils';
 import { awardXp, XP_VALUES } from '../lib/xpSystem';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 const SERVICE_TYPES = [
   'Oil Change',
@@ -107,7 +108,8 @@ const AddServiceRecordPage: React.FC = () => {
         }
       } catch (err) {
         console.error('Failed to load vehicle:', err);
-        setError('Failed to load vehicle details');
+        const errorMessage = extractErrorMessage(err);
+        setError(`Failed to load vehicle details: ${errorMessage}`);
       }
     };
 
@@ -181,7 +183,9 @@ const AddServiceRecordPage: React.FC = () => {
           invoiceUrl = await uploadServiceInvoice(invoiceFile, vehicleId);
         } catch (err) {
           console.error('Failed to upload invoice:', err);
-          toast.error('Failed to upload invoice, but continuing with record creation');
+          const errorMessage = extractErrorMessage(err);
+          toast.error(`Failed to upload invoice: ${errorMessage}`);
+          // Continue with record creation without invoice
         }
       }
 
@@ -211,8 +215,9 @@ const AddServiceRecordPage: React.FC = () => {
       navigate('/vehicles');
     } catch (err: any) {
       console.error('Failed to create service record:', err);
-      setError(err.message || 'Failed to create service record');
-      toast.error('Failed to create service record');
+      const errorMessage = extractErrorMessage(err);
+      setError(`Failed to create service record: ${errorMessage}`);
+      toast.error(`Failed to create service record: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -273,19 +278,15 @@ const AddServiceRecordPage: React.FC = () => {
                 error={errors.service_date}
                 required
               >
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-5 w-5" />
-                  <Input
-                    type="date"
-                    name="service_date"
-                    value={formData.service_date}
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
-                    error={!!errors.service_date}
-                    className="pl-10"
-                    max={new Date().toISOString().split('T')[0]}
-                  />
-                </div>
+                <Input
+                  type="date"
+                  name="service_date"
+                  value={formData.service_date}
+                  onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  error={!!errors.service_date}
+                  max={new Date().toISOString().split('T')[0]}
+                />
               </FormField>
 
               {/* Service Type */}
@@ -295,22 +296,18 @@ const AddServiceRecordPage: React.FC = () => {
                 error={errors.service_type}
                 required
               >
-                <div className="relative">
-                  <Wrench className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-5 w-5" />
-                  <Select
-                    name="service_type"
-                    value={formData.service_type}
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
-                    error={!!errors.service_type}
-                    className="pl-10"
-                    placeholder="Select service type"
-                  >
-                    {SERVICE_TYPES.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </Select>
-                </div>
+                <Select
+                  name="service_type"
+                  value={formData.service_type}
+                  onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  error={!!errors.service_type}
+                  placeholder="Select service type"
+                >
+                  {SERVICE_TYPES.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </Select>
               </FormField>
             </div>
 
@@ -360,19 +357,15 @@ const AddServiceRecordPage: React.FC = () => {
                 error={errors.cost}
                 required
               >
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-5 w-5" />
-                  <Input
-                    type="text"
-                    name="cost"
-                    value={formData.cost}
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
-                    error={!!errors.cost}
-                    className="pl-10"
-                    placeholder="e.g., 89.99"
-                  />
-                </div>
+                <Input
+                  type="text"
+                  name="cost"
+                  value={formData.cost}
+                  onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  error={!!errors.cost}
+                  placeholder="e.g., 89.99"
+                />
               </FormField>
             </div>
 
@@ -382,16 +375,12 @@ const AddServiceRecordPage: React.FC = () => {
               name="service_provider"
               description="Optional - Name of shop or mechanic"
             >
-              <div className="relative">
-                <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-5 w-5" />
-                <Input
-                  name="service_provider"
-                  value={formData.service_provider}
-                  onChange={handleInputChange}
-                  className="pl-10"
-                  placeholder="e.g., Joe's Auto Shop"
-                />
-              </div>
+              <Input
+                name="service_provider"
+                value={formData.service_provider}
+                onChange={handleInputChange}
+                placeholder="e.g., Joe's Auto Shop"
+              />
             </FormField>
 
             {/* Notes */}
@@ -429,7 +418,6 @@ const AddServiceRecordPage: React.FC = () => {
                 <div className="cursor-pointer">
                   {invoiceFile ? (
                     <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
-                      <FileText className="h-5 w-5" />
                       <span className="font-medium">{invoiceFile.name}</span>
                     </div>
                   ) : (

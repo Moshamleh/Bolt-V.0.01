@@ -13,6 +13,7 @@ import SetupProgressIndicator, { Step } from '../components/SetupProgressIndicat
 import { playPopSound } from '../lib/utils';
 import Confetti from '../components/Confetti';
 import { awardXp, XP_VALUES } from '../lib/xpSystem';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 const YEARS = Array.from({ length: 75 }, (_, i) => new Date().getFullYear() - i);
 const MAKES = [
@@ -288,7 +289,8 @@ const VehicleSetupPage: React.FC = () => {
       }, 2000);
     } catch (err) {
       console.error('Failed to save vehicle:', err);
-      toast.error('Failed to save vehicle');
+      const errorMessage = extractErrorMessage(err);
+      toast.error(`Failed to save vehicle: ${errorMessage}`);
       setIsSubmitting(false);
     }
   };

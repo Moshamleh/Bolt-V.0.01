@@ -13,6 +13,7 @@ import { formatFileSize, isValidFileType } from '../lib/utils';
 import Confetti from '../components/Confetti';
 import { moderateContent } from '../lib/aiModeration';
 import { awardXp, XP_VALUES } from '../lib/xpSystem';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 const YEARS = Array.from({ length: 75 }, (_, i) => new Date().getFullYear() - i);
 const MAKES = [
@@ -134,7 +135,8 @@ const ListPartPage: React.FC = () => {
         setIsKycVerified(verified);
       } catch (err) {
         console.error('Failed to check KYC status:', err);
-        setError('Failed to verify KYC status');
+        const errorMessage = extractErrorMessage(err);
+        setError(`Failed to verify KYC status: ${errorMessage}`);
         setIsKycVerified(false);
       }
     };
@@ -212,8 +214,9 @@ const ListPartPage: React.FC = () => {
       toast.success('Description generated successfully!');
     } catch (err: any) {
       console.error('Error generating description:', err);
-      setError(err.message || 'Failed to generate description.');
-      toast.error(err.message || 'Failed to generate description.');
+      const errorMessage = extractErrorMessage(err);
+      setError(`Failed to generate description: ${errorMessage}`);
+      toast.error(`Failed to generate description: ${errorMessage}`);
     } finally {
       setIsGeneratingDescription(false);
     }
@@ -313,7 +316,7 @@ const ListPartPage: React.FC = () => {
         await awardXp(undefined, XP_VALUES.LIST_PART, "Listed a part in the marketplace");
         
         // Show XP toast notification
-        toast.success("🎉 +30 XP added to your profile!");
+        toast.success(`🎉 +${XP_VALUES.LIST_PART} XP added to your profile!`);
         
         // Show confetti animation
         setShowConfetti(true);
@@ -326,8 +329,9 @@ const ListPartPage: React.FC = () => {
       navigate('/marketplace');
     } catch (err: any) {
       console.error('Failed to create listing:', err);
-      setError(err.message || 'Failed to create listing');
-      toast.error('Failed to create listing');
+      const errorMessage = extractErrorMessage(err);
+      setError(`Failed to create listing: ${errorMessage}`);
+      toast.error(`Failed to create listing: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }

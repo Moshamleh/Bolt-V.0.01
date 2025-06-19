@@ -11,6 +11,7 @@ import Input from '../components/Input';
 import Textarea from '../components/Textarea';
 import Select from '../components/Select';
 import { formatFileSize, isValidFileType } from '../lib/utils';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 const YEARS = Array.from({ length: 75 }, (_, i) => new Date().getFullYear() - i);
 const MAKES = [
@@ -160,7 +161,8 @@ const AdminEditPartPage: React.FC = () => {
         }
       } catch (err) {
         console.error('Failed to load part:', err);
-        setError('Failed to load part details');
+        const errorMessage = extractErrorMessage(err);
+        setError(`Failed to load part details: ${errorMessage}`);
       } finally {
         setLoading(false);
       }
@@ -279,8 +281,9 @@ const AdminEditPartPage: React.FC = () => {
       navigate('/admin/parts');
     } catch (err: any) {
       console.error('Failed to update part:', err);
-      setError(err.message || 'Failed to update part');
-      toast.error('Failed to update part');
+      const errorMessage = extractErrorMessage(err);
+      setError(`Failed to update part: ${errorMessage}`);
+      toast.error(`Failed to update part: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }

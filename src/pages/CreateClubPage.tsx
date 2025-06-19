@@ -10,6 +10,7 @@ import Textarea from '../components/Textarea';
 import Select from '../components/Select';
 import { formatFileSize, isValidFileType } from '../lib/utils';
 import { awardXp, XP_VALUES } from '../lib/xpSystem';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -157,8 +158,10 @@ const CreateClubPage: React.FC = () => {
       }
 
       navigate(`/clubs/${club.id}`);
-    } catch (err: any) {
-      setError(err.message || 'Failed to create club');
+    } catch (err) {
+      console.error('Failed to create club:', err);
+      const errorMessage = extractErrorMessage(err);
+      setError(`Failed to create club: ${errorMessage}`);
       setIsSubmitting(false);
     }
   };
@@ -387,7 +390,7 @@ const CreateClubPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg hover:shadow-blue-500/20"
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isSubmitting ? (
                   <Loader2 className="h-5 w-5 animate-spin" />

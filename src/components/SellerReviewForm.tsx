@@ -6,6 +6,7 @@ import { createSellerReview, updateSellerReview } from '../lib/supabase';
 import SellerRatingStars from './SellerRatingStars';
 import Textarea from './Textarea';
 import { awardXp, XP_VALUES } from '../lib/xpSystem';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 interface SellerReviewFormProps {
   sellerId: string;
@@ -71,7 +72,8 @@ const SellerReviewForm: React.FC<SellerReviewFormProps> = ({
       onReviewSubmitted();
     } catch (err) {
       console.error('Failed to submit review:', err);
-      setError('Failed to submit review. Please try again.');
+      const errorMessage = extractErrorMessage(err);
+      setError(`Failed to submit review: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }

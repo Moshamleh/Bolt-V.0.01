@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { supabase, signUp, updateProfile } from '../lib/supabase';
 import WelcomeModal from '../components/WelcomeModal';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -112,8 +113,9 @@ const LoginPage: React.FC = () => {
           navigate('/diagnostic');
         }
       }
-    } catch (err: any) {
-      setError('Login failed. Please check your credentials.');
+    } catch (err) {
+      const errorMessage = extractErrorMessage(err);
+      setError(errorMessage);
       setIsLoading(false);
     }
   };
@@ -129,8 +131,9 @@ const LoginPage: React.FC = () => {
 
       if (error) throw error;
       setError('Check your email for the confirmation link.');
-    } catch (err: any) {
-      setError('Sign up failed. Please try again.');
+    } catch (err) {
+      const errorMessage = extractErrorMessage(err);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -148,7 +151,8 @@ const LoginPage: React.FC = () => {
       if (error) throw error;
       toast.success('Password reset instructions sent to your email');
     } catch (err) {
-      setError('Failed to send reset instructions. Please try again.');
+      const errorMessage = extractErrorMessage(err);
+      setError(errorMessage);
     } finally {
       setIsResettingPassword(false);
     }
@@ -167,7 +171,8 @@ const LoginPage: React.FC = () => {
       if (error) throw error;
     } catch (err) {
       console.error('Google sign in failed:', err);
-      setError('Failed to sign in with Google');
+      const errorMessage = extractErrorMessage(err);
+      setError(errorMessage);
       setIsGoogleLoading(false);
     }
   };
@@ -185,7 +190,8 @@ const LoginPage: React.FC = () => {
       if (error) throw error;
     } catch (err) {
       console.error('Apple sign in failed:', err);
-      setError('Failed to sign in with Apple');
+      const errorMessage = extractErrorMessage(err);
+      setError(errorMessage);
       setIsAppleLoading(false);
     }
   };

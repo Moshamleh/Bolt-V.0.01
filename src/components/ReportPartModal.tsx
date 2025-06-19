@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { reportPart } from '../lib/supabase';
 import Textarea from './Textarea';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 interface ReportPartModalProps {
   isOpen: boolean;
@@ -47,7 +48,8 @@ const ReportPartModal: React.FC<ReportPartModalProps> = ({ isOpen, onClose, part
       setMessage('');
     } catch (err) {
       console.error('Failed to submit report:', err);
-      setError('Failed to submit report. Please try again.');
+      const errorMessage = extractErrorMessage(err);
+      setError(`Failed to submit report: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }

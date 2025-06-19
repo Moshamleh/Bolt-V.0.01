@@ -12,6 +12,7 @@ import SetupProgressIndicator, { Step } from '../components/SetupProgressIndicat
 import { playPopSound } from '../lib/utils';
 import Confetti from '../components/Confetti';
 import { awardXp, XP_VALUES } from '../lib/xpSystem';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 const validationRules: ValidationRules = {
   fullName: {
@@ -172,7 +173,9 @@ const ProfileSetupPage: React.FC = () => {
           finalAvatarUrl = await uploadAvatar(avatarFile);
         } catch (avatarError) {
           console.error('Avatar upload failed:', avatarError);
-          toast.error('Failed to upload avatar, but continuing with profile creation');
+          const errorMessage = extractErrorMessage(avatarError);
+          toast.error(`Failed to upload avatar: ${errorMessage}`);
+          // Continue with profile creation without avatar
         }
       }
 
@@ -240,7 +243,8 @@ const ProfileSetupPage: React.FC = () => {
       }, 1500);
     } catch (err) {
       console.error('Failed to create profile:', err);
-      toast.error('Failed to create profile');
+      const errorMessage = extractErrorMessage(err);
+      toast.error(`Failed to create profile: ${errorMessage}`);
       setIsSubmitting(false);
     }
   };
