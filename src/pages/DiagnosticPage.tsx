@@ -16,6 +16,7 @@ const MobileTopNavBar = lazy(() => import('../components/MobileTopNavBar'));
 const MobilePageMenu = lazy(() => import('../components/MobilePageMenu'));
 const ChatHistory = lazy(() => import('../components/ChatHistory'));
 const RepairTipsPanel = lazy(() => import('../components/RepairTipsPanel'));
+const MobileCollapsibleMenu = lazy(() => import('../components/MobileCollapsibleMenu'));
 
 // Loading fallback component
 const ComponentLoader = () => (
@@ -361,60 +362,17 @@ const DiagnosticPage: React.FC = () => {
       </Suspense>
 
       <Suspense fallback={<ComponentLoader />}>
-        <MobilePageMenu
+        <MobileCollapsibleMenu
           isOpen={isHistoryMenuOpen}
           onClose={() => setIsHistoryMenuOpen(false)}
-          title="Diagnostic History"
-        >
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Filter</h3>
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-              </div>
-            </div>
-            <div className="flex mt-2 gap-2">
-              <button
-                onClick={() => setFilterStatus('all')}
-                className={`px-3 py-1.5 text-sm rounded-full ${
-                  filterStatus === 'all'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                Show All
-              </button>
-              <button
-                onClick={() => setFilterStatus('active')}
-                className={`px-3 py-1.5 text-sm rounded-full ${
-                  filterStatus === 'active'
-                    ? 'bg-amber-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                Only Active
-              </button>
-              <button
-                onClick={() => setFilterStatus('resolved')}
-                className={`px-3 py-1.5 text-sm rounded-full ${
-                  filterStatus === 'resolved'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                Only Resolved
-              </button>
-            </div>
-          </div>
-          <ChatHistory
-            diagnoses={diagnoses}
-            loading={loading}
-            error={error}
-            onStatusChange={handleDiagnosisStatusChange}
-            onLoadDiagnosis={handleLoadDiagnosis}
-            filterStatus={filterStatus}
-          />
-        </MobilePageMenu>
+          diagnoses={diagnoses}
+          loading={loading}
+          error={error}
+          onStatusChange={handleDiagnosisStatusChange}
+          onLoadDiagnosis={handleLoadDiagnosis}
+          filterStatus={filterStatus}
+          onFilterChange={setFilterStatus}
+        />
       </Suspense>
 
       {/* Desktop Layout */}
