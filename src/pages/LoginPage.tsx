@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { KeyRound, Mail, Loader2, Zap, X, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { supabase, signUp } from '../lib/supabase';
+import { supabase, signUp, updateProfile } from '../lib/supabase';
 import WelcomeModal from '../components/WelcomeModal';
 
 const LoginPage: React.FC = () => {
@@ -190,9 +190,32 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const handleStartVehicleSetup = () => {
-    setShowWelcomeModal(false);
-    navigate('/vehicle-setup');
+  const handleSetupVehicle = async () => {
+    try {
+      // Update profile to mark initial_setup_complete as false
+      await updateProfile({ initial_setup_complete: false });
+      
+      // Navigate to profile setup
+      navigate('/profile-setup');
+    } catch (error) {
+      console.error('Error during setup:', error);
+      // Navigate anyway even if there's an error
+      navigate('/profile-setup');
+    }
+  };
+
+  const handleExploreMarketplace = async () => {
+    try {
+      // Update profile to mark initial_setup_complete as true
+      await updateProfile({ initial_setup_complete: true });
+      
+      // Navigate to marketplace
+      navigate('/marketplace');
+    } catch (error) {
+      console.error('Error during setup:', error);
+      // Navigate anyway even if there's an error
+      navigate('/marketplace');
+    }
   };
 
   const toggleMode = () => {
@@ -431,11 +454,8 @@ const LoginPage: React.FC = () => {
       {/* Welcome Modal for new users */}
       <WelcomeModal 
         isOpen={showWelcomeModal}
-        onClose={() => {
-          setShowWelcomeModal(false);
-          navigate('/diagnostic');
-        }}
-        onStartTour={handleStartVehicleSetup}
+        onExploreMarketplace={handleExploreMarketplace}
+        onSetupVehicle={handleSetupVehicle}
         userName={userName}
       />
     </div>

@@ -4,12 +4,17 @@ import { X, Zap } from 'lucide-react';
 
 interface WelcomeModalProps {
   isOpen: boolean;
-  onClose: () => void;
-  onStartTour: () => void;
+  onExploreMarketplace: () => void;
+  onSetupVehicle: () => void;
   userName?: string;
 }
 
-const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, onStartTour, userName = '' }) => {
+const WelcomeModal: React.FC<WelcomeModalProps> = ({ 
+  isOpen, 
+  onExploreMarketplace, 
+  onSetupVehicle, 
+  userName = '' 
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -28,7 +33,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, onStartTou
         {/* Header with gradient background */}
         <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
           <button
-            onClick={onClose}
+            onClick={onExploreMarketplace}
             className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
           >
             <X className="h-5 w-5" />
@@ -45,18 +50,24 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, onStartTou
           </div>
           
           <p className="text-white/90">
-            Your personal AI-powered garage is ready to roll.
+            We've got your back with diagnostics, repairs, and parts. Let's get your garage set up.
           </p>
         </div>
 
         {/* Content */}
         <div className="p-6">
-          <div className="flex justify-end gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
-              onClick={onStartTour}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              onClick={onSetupVehicle}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
             >
-              Let's Set Up My Vehicle
+              🚗 Set Up My Vehicle
+            </button>
+            <button
+              onClick={onExploreMarketplace}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              🛒 Explore Marketplace
             </button>
           </div>
         </div>
