@@ -1897,6 +1897,9 @@ export const getDashboardStats = async (): Promise<{
   pendingKyc: number;
   pendingMechanics: number;
   reportedParts: number;
+  totalDiagnoses: number;
+  totalPartsListed: number;
+  kycApprovedThisMonth: number;
 }> => {
   // Get total users count
   const { count: totalUsers, error: usersError } = await supabase
@@ -1928,11 +1931,43 @@ export const getDashboardStats = async (): Promise<{
 
   if (partsError) throw partsError;
 
+  // Get total diagnoses count
+  const { count: totalDiagnoses, error: diagnosesError } = await supabase
+    .from('diagnoses')
+    .select('*', { count: 'exact', head: true });
+
+  if (diagnosesError) throw diagnosesError;
+
+  // Get total parts listed count
+  const { count: totalPartsListed, error: partsListedError } = await supabase
+    .from('parts')
+    .select('*', { count: 'exact', head: true });
+
+  if (partsListedError) throw partsListedError;
+
+  // Get KYC approved this month count
+  // Calculate first and last day of current month
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
+
+  const { count: kycApprovedThisMonth, error: kycApprovedError } = await supabase
+    .from('kyc_requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'approved')
+    .gte('created_at', firstDayOfMonth)
+    .lte('created_at', lastDayOfMonth);
+
+  if (kycApprovedError) throw kycApprovedError;
+
   return {
     totalUsers: totalUsers || 0,
     pendingKyc: pendingKyc || 0,
     pendingMechanics: pendingMechanics || 0,
-    reportedParts: reportedParts || 0
+    reportedParts: reportedParts || 0,
+    totalDiagnoses: totalDiagnoses || 0,
+    totalPartsListed: totalPartsListed || 0,
+    kycApprovedThisMonth: kycApprovedThisMonth || 0
   };
 };
 

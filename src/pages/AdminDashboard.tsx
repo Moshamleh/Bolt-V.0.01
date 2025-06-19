@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, ShieldCheck, AlertTriangle, Loader2, Wrench } from 'lucide-react';
+import { Users, ShieldCheck, AlertTriangle, Loader2, Wrench, Zap, Package, CheckCircle } from 'lucide-react';
 import { useProfile } from '../hooks/useProfile';
 import KYCVerificationQueue from '../components/KYCVerificationQueue';
 import MechanicRequestsQueue from '../components/MechanicRequestsQueue';
@@ -10,7 +10,7 @@ import { getDashboardStats } from '../lib/supabase';
 
 const AdminDashboard: React.FC = () => {
   const { profile, isAdmin, isLoading: profileLoading } = useProfile();
-  const { data: stats, error: statsError } = useSWR('dashboard-stats', getDashboardStats);
+  const { data: stats, error: statsError, isLoading: statsLoading } = useSWR('dashboard-stats', getDashboardStats);
 
   if (profileLoading) {
     return (
@@ -60,7 +60,7 @@ const AdminDashboard: React.FC = () => {
     </motion.div>
   );
 
-  const loading = !stats && !statsError;
+  const loading = statsLoading && !stats && !statsError;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
@@ -76,7 +76,7 @@ const AdminDashboard: React.FC = () => {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <DashboardCard
             title="User Management"
             description="Total registered users on the platform"
@@ -110,6 +110,36 @@ const AdminDashboard: React.FC = () => {
             count={stats?.reportedParts || 0}
             icon={<AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />}
             color="bg-amber-100 dark:bg-amber-900/50"
+            loading={loading}
+          />
+        </div>
+
+        {/* Additional Stats Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <DashboardCard
+            title="Total Diagnostics"
+            description="AI diagnostics run by users"
+            count={stats?.totalDiagnoses || 0}
+            icon={<Zap className="h-6 w-6 text-blue-600 dark:text-blue-400" />}
+            color="bg-blue-100 dark:bg-blue-900/50"
+            loading={loading}
+          />
+
+          <DashboardCard
+            title="Parts Listed"
+            description="Total parts in the marketplace"
+            count={stats?.totalPartsListed || 0}
+            icon={<Package className="h-6 w-6 text-green-600 dark:text-green-400" />}
+            color="bg-green-100 dark:bg-green-900/50"
+            loading={loading}
+          />
+
+          <DashboardCard
+            title="KYC Approved"
+            description="Verifications approved this month"
+            count={stats?.kycApprovedThisMonth || 0}
+            icon={<CheckCircle className="h-6 w-6 text-purple-600 dark:text-purple-400" />}
+            color="bg-purple-100 dark:bg-purple-900/50"
             loading={loading}
           />
         </div>
