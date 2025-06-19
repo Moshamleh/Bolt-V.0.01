@@ -3,13 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Car, MapPin, Tag, MessageSquare, Loader2, 
   Heart, Share2, AlertCircle, ChevronLeft, ChevronRight,
-  User, FileText, Flag, CheckCircle
+  User, FileText, Flag, CheckCircle, Zap
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
-import { Part, getPartById, getOrCreatePartChat, isPartSaved, savePart, unsavePart } from '../lib/supabase';
+import { Part, getPartById, getOrCreatePartChat, isPartSaved, savePart, unsavePart, boostPart } from '../lib/supabase';
 import ReportPartModal from '../components/ReportPartModal';
+import BoostListingModal from '../components/BoostListingModal';
 
 const PartDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,6 +23,8 @@ const PartDetailPage: React.FC = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isBoostModalOpen, setIsBoostModalOpen] = useState(false);
+  const [isCurrentUserSeller, setIsCurrentUserSeller] = useState(false);
 
   useEffect(() => {
     const loadPart = async () => {
@@ -34,6 +37,12 @@ const PartDetailPage: React.FC = () => {
         ]);
         setPart(partData);
         setIsSaved(savedStatus);
+        
+        // Check if current user is the seller
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && partData.seller_id === user.id) {
+          setIsCurrentUserSeller(true);
+        }
       } catch (err) {
         console.error('Failed to load part:', err);
         setError('Failed to load part details');
@@ -97,6 +106,20 @@ const PartDetailPage: React.FC = () => {
 
   const handleReportPart = () => {
     setIsReportModalOpen(true);
+  };
+
+  const handleBoostListing = () => {
+    setIsBoostModalOpen(true);
+  };
+
+  const handleBoostComplete = () => {
+    // Update the local part state to show as boosted
+    if (part) {
+      setPart({
+        ...part,
+        is_boosted: true
+      });
+    }
   };
 
   const formatPrice = (price: number) => {
@@ -216,6 +239,14 @@ const PartDetailPage: React.FC = () => {
               className="w-full h-full object-cover"
             />
             
+            {/* Boosted Badge */}
+            {part.is_boosted && (
+              <div className="absolute top-4 left-4 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full text-sm font-medium shadow-lg flex items-center gap-1.5">
+                <Zap className="h-4 w-4" />
+                <span>Boosted</span>
+              </div>
+            )}
+            
             {images.length > 1 && (
               <>
                 <button
@@ -328,21 +359,42 @@ const PartDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              {/* Boost Listing Button (only for seller) */}
+              {isCurrentUserSeller && !part.is_boosted && (
                 <button
-                  onClick={handleMessageSeller}
-                  disabled={isMessagingLoading}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  onClick={handleBoostListing}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-medium hover:from-amber-600 hover:to-orange-600 transition-colors shadow-md"
                 >
-                  {isMessagingLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <>
-                      <MessageSquare className="h-5 w-5" />
-                      Message Seller
-                    </>
-                  )}
+                  <Zap className="h-5 w-5" />
+                  🔥 Boost Listing – $2.99
                 </button>
+              )}
+
+              {/* Boosted Status (if boosted) */}
+              {isCurrentUserSeller && part.is_boosted && (
+                <div className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 dark:text-amber-300 rounded-lg font-medium border border-amber-200 dark:border-amber-800">
+                  <Zap className="h-5 w-5" />
+                  Listing Boosted – Showing at the top of search results
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                {!isCurrentUserSeller && (
+                  <button
+                    onClick={handleMessageSeller}
+                    disabled={isMessagingLoading}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isMessagingLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <>
+                        <MessageSquare className="h-5 w-5" />
+                        Message Seller
+                      </>
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={handleSaveToggle}
                   disabled={isSaving}
@@ -436,6 +488,15 @@ const PartDetailPage: React.FC = () => {
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
         partId={part.id}
+      />
+
+      {/* Boost Modal */}
+      <BoostListingModal
+        isOpen={isBoostModalOpen}
+        onClose={() => setIsBoostModalOpen(false)}
+        partId={part.id}
+        partTitle={part.title}
+        onBoostComplete={handleBoostComplete}
       />
     </div>
   );

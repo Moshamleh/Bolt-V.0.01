@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Plus, ChevronDown, ChevronUp, Loader2, Menu, X, ShoppingBag, MessageSquare, Settings, Heart, AlertCircle, Package, ChevronLeft, ChevronRight, Mailbox as Toolbox, Wrench, ListFilter, MapPin, Wine as Engine, Disc, CarFront, CheckCircle } from 'lucide-react';
+import { 
+  Search, Filter, Plus, ChevronDown, ChevronUp, Loader2, Menu, X, ShoppingBag, MessageSquare, Settings, Heart, AlertCircle, Package, ChevronLeft, ChevronRight, Mailbox as Toolbox, Wrench, ListFilter, MapPin, Wine as Engine, Disc, CarFront, CheckCircle, Zap 
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Part, getParts, getOrCreatePartChat, PaginatedResponse } from '../lib/supabase';
 import PartCard from '../components/PartCard';
@@ -32,6 +34,7 @@ const MarketplacePage: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeFilterChipId, setActiveFilterChipId] = useState('all');
   const [showTrustedSellersOnly, setShowTrustedSellersOnly] = useState(false);
+  const [showBoostedOnly, setShowBoostedOnly] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -57,7 +60,14 @@ const MarketplacePage: React.FC = () => {
         };
         
         const response = await getParts(filters, currentPage, ITEMS_PER_PAGE);
-        setParts(response.data);
+        
+        // If showBoostedOnly is true, filter to only show boosted parts
+        let filteredData = response.data;
+        if (showBoostedOnly) {
+          filteredData = response.data.filter(part => part.is_boosted);
+        }
+        
+        setParts(filteredData);
         setTotalItems(response.total);
         setTotalPages(response.totalPages);
         setPaginatedResponse(response);
@@ -77,7 +87,8 @@ const MarketplacePage: React.FC = () => {
     oemNumber,
     currentPage,
     activeFilterChipId,
-    showTrustedSellersOnly
+    showTrustedSellersOnly,
+    showBoostedOnly
   ]);
 
   const handleSellPart = () => {
@@ -113,6 +124,7 @@ const MarketplacePage: React.FC = () => {
     setPartNumber('');
     setOemNumber('');
     setShowTrustedSellersOnly(false);
+    setShowBoostedOnly(false);
     setCurrentPage(1);
     setIsMobileMenuOpen(false);
   };
@@ -152,7 +164,7 @@ const MarketplacePage: React.FC = () => {
   );
 
   const EmptyState = () => {
-    const hasFilters = searchTerm || partNumber || oemNumber || activeFilterChipId !== 'all' || showTrustedSellersOnly;
+    const hasFilters = searchTerm || partNumber || oemNumber || activeFilterChipId !== 'all' || showTrustedSellersOnly || showBoostedOnly;
     
     return (
       <motion.div
@@ -272,24 +284,6 @@ const MarketplacePage: React.FC = () => {
     );
   };
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
-        <div className="max-w-7xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            {error}
-          </h2>
-          <button
-            onClick={() => window.location.reload()}
-            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
@@ -350,7 +344,10 @@ const MarketplacePage: React.FC = () => {
               
               {/* Trusted Sellers Filter */}
               <button
-                onClick={() => setShowTrustedSellersOnly(!showTrustedSellersOnly)}
+                onClick={() => {
+                  setShowTrustedSellersOnly(!showTrustedSellersOnly);
+                  setCurrentPage(1); // Reset to first page when changing filters
+                }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
                   showTrustedSellersOnly
                     ? 'bg-green-600 text-white shadow-glow'
@@ -358,7 +355,23 @@ const MarketplacePage: React.FC = () => {
                 }`}
               >
                 <CheckCircle className="h-4 w-4" />
-                Trusted Sellers Only
+                Verified Sellers
+              </button>
+              
+              {/* Boosted Filter */}
+              <button
+                onClick={() => {
+                  setShowBoostedOnly(!showBoostedOnly);
+                  setCurrentPage(1); // Reset to first page when changing filters
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                  showBoostedOnly
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-glow'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                <Zap className="h-4 w-4" />
+                Boosted Only
               </button>
             </div>
 
@@ -386,7 +399,7 @@ const MarketplacePage: React.FC = () => {
                 </button>
               </div>
 
-              {(showFilters || searchTerm || partNumber || oemNumber || activeFilterChipId !== 'all' || showTrustedSellersOnly) && (
+              {(showFilters || searchTerm || partNumber || oemNumber || activeFilterChipId !== 'all' || showTrustedSellersOnly || showBoostedOnly) && (
                 <button
                   onClick={handleClearFilters}
                   className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
@@ -466,6 +479,7 @@ const MarketplacePage: React.FC = () => {
                       location={part.location}
                       createdAt={part.created_at}
                       isTrustedSeller={part.seller_is_trusted}
+                      isBoosted={part.is_boosted}
                       onClick={() => handlePartClick(part.id)}
                     />
                   </motion.div>
@@ -522,7 +536,7 @@ const MarketplacePage: React.FC = () => {
               <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-                  <span className="text-gray-700 dark:text-gray-300">Trusted Sellers Only</span>
+                  <span className="text-gray-700 dark:text-gray-300">Verified Sellers Only</span>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -532,6 +546,23 @@ const MarketplacePage: React.FC = () => {
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                </label>
+              </div>
+              
+              {/* Boosted Only Toggle for Mobile */}
+              <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  <span className="text-gray-700 dark:text-gray-300">Boosted Listings Only</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showBoostedOnly}
+                    onChange={() => setShowBoostedOnly(!showBoostedOnly)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r from-amber-500 to-orange-500"></div>
                 </label>
               </div>
               

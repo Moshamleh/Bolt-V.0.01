@@ -27,9 +27,6 @@ export interface Profile {
   notification_preferences?: NotificationPreferences;
   invited_by?: string | null;
   listing_boost_until?: string | null;
-  first_diagnostic_completed?: boolean;
-  first_club_joined?: boolean;
-  first_part_listed?: boolean;
 }
 
 export interface NotificationPreferences {
@@ -85,6 +82,7 @@ export interface Part {
   part_number: string | null;
   oem_number: string | null;
   approved?: boolean;
+  is_boosted?: boolean;
   seller_is_trusted?: boolean;
 }
 
@@ -340,15 +338,6 @@ export interface SellerRatingStats {
   three_star_count: number;
   two_star_count: number;
   one_star_count: number;
-}
-
-export interface UserAchievement {
-  id: string;
-  user_id: string;
-  achievement_id: string;
-  xp_awarded: number;
-  badge_awarded: string | null;
-  awarded_at: string;
 }
 
 // Auth functions
@@ -618,7 +607,13 @@ export const getParts = async (
 ): Promise<PaginatedResponse<Part>> => {
   let query = supabase
     .from('parts')
-    .select('*, seller:profiles!seller_id(listing_boost_until, is_trusted)', { count: 'exact' });
+    .select(`
+      *,
+      seller:seller_id (
+        listing_boost_until,
+        is_trusted
+      )
+    `, { count: 'exact' });
 
   // Apply search
   if (filters.search) {
@@ -679,9 +674,8 @@ export const getParts = async (
   query = query.range(from, to);
   
   // Order by boosted listings first, then by creation date
-  query = query.order('seller.listing_boost_until', { 
-    ascending: false, 
-    nullsLast: true 
+  query = query.order('is_boosted', { 
+    ascending: false
   }).order('created_at', { 
     ascending: false 
   });
@@ -690,7 +684,7 @@ export const getParts = async (
 
   if (error) throw error;
 
-  // Process the data to include seller_is_trusted flag
+  // Process the data to include seller_is_trusted
   const processedData = data?.map(item => {
     const { seller, ...partData } = item;
     return {
@@ -712,7 +706,7 @@ export const getParts = async (
   };
 };
 
-export const getPartById = async (partId: string): Promise<Part & { seller_email: string; seller_is_trusted: boolean }> => {
+export const getPartById = async (partId: string): Promise<Part & { seller_email: string }> => {
   const { data, error } = await supabase
     .from('parts')
     .select(`
@@ -776,6 +770,35 @@ export const deletePart = async (partId: string): Promise<void> => {
     .eq('id', partId);
 
   if (error) throw error;
+};
+
+// Boost part listing
+export const boostPart = async (partId: string, days: number = 7): Promise<void> => {
+  // Calculate the boost expiration date
+  const boostUntil = new Date();
+  boostUntil.setDate(boostUntil.getDate() + days);
+  
+  // Update the part with boosted status
+  const { error } = await supabase
+    .from('parts')
+    .update({ is_boosted: true })
+    .eq('id', partId);
+
+  if (error) throw error;
+  
+  // Create a notification for the user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    await supabase
+      .from('notifications')
+      .insert({
+        user_id: user.id,
+        type: 'part_boosted',
+        message: `Your listing has been boosted and will appear at the top of search results for ${days} days.`,
+        read: false,
+        link: `/parts/${partId}`
+      });
+  }
 };
 
 // Admin functions for parts management
@@ -880,6 +903,52 @@ export const checkKycStatus = async (): Promise<boolean> => {
 
   if (error) throw error;
   return data.kyc_verified;
+};
+
+// Check and set trusted seller status
+export const checkAndSetTrustedSeller = async (userId: string): Promise<void> => {
+  try {
+    // Get KYC verification status
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('kyc_verified')
+      .eq('id', userId)
+      .single();
+    
+    if (profileError) throw profileError;
+    
+    // Count approved parts by this seller
+    const { count: approvedPartsCount, error: partsError } = await supabase
+      .from('parts')
+      .select('*', { count: 'exact', head: true })
+      .eq('seller_id', userId)
+      .eq('approved', true);
+    
+    if (partsError) throw partsError;
+    
+    // If KYC is verified and seller has at least 3 approved parts, mark as trusted
+    if (profile.kyc_verified && approvedPartsCount >= 3) {
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ is_trusted: true })
+        .eq('id', userId);
+      
+      if (updateError) throw updateError;
+      
+      // Create notification for the user
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: userId,
+          type: 'trusted_seller',
+          message: 'Congratulations! You are now a Verified Seller. Your listings will display a verification badge.',
+          read: false
+        });
+    }
+  } catch (error) {
+    console.error('Failed to check trusted seller status:', error);
+    // Don't throw the error to prevent disrupting the main flow
+  }
 };
 
 // Saved parts functions
@@ -1723,14 +1792,7 @@ export const getAllBadges = async (): Promise<Badge[]> => {
   return data || [];
 };
 
-export const awardBadge = async (userId: string | undefined, badgeName: string, note?: string): Promise<void> => {
-  // Get current user if userId is not provided
-  if (!userId) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
-    userId = user.id;
-  }
-
+export const awardBadge = async (userId: string, badgeName: string, note?: string): Promise<void> => {
   // First, find the badge by name
   const { data: badge, error: badgeError } = await supabase
     .from('badges')
@@ -1759,6 +1821,70 @@ export const awardBadge = async (userId: string | undefined, badgeName: string, 
   
   // Play sound effect
   playPopSound();
+};
+
+// User achievements functions
+export const hasUserAchievementBeenAwarded = async (userId: string, achievementId: string): Promise<boolean> => {
+  // Get current user if userId is not provided
+  if (!userId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+    userId = user.id;
+  }
+
+  const { data, error } = await supabase
+    .from('user_achievements')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('achievement_id', achievementId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return !!data;
+};
+
+export const recordUserAchievement = async (
+  userId: string, 
+  achievementId: string, 
+  xpAwarded: number,
+  badgeName?: string
+): Promise<void> => {
+  // Get current user if userId is not provided
+  if (!userId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+    userId = user.id;
+  }
+
+  // Get badge ID if badge name is provided
+  let badgeId: string | null = null;
+  if (badgeName) {
+    const { data: badge } = await supabase
+      .from('badges')
+      .select('id')
+      .eq('name', badgeName)
+      .maybeSingle();
+    
+    badgeId = badge?.id || null;
+  }
+
+  // Record the achievement
+  const { error } = await supabase
+    .from('user_achievements')
+    .insert({
+      user_id: userId,
+      achievement_id: achievementId,
+      xp_awarded: xpAwarded,
+      badge_awarded: badgeId
+    })
+    .on_conflict(['user_id', 'achievement_id'])
+    .ignore(); // Ignore if the user already has this achievement
+
+  if (error) throw error;
 };
 
 // Leaderboard functions
@@ -2047,112 +2173,6 @@ export const getKycStatusCounts = async (): Promise<{
     approved: approved || 0,
     rejected: rejected || 0
   };
-};
-
-// User achievements functions
-export const hasUserAchievementBeenAwarded = async (userId: string | undefined, achievementId: string): Promise<boolean> => {
-  // Get current user if userId is not provided
-  if (!userId) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
-    userId = user.id;
-  }
-
-  const { data, error } = await supabase
-    .from('user_achievements')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('achievement_id', achievementId)
-    .maybeSingle();
-
-  if (error) throw error;
-  return !!data;
-};
-
-export const recordUserAchievement = async (
-  userId: string | undefined, 
-  achievementId: string, 
-  xpAwarded: number, 
-  badgeName?: string
-): Promise<void> => {
-  // Get current user if userId is not provided
-  if (!userId) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
-    userId = user.id;
-  }
-
-  // Check if achievement already awarded
-  const alreadyAwarded = await hasUserAchievementBeenAwarded(userId, achievementId);
-  if (alreadyAwarded) return;
-
-  // Get badge ID if badge name provided
-  let badgeId = null;
-  if (badgeName) {
-    const { data: badge, error: badgeError } = await supabase
-      .from('badges')
-      .select('id')
-      .eq('name', badgeName)
-      .maybeSingle();
-
-    if (badgeError) throw badgeError;
-    if (badge) badgeId = badge.id;
-  }
-
-  // Record the achievement
-  const { error } = await supabase
-    .from('user_achievements')
-    .insert({
-      user_id: userId,
-      achievement_id: achievementId,
-      xp_awarded: xpAwarded,
-      badge_awarded: badgeId
-    });
-
-  if (error) throw error;
-};
-
-// Trusted seller functions
-export const checkAndSetTrustedSeller = async (userId: string): Promise<void> => {
-  // Get KYC verification status
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('kyc_verified')
-    .eq('id', userId)
-    .single();
-
-  if (profileError) throw profileError;
-
-  // Count approved parts by this seller
-  const { count: approvedPartsCount, error: partsError } = await supabase
-    .from('parts')
-    .select('*', { count: 'exact', head: true })
-    .eq('seller_id', userId)
-    .eq('approved', true);
-
-  if (partsError) throw partsError;
-
-  // If KYC is verified and seller has at least 3 approved parts, mark as trusted
-  if (profile.kyc_verified && approvedPartsCount >= 3) {
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ is_trusted: true })
-      .eq('id', userId);
-
-    if (updateError) throw updateError;
-
-    // Create notification for the user
-    const { error: notificationError } = await supabase
-      .from('notifications')
-      .insert({
-        user_id: userId,
-        type: 'trusted_seller',
-        message: 'Congratulations! You are now a Verified Seller. Your listings will display a verification badge.',
-        read: false
-      });
-
-    if (notificationError) throw notificationError;
-  }
 };
 
 export default supabase;

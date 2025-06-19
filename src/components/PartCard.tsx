@@ -1,5 +1,5 @@
 import React from 'react';
-import { Car, MapPin, CheckCircle } from 'lucide-react';
+import { Car, MapPin, CheckCircle, Zap } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 export interface PartCardProps {
@@ -14,6 +14,7 @@ export interface PartCardProps {
   location: string;
   createdAt: string;
   isTrustedSeller?: boolean;
+  isBoosted?: boolean;
   onClick?: () => void;
 }
 
@@ -28,6 +29,7 @@ const PartCard: React.FC<PartCardProps> = ({
   location,
   createdAt,
   isTrustedSeller,
+  isBoosted,
   onClick
 }) => {
   const formatPrice = (price: number) => {
@@ -79,6 +81,14 @@ const PartCard: React.FC<PartCardProps> = ({
             </div>
           )}
         </div>
+        
+        {/* Boosted Badge */}
+        {isBoosted && (
+          <div className="absolute top-2 left-2 px-3 py-1.5 bg-gradient-to-r from-amber-500/90 to-orange-500/90 text-white rounded-full text-xs font-medium shadow-lg backdrop-blur-sm flex items-center gap-1.5">
+            <Zap className="h-3.5 w-3.5" />
+            <span>Boosted</span>
+          </div>
+        )}
       </div>
 
       <div className="p-4 flex-grow flex flex-col">

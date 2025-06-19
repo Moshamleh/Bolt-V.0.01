@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Settings, Trash2, Car, MapPin, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Settings, Trash2, Car, MapPin, Loader2, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
-import { Part, getMyParts, deletePart } from '../lib/supabase';
+import { Part, getMyParts, deletePart, boostPart } from '../lib/supabase';
+import BoostListingModal from '../components/BoostListingModal';
 
 const MyListingsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -11,6 +12,8 @@ const MyListingsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedPartForBoost, setSelectedPartForBoost] = useState<Part | null>(null);
+  const [isBoostModalOpen, setIsBoostModalOpen] = useState(false);
 
   useEffect(() => {
     const loadParts = async () => {
@@ -50,6 +53,24 @@ const MyListingsPage: React.FC = () => {
       setError('Failed to delete listing');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleBoostPart = (part: Part) => {
+    setSelectedPartForBoost(part);
+    setIsBoostModalOpen(true);
+  };
+
+  const handleBoostComplete = () => {
+    // Update the local state to show the part as boosted
+    if (selectedPartForBoost) {
+      setParts(prev => 
+        prev.map(part => 
+          part.id === selectedPartForBoost.id 
+            ? { ...part, is_boosted: true } 
+            : part
+        )
+      );
     }
   };
 
@@ -133,6 +154,16 @@ const MyListingsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
+        <motion.button
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          onClick={() => navigate('/marketplace')}
+          className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6"
+        >
+          <ArrowLeft className="h-5 w-5 mr-2" />
+          Back to Marketplace
+        </motion.button>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -185,6 +216,14 @@ const MyListingsPage: React.FC = () => {
                         {part.condition.charAt(0).toUpperCase() + part.condition.slice(1)}
                       </span>
                     </div>
+                    
+                    {/* Boosted Badge */}
+                    {part.is_boosted && (
+                      <div className="absolute top-2 left-2 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full text-xs font-medium shadow-lg flex items-center gap-1.5">
+                        <Zap className="h-3.5 w-3.5" />
+                        <span>Boosted</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-4">
@@ -212,6 +251,15 @@ const MyListingsPage: React.FC = () => {
                     </div>
 
                     <div className="flex gap-2">
+                      {!part.is_boosted && (
+                        <button
+                          onClick={() => handleBoostPart(part)}
+                          className="flex-1 flex items-center justify-center px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors"
+                        >
+                          <Zap className="h-4 w-4 mr-2" />
+                          Boost
+                        </button>
+                      )}
                       <button
                         onClick={() => handleEditPart(part.id)}
                         className="flex-1 flex items-center justify-center px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -241,6 +289,15 @@ const MyListingsPage: React.FC = () => {
           </AnimatePresence>
         )}
       </div>
+
+      {/* Boost Modal */}
+      <BoostListingModal
+        isOpen={isBoostModalOpen}
+        onClose={() => setIsBoostModalOpen(false)}
+        partId={selectedPartForBoost?.id || ''}
+        partTitle={selectedPartForBoost?.title || ''}
+        onBoostComplete={handleBoostComplete}
+      />
     </div>
   );
 };
