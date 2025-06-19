@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Zap, Loader2, CreditCard, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { boostPart } from '../lib/supabase';
+import { boostPart, createBoostOrder } from '../lib/supabase';
 import { awardXp, XP_VALUES } from '../lib/xpSystem';
+import { loadStripe } from '@stripe/stripe-js';
+
+// Initialize Stripe
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_test_placeholder');
 
 interface BoostListingModalProps {
   isOpen: boolean;
@@ -29,8 +33,68 @@ const BoostListingModal: React.FC<BoostListingModalProps> = ({
     setError(null);
     
     try {
-      // Process the boost (in a real app, this would involve payment)
-      await boostPart(partId, 7); // Boost for 7 days
+      // Create a boost order in the database with status 'pending'
+      const boostOrder = await createBoostOrder(partId);
+      
+      // In a real implementation, redirect to Stripe Checkout
+      // For now, we'll simulate a successful payment
+      
+      // Simulate payment processing delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Update the boost order status to 'paid' and set expiry date
+      // This would normally be done by a webhook from Stripe
+      const durationInDays = 7;
+      
+      // Process the boost (in a real app, this would be triggered by a webhook)
+      await boostPart(partId, durationInDays, boostOrder.id);
+      
+      // Award XP for boosting a listing
+      await awardXp(undefined, 50, "Boosted a marketplace listing");
+      
+      // Show success state
+      setIsSuccess(true);
+      
+      // Notify parent component
+      onBoostComplete();
+      
+      // Auto-close after 3 seconds
+      setTimeout(() => {
+        onClose();
+      }, 3000);
+    } catch (err) {
+      console.error('Failed to boost listing:', err);
+      setError('Failed to process your boost. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleStripeCheckout = async () => {
+    setIsProcessing(true);
+    setError(null);
+    
+    try {
+      // Create a boost order in the database with status 'pending'
+      const boostOrder = await createBoostOrder(partId);
+      
+      // Initialize Stripe
+      const stripe = await stripePromise;
+      if (!stripe) {
+        throw new Error('Stripe failed to initialize');
+      }
+      
+      // In a real implementation, you would:
+      // 1. Call your backend to create a Stripe Checkout Session
+      // 2. Redirect to the Stripe Checkout page
+      // 3. Handle the redirect back to your site
+      // 4. Process the webhook from Stripe to confirm payment
+      
+      // For now, we'll simulate a successful payment
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Process the boost (in a real app, this would be triggered by a webhook)
+      await boostPart(partId, 7, boostOrder.id);
       
       // Award XP for boosting a listing
       await awardXp(undefined, 50, "Boosted a marketplace listing");

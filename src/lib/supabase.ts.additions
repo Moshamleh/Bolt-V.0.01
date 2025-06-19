@@ -1,0 +1,67 @@
+// These functions should be added to your existing src/lib/supabase.ts file
+
+/**
+ * Create a boost order for a part
+ * @param partId The ID of the part to boost
+ * @returns The created boost order
+ */
+export async function createBoostOrder(partId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('boost_orders')
+      .insert({
+        part_id: partId,
+        status: 'pending'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error creating boost order:', error);
+    throw error;
+  }
+}
+
+/**
+ * Boost a part for a specified duration
+ * @param partId The ID of the part to boost
+ * @param durationInDays The duration of the boost in days
+ * @param boostOrderId The ID of the boost order
+ * @returns The updated part
+ */
+export async function boostPart(partId: string, durationInDays: number = 7, boostOrderId?: string) {
+  try {
+    // Calculate expiry date
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + durationInDays);
+    
+    // If a boost order ID is provided, update it
+    if (boostOrderId) {
+      const { error: boostOrderError } = await supabase
+        .from('boost_orders')
+        .update({ 
+          status: 'paid',
+          expires_at: expiresAt.toISOString()
+        })
+        .eq('id', boostOrderId);
+      
+      if (boostOrderError) throw boostOrderError;
+    }
+    
+    // Update the part to be boosted
+    const { data, error } = await supabase
+      .from('parts')
+      .update({ is_boosted: true })
+      .eq('id', partId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error boosting part:', error);
+    throw error;
+  }
+}
