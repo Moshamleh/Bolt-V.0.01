@@ -105,6 +105,16 @@ export interface UserEarnedBadge {
   note?: string;
 }
 
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: string;
+  message: string;
+  read?: boolean;
+  created_at?: string;
+  link?: string;
+}
+
 // Auth functions
 export async function signUp(email: string, password: string, invitedBy?: string) {
   const { data, error } = await supabase.auth.signUp({
@@ -318,6 +328,47 @@ export async function boostPart(partId: string, days: number = 7): Promise<Part>
   
   if (error) throw error;
   return data;
+}
+
+// Notification functions
+export async function getUserNotifications(): Promise<Notification[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function markNotificationAsRead(notificationId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read: true })
+    .eq('id', notificationId)
+    .eq('user_id', user.id);
+
+  if (error) throw error;
+}
+
+export async function deleteNotification(notificationId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('notifications')
+    .delete()
+    .eq('id', notificationId)
+    .eq('user_id', user.id);
+
+  if (error) throw error;
 }
 
 // KYC functions
