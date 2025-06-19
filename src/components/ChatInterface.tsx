@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SendHorizonal, ThumbsUp, ThumbsDown, Loader2, Link as LinkIcon } from 'lucide-react';
+import { SendHorizonal, ThumbsUp, ThumbsDown, Loader2, Link as LinkIcon, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TextareaAutosize from 'react-textarea-autosize';
 import toast from 'react-hot-toast';
@@ -30,6 +30,7 @@ interface ChatInterfaceProps {
   suggestedPrompts?: string[];
   recheckPrompt?: string | null;
   setRecheckPrompt?: React.Dispatch<React.SetStateAction<string | null>>;
+  userName?: string;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -41,13 +42,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   setActiveDiagnosisId,
   suggestedPrompts = [],
   recheckPrompt = null,
-  setRecheckPrompt
+  setRecheckPrompt,
+  userName = ''
 }) => {
   const [input, setInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittingFeedback, setSubmittingFeedback] = useState<string | null>(null);
   const [messageVersion, setMessageVersion] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showInitialGreeting, setShowInitialGreeting] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -92,6 +95,40 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
     }
   }, [messages, messageVersion]);
+
+  // Show initial greeting when chat is empty
+  useEffect(() => {
+    if (messages.length === 0 && showInitialGreeting) {
+      // Add typing indicator
+      const typingIndicatorId = `typing-${Date.now()}`;
+      setMessages([{
+        id: typingIndicatorId,
+        text: '',
+        isUser: false,
+        isTypingIndicator: true,
+        timestamp: new Date()
+      }]);
+      setMessageVersion(prev => prev + 1);
+      
+      // After 2 seconds, replace with welcome message
+      setTimeout(() => {
+        // Create personalized greeting
+        const greeting = `👋 Hey ${userName ? userName : 'there'}, I'm Bolt — your personal AI mechanic.
+
+I'm here to help with anything under the hood.
+Try saying: "My car makes a weird clicking sound when I turn."`;
+        
+        setMessages([{
+          id: `greeting-${Date.now()}`,
+          text: greeting,
+          isUser: false,
+          timestamp: new Date()
+        }]);
+        setMessageVersion(prev => prev + 1);
+        setShowInitialGreeting(false);
+      }, 2000);
+    }
+  }, [messages, showInitialGreeting, userName, setMessages]);
 
   const provideFeedback = async () => {
     if (navigator.vibrate) {

@@ -354,13 +354,13 @@ const DiagnosticPage: React.FC = () => {
 
   // Get user's first name
   const getFirstName = () => {
-    if (!profile) return 'there';
+    if (!profile) return '';
     
     if (profile.full_name) {
       return profile.full_name.split(' ')[0];
     }
     
-    return profile.username || 'there';
+    return profile.username || '';
   };
 
   const handleUrgentTipRequest = async () => {
@@ -463,6 +463,7 @@ const DiagnosticPage: React.FC = () => {
           error={error}
           onStatusChange={handleDiagnosisStatusChange}
           onLoadDiagnosis={handleLoadDiagnosis}
+          onRecheckDiagnosis={handleRecheckDiagnosis}
           filterStatus={filterStatus}
           onFilterChange={setFilterStatus}
         />
@@ -650,6 +651,7 @@ const DiagnosticPage: React.FC = () => {
                   suggestedPrompts={suggestedPrompts}
                   recheckPrompt={recheckPrompt}
                   setRecheckPrompt={setRecheckPrompt}
+                  userName={getFirstName()}
                 />
               </Suspense>
             </div>
@@ -833,18 +835,22 @@ const DiagnosticPage: React.FC = () => {
             suggestedPrompts={suggestedPrompts}
             recheckPrompt={recheckPrompt}
             setRecheckPrompt={setRecheckPrompt}
+            userName={getFirstName()}
           />
         </Suspense>
       </div>
 
       {/* Welcome Modal for new users */}
       <WelcomeModal 
-        isOpen={showWelcomeModal} 
-        onClose={() => {
+        isOpen={showWelcomeModal}
+        onExploreMarketplace={() => {
           setShowWelcomeModal(false);
-          completeOnboarding();
+          navigate('/marketplace');
         }}
-        onStartTour={handleStartTour}
+        onSetupVehicle={() => {
+          setShowWelcomeModal(false);
+          navigate('/vehicle-setup');
+        }}
         userName={getFirstName()}
       />
     </div>
