@@ -11,6 +11,7 @@ import { awardXp, XP_VALUES } from '../lib/xpSystem';
 import Confetti from '../components/Confetti';
 import ChatHistorySkeleton from '../components/ChatHistorySkeleton';
 import VehicleCardSkeleton from '../components/VehicleCardSkeleton';
+import { incrementChallengeProgress } from '../lib/supabase_modules/challenges';
 
 // Lazy load components
 const ChatInterface = lazy(() => import('../components/ChatInterface'));
@@ -18,6 +19,8 @@ const MobileTopNavBar = lazy(() => import('../components/MobileTopNavBar'));
 const MobileCollapsibleMenu = lazy(() => import('../components/MobileCollapsibleMenu'));
 const ChatHistory = lazy(() => import('../components/ChatHistory'));
 const RepairTipsPanel = lazy(() => import('../components/RepairTipsPanel'));
+const TipCarousel = lazy(() => import('../components/TipCarousel'));
+const ChallengeProgress = lazy(() => import('../components/ChallengeProgress'));
 
 // Loading fallback component
 const ComponentLoader = () => (
@@ -79,6 +82,8 @@ const DiagnosticPage: React.FC = () => {
   useEffect(() => {
     const loadVehicles = async () => {
       try {
+        setLoading(true);
+        
         const vehicles = await getUserVehicles();
         setVehicles(vehicles);
         if (vehicles.length > 0) {
@@ -267,6 +272,23 @@ const DiagnosticPage: React.FC = () => {
         
         // Show confetti animation
         setShowConfetti(true);
+        
+        // Update challenge progress
+        try {
+          // First Diagnosis challenge
+          await incrementChallengeProgress('First Diagnosis');
+          
+          // Diagnostic Expert challenge
+          await incrementChallengeProgress('Diagnostic Expert');
+          
+          // Daily Diagnostics challenge
+          await incrementChallengeProgress('Daily Diagnostics');
+          
+          // Weekly Mechanic challenge
+          await incrementChallengeProgress('Weekly Mechanic');
+        } catch (challengeError) {
+          console.error('Failed to update challenge progress:', challengeError);
+        }
       } catch (badgeError) {
         console.error('Failed to award First Diagnosis badge:', badgeError);
         // Don't fail the diagnostic if badge awarding fails
@@ -276,6 +298,20 @@ const DiagnosticPage: React.FC = () => {
       try {
         await awardXp(undefined, XP_VALUES.RUN_DIAGNOSTIC, "Completed AI diagnostic");
         toast.success(`🎉 +${XP_VALUES.RUN_DIAGNOSTIC} XP added to your profile!`);
+        
+        // Update challenge progress
+        try {
+          // Diagnostic Expert challenge
+          await incrementChallengeProgress('Diagnostic Expert');
+          
+          // Daily Diagnostics challenge
+          await incrementChallengeProgress('Daily Diagnostics');
+          
+          // Weekly Mechanic challenge
+          await incrementChallengeProgress('Weekly Mechanic');
+        } catch (challengeError) {
+          console.error('Failed to update challenge progress:', challengeError);
+        }
       } catch (xpError) {
         console.error('Failed to award XP:', xpError);
         // Don't fail the diagnostic if XP awarding fails
@@ -639,6 +675,13 @@ const DiagnosticPage: React.FC = () => {
             )}
           </AnimatePresence>
 
+          {/* Challenge Progress */}
+          <div className="bg-white dark:bg-gray-800 border-b border-neutral-200 dark:border-gray-700 p-4">
+            <Suspense fallback={<div className="h-12"></div>}>
+              <ChallengeProgress limit={1} />
+            </Suspense>
+          </div>
+
           {/* Chat Interface */}
           <div className="flex-1 flex">
             <div className={`flex-1 ${showRepairTips ? 'md:w-2/3' : 'w-full'}`}>
@@ -739,6 +782,13 @@ const DiagnosticPage: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Challenge Progress (Mobile) */}
+        <div className="px-4 mb-4">
+          <Suspense fallback={<div className="h-12"></div>}>
+            <ChallengeProgress limit={1} />
+          </Suspense>
         </div>
 
         {/* Urgent Maintenance Tip (Mobile) */}

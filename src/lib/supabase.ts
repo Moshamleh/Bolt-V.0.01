@@ -307,6 +307,33 @@ export interface NotificationPreferences {
   marketplace_activity: boolean;
 }
 
+// New interfaces for gamification system
+export interface Challenge {
+  id: string;
+  name: string;
+  description: string;
+  type: 'diagnostic_count' | 'part_listing_count' | 'club_message_count' | 'daily_diagnostic_count' | 'weekly_diagnostic_count' | 'service_record_count' | 'vehicle_count' | 'club_join_count' | 'feedback_count' | string;
+  target_value: number;
+  frequency: 'daily' | 'weekly' | 'one_time' | string;
+  xp_reward: number;
+  badge_reward_id?: string; // UUID of the badge
+  start_date?: string; // ISO string
+  end_date?: string; // ISO string
+  created_at?: string; // ISO string
+}
+
+export interface UserChallenge {
+  id: string;
+  user_id: string;
+  challenge_id: string;
+  current_progress: number;
+  completed: boolean;
+  completed_at?: string; // ISO string
+  last_updated?: string; // ISO string
+  created_at?: string; // ISO string
+  challenge?: Challenge; // Optional: for joining with challenge details
+}
+
 // Re-export all functions from modularized files
 export * from './supabase_modules/auth';
 export * from './supabase_modules/profile';

@@ -8,6 +8,7 @@ import { getUserXp, getLevelName } from '../lib/xpSystem';
 import XpProgressBar from '../components/XpProgressBar';
 import toast from 'react-hot-toast';
 import ProfileSkeleton from '../components/ProfileSkeleton';
+import ChallengeProgress from '../components/ChallengeProgress';
 
 // Lazy load components
 const ProfileSection = lazy(() => import('../components/ProfileSection'));
@@ -19,6 +20,7 @@ const ProfileCompletionIndicator = lazy(() => import('../components/ProfileCompl
 const NotificationPreferencesSection = lazy(() => import('../components/NotificationPreferencesSection'));
 const ReferralSection = lazy(() => import('../components/ReferralSection'));
 const AchievementTracker = lazy(() => import('../components/AchievementTracker'));
+const ChallengesList = lazy(() => import('../components/ChallengesList'));
 
 // Loading fallback component
 const ComponentLoader = () => (
@@ -148,6 +150,7 @@ const AccountPage = () => {
   const tabs = [
     { id: 'profile', label: 'Profile', icon: <User className="h-5 w-5" /> },
     { id: 'achievements', label: 'Achievements', icon: <Award className="h-5 w-5" /> },
+    { id: 'challenges', label: 'Challenges', icon: <Zap className="h-5 w-5" /> },
     { id: 'referrals', label: 'Referrals', icon: <Share2 className="h-5 w-5" /> },
     { id: 'notifications', label: 'Notifications', icon: <Bell className="h-5 w-5" /> },
     { id: 'preferences', label: 'Preferences', icon: <Moon className="h-5 w-5" /> },
@@ -278,6 +281,36 @@ const AccountPage = () => {
                   </p>
                 </div>
                 <BadgesPanel badges={displayBadges} loading={badgesLoading} />
+              </div>
+            </Suspense>
+          </LazyErrorBoundary>
+        );
+      case 'challenges':
+        return (
+          <LazyErrorBoundary componentName="Challenges Section">
+            <Suspense fallback={<ComponentLoader />}>
+              <div className="space-y-6">
+                <ChallengeProgress className="mb-6" />
+                
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    Available Challenges
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Complete these challenges to earn XP and badges
+                  </p>
+                </div>
+                
+                <ChallengesList limit={5} />
+                
+                <div className="flex justify-center mt-4">
+                  <button
+                    onClick={() => navigate('/challenges')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                  >
+                    View All Challenges
+                  </button>
+                </div>
               </div>
             </Suspense>
           </LazyErrorBoundary>
