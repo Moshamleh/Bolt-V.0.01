@@ -4,6 +4,7 @@ import { Car, Plus, Settings, Wrench, Loader2, FileText, Calendar, Lightbulb, Me
 import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, getUserVehicles, getProfile } from '../lib/supabase';
 import MobilePageMenu from '../components/MobilePageMenu';
+import VehicleCardSkeleton from '../components/VehicleCardSkeleton';
 
 // Lazy load components
 const RepairTipsPanel = lazy(() => import('../components/RepairTipsPanel'));
@@ -68,23 +69,6 @@ const VehicleManagementPage: React.FC = () => {
   const handleViewServiceHistory = (vehicleId: string) => {
     navigate(`/vehicles/${vehicleId}/service-history`);
   };
-
-  const LoadingSkeleton = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="animate-pulse bg-neutral-100 dark:bg-gray-800 rounded-xl shadow-sm border border-neutral-200 dark:border-gray-700 p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="space-y-2 flex-1">
-              <div className="h-6 bg-neutral-200 dark:bg-gray-700 rounded w-3/4"></div>
-              <div className="h-4 bg-neutral-200 dark:bg-gray-700 rounded w-1/2"></div>
-            </div>
-            <div className="w-8 h-8 bg-neutral-200 dark:bg-gray-700 rounded"></div>
-          </div>
-          <div className="h-10 bg-neutral-200 dark:bg-gray-700 rounded-lg mt-4"></div>
-        </div>
-      ))}
-    </div>
-  );
 
   const EmptyState = () => (
     <motion.div
@@ -156,7 +140,11 @@ const VehicleManagementPage: React.FC = () => {
         </motion.div>
 
         {loading ? (
-          <LoadingSkeleton />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <VehicleCardSkeleton key={index} />
+            ))}
+          </div>
         ) : vehicles.length === 0 ? (
           <EmptyState />
         ) : (

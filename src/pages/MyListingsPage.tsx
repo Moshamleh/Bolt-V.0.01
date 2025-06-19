@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { Part, getMyParts, deletePart, boostPart } from '../lib/supabase';
 import BoostListingModal from '../components/BoostListingModal';
+import PartCardSkeleton from '../components/PartCardSkeleton';
 
 const MyListingsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -80,33 +81,6 @@ const MyListingsPage: React.FC = () => {
       currency: 'USD',
     }).format(price);
   };
-
-  const LoadingSkeleton = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="animate-pulse bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <div className="aspect-video bg-gray-200 dark:bg-gray-700"></div>
-          <div className="p-4">
-            <div className="flex justify-between items-start mb-4">
-              <div className="w-2/3">
-                <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-              </div>
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
-            </div>
-            <div className="space-y-2 mb-4">
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-            </div>
-            <div className="flex gap-2">
-              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded flex-1"></div>
-              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded flex-1"></div>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
 
   const EmptyState = () => (
     <motion.div
@@ -186,7 +160,11 @@ const MyListingsPage: React.FC = () => {
         </motion.div>
 
         {loading ? (
-          <LoadingSkeleton />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <PartCardSkeleton key={index} />
+            ))}
+          </div>
         ) : parts.length === 0 ? (
           <EmptyState />
         ) : (

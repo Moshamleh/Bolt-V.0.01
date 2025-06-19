@@ -14,6 +14,7 @@ import {
   Vehicle, 
   getUserVehicles 
 } from '../lib/supabase';
+import ServiceRecordSkeleton from '../components/ServiceRecordSkeleton';
 
 const ServiceHistoryPage: React.FC = () => {
   const { vehicleId } = useParams<{ vehicleId: string }>();
@@ -112,30 +113,6 @@ const ServiceHistoryPage: React.FC = () => {
     return `${vehicle.year} ${vehicle.make} ${vehicle.model}${vehicle.trim ? ` ${vehicle.trim}` : ''}`;
   };
 
-  const LoadingSkeleton = () => (
-    <div className="space-y-6">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="animate-pulse bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-          <div className="flex justify-between items-start mb-4">
-            <div className="space-y-2 flex-1">
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-            </div>
-            <div className="h-8 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
-          </div>
-          <div className="space-y-2">
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-          </div>
-          <div className="flex gap-2 mt-4">
-            <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
-            <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
   const EmptyState = () => (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -222,7 +199,11 @@ const ServiceHistoryPage: React.FC = () => {
         )}
 
         {loading ? (
-          <LoadingSkeleton />
+          <div className="space-y-6">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <ServiceRecordSkeleton key={index} />
+            ))}
+          </div>
         ) : records.length === 0 ? (
           <EmptyState />
         ) : (

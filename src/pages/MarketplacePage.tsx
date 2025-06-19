@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Part, getParts, getOrCreatePartChat, PaginatedResponse } from '../lib/supabase';
 import PartCard from '../components/PartCard';
 import MobilePageMenu from '../components/MobilePageMenu';
+import PartCardSkeleton from '../components/PartCardSkeleton';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -144,24 +145,6 @@ const MarketplacePage: React.FC = () => {
     setActiveFilterChipId(chipId);
     setCurrentPage(1); // Reset to first page when changing filters
   };
-
-  const LoadingSkeleton = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-        <div key={i} className="animate-pulse">
-          <div className="bg-gray-200 dark:bg-gray-700 rounded-t-lg h-48 w-full"></div>
-          <div className="bg-white dark:bg-gray-800 rounded-b-lg p-4">
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-            <div className="mt-4 space-y-2">
-              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
 
   const EmptyState = () => {
     const hasFilters = searchTerm || partNumber || oemNumber || activeFilterChipId !== 'all' || showTrustedSellersOnly || showBoostedOnly;
@@ -453,7 +436,11 @@ const MarketplacePage: React.FC = () => {
         </div>
 
         {loading && parts.length === 0 ? (
-          <LoadingSkeleton />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <PartCardSkeleton key={index} />
+            ))}
+          </div>
         ) : parts.length === 0 ? (
           <EmptyState />
         ) : (

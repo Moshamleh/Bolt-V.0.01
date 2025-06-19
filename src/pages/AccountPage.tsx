@@ -7,6 +7,7 @@ import LazyErrorBoundary from '../components/LazyErrorBoundary';
 import { getUserXp, getLevelName } from '../lib/xpSystem';
 import XpProgressBar from '../components/XpProgressBar';
 import toast from 'react-hot-toast';
+import ProfileSkeleton from '../components/ProfileSkeleton';
 
 // Lazy load components
 const ProfileSection = lazy(() => import('../components/ProfileSection'));
@@ -159,7 +160,7 @@ const AccountPage = () => {
       case 'profile':
         return (
           <LazyErrorBoundary componentName="Profile Section">
-            <Suspense fallback={<ComponentLoader />}>
+            <Suspense fallback={<ProfileSkeleton />}>
               <div className="space-y-6">
                 <ProfileCompletionIndicator profile={profile} />
                 

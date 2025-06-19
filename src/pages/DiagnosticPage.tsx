@@ -9,6 +9,8 @@ import { useProfile } from '../hooks/useProfile';
 import { hasCompletedFirstDiagnostic, markFirstDiagnosticCompleted } from '../lib/utils';
 import { awardXp, XP_VALUES } from '../lib/xpSystem';
 import Confetti from '../components/Confetti';
+import ChatHistorySkeleton from '../components/ChatHistorySkeleton';
+import VehicleCardSkeleton from '../components/VehicleCardSkeleton';
 
 // Lazy load components
 const ChatInterface = lazy(() => import('../components/ChatInterface'));
@@ -514,7 +516,7 @@ const DiagnosticPage: React.FC = () => {
               </button>
             </div>
           </div>
-          <Suspense fallback={<ComponentLoader />}>
+          <Suspense fallback={<ChatHistorySkeleton />}>
             <ChatHistory
               diagnoses={diagnoses}
               loading={loading}
