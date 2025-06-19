@@ -8,7 +8,7 @@ import {
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
-import { Part, getPartById, getOrCreatePartChat, isPartSaved, savePart, unsavePart, boostPart } from '../lib/supabase';
+import { Part, getPartById, getOrCreatePartChat, isPartSaved, savePart, unsavePart, boostPart, supabase } from '../lib/supabase';
 import ReportPartModal from '../components/ReportPartModal';
 import BoostListingModal from '../components/BoostListingModal';
 import BlurImage from '../components/BlurImage';
