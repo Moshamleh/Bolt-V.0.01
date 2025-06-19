@@ -448,6 +448,7 @@ const MarketplacePage: React.FC = () => {
                       model={part.model}
                       location={part.location}
                       createdAt={part.created_at}
+                      isTrustedSeller={part.seller_is_trusted}
                       onClick={() => handlePartClick(part.id)}
                     />
                   </motion.div>

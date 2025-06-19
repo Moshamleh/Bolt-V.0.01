@@ -1,5 +1,5 @@
 import React from 'react';
-import { Car, MapPin } from 'lucide-react';
+import { Car, MapPin, CheckCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 export interface PartCardProps {
@@ -13,6 +13,7 @@ export interface PartCardProps {
   model: string;
   location: string;
   createdAt: string;
+  isTrustedSeller?: boolean;
   onClick?: () => void;
 }
 
@@ -26,6 +27,7 @@ const PartCard: React.FC<PartCardProps> = ({
   model,
   location,
   createdAt,
+  isTrustedSeller,
   onClick
 }) => {
   const formatPrice = (price: number) => {
@@ -59,13 +61,23 @@ const PartCard: React.FC<PartCardProps> = ({
           alt={title}
           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
-        <div className="absolute top-2 right-2">
+        <div className="absolute top-2 right-2 flex flex-col gap-2 items-end">
           <span className={`
             px-2 py-1 rounded-full text-xs font-medium shadow-sm backdrop-blur-sm
             ${getConditionStyles(condition)}
           `}>
             {condition.charAt(0).toUpperCase() + condition.slice(1)}
           </span>
+          
+          {isTrustedSeller && (
+            <div 
+              className="flex items-center gap-1 px-2 py-1 bg-blue-100/90 text-blue-800 rounded-full text-xs font-medium shadow-sm backdrop-blur-sm"
+              title="Trusted seller – real parts, good track record"
+            >
+              <CheckCircle className="h-3 w-3" />
+              <span>Verified Seller</span>
+            </div>
+          )}
         </div>
       </div>
 

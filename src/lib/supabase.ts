@@ -82,6 +82,7 @@ export interface Part {
   part_number: string | null;
   oem_number: string | null;
   approved?: boolean;
+  seller_is_trusted?: boolean;
 }
 
 export interface PartFilters {
@@ -591,7 +592,7 @@ export const getParts = async (
 ): Promise<PaginatedResponse<Part>> => {
   let query = supabase
     .from('parts')
-    .select('*, seller:profiles!seller_id(listing_boost_until)', { count: 'exact' });
+    .select('*, seller:profiles!seller_id(listing_boost_until, is_trusted)', { count: 'exact' });
 
   // Apply search
   if (filters.search) {
@@ -658,10 +659,13 @@ export const getParts = async (
 
   if (error) throw error;
 
-  // Process the data to remove the seller profile info
+  // Process the data to include seller_is_trusted flag
   const processedData = data?.map(item => {
     const { seller, ...partData } = item;
-    return partData as Part;
+    return {
+      ...partData,
+      seller_is_trusted: seller?.is_trusted || false
+    } as Part;
   }) || [];
 
   const totalPages = Math.ceil((count || 0) / itemsPerPage);
@@ -683,7 +687,8 @@ export const getPartById = async (partId: string): Promise<Part & { seller_email
     .select(`
       *,
       seller:seller_id (
-        email
+        email,
+        is_trusted
       )
     `)
     .eq('id', partId)
@@ -691,11 +696,12 @@ export const getPartById = async (partId: string): Promise<Part & { seller_email
 
   if (error) throw error;
   
-  // Reshape the data to include seller_email
+  // Reshape the data to include seller_email and seller_is_trusted
   const { seller, ...partData } = data;
   return {
     ...partData,
-    seller_email: seller?.email || 'Unknown'
+    seller_email: seller?.email || 'Unknown',
+    seller_is_trusted: seller?.is_trusted || false
   };
 };
 

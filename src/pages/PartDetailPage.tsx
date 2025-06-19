@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Car, MapPin, Tag, MessageSquare, Loader2, 
   Heart, Share2, AlertCircle, ChevronLeft, ChevronRight,
-  User, FileText, Flag
+  User, FileText, Flag, CheckCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
@@ -258,9 +258,20 @@ const PartDetailPage: React.FC = () => {
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 space-y-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    {part.title}
-                  </h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                      {part.title}
+                    </h1>
+                    {part.seller_is_trusted && (
+                      <div 
+                        className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium"
+                        title="Trusted seller – real parts, good track record"
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Verified Seller</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
                     <span className={`
                       px-2 py-1 rounded-full text-sm font-medium
@@ -366,9 +377,20 @@ const PartDetailPage: React.FC = () => {
                   <User className="h-6 w-6 text-gray-400 dark:text-gray-500" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-900 dark:text-white">
-                    {part.seller_email.split('@')[0]}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium text-gray-900 dark:text-white">
+                      {part.seller_email.split('@')[0]}
+                    </h3>
+                    {part.seller_is_trusted && (
+                      <div 
+                        className="flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium"
+                        title="Trusted seller – real parts, good track record"
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Verified</span>
+                      </div>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     Member since {formatDistanceToNow(new Date(2023, 0, 1), { addSuffix: true })}
                   </p>
