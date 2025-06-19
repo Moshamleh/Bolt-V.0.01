@@ -3,10 +3,11 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Zap, Store, UsersRound, Settings, Wrench, Loader2, Car, Trophy } from 'lucide-react';
 import OnboardingTour from './OnboardingTour';
 import { useOnboarding } from '../hooks/useOnboarding';
-import { supabase, getProfile } from '../lib/supabase';
+import { updateProfile } from '../lib/supabase';
 import InitialSetupRedirect from './InitialSetupRedirect';
 import NotificationDropdown from './NotificationDropdown';
 import WeeklyRecapManager from './WeeklyRecapManager';
+import { useAuth } from '../context/AuthContext';
 
 // Lazy load components
 const ProfileCompletionBanner = lazy(() => import('./ProfileCompletionBanner'));
@@ -14,11 +15,11 @@ const ProfileCompletionBanner = lazy(() => import('./ProfileCompletionBanner'));
 const Layout: React.FC = () => {
   const { showOnboarding, completeOnboarding, skipOnboarding } = useOnboarding();
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [showProfileBanner, setShowProfileBanner] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, loading: authLoading } = useAuth();
 
   // Only show profile banner on the account page
   const shouldShowBanner = location.pathname === '/account';
@@ -26,18 +27,27 @@ const Layout: React.FC = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        if (authLoading) {
+          return;
+        }
         
-        if (!session) {
+        if (!user) {
           navigate('/login');
           return;
         }
         
-        setIsAuthenticated(true);
-
         // Load profile data
-        const profileData = await getProfile();
-        setProfile(profileData);
+        const { data: profileData, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (error && error.code !== 'PGRST116') {
+          throw error;
+        }
+        
+        setProfile(profileData || null);
 
         // Check if profile is incomplete
         if (profileData) {
@@ -65,21 +75,10 @@ const Layout: React.FC = () => {
     };
 
     checkAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
-        navigate('/login');
-      } else if (event === 'SIGNED_IN' && session) {
-        setIsAuthenticated(true);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate, shouldShowBanner]);
+  }, [navigate, shouldShowBanner, user, authLoading]);
 
   // Show loading spinner while checking authentication
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="min-h-screen bg-neutral-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -91,7 +90,7 @@ const Layout: React.FC = () => {
   }
 
   // Don't render anything if not authenticated (will redirect)
-  if (!isAuthenticated) {
+  if (!user) {
     return null;
   }
 

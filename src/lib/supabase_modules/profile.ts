@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import { Profile } from '../supabase'; // Import Profile type from main supabase.ts
+import { User } from '@supabase/supabase-js';
 
 export interface NotificationPreferences {
   chat_messages: boolean;
@@ -9,14 +10,30 @@ export interface NotificationPreferences {
   marketplace_activity: boolean;
 }
 
-export async function getProfile(): Promise<Profile | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+export async function getProfile(user?: User): Promise<Profile | null> {
+  // Use provided user or get from session
+  const userId = user?.id;
+  
+  if (!userId) {
+    const { data: { user: sessionUser } } = await supabase.auth.getUser();
+    if (!sessionUser) throw new Error('Not authenticated');
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', sessionUser.id)
+      .single();
 
+    if (error && error.code !== 'PGRST116') {
+      throw error;
+    }
+    return data;
+  }
+  
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single();
 
   if (error && error.code !== 'PGRST116') {
@@ -36,14 +53,29 @@ export async function createProfile(profile: Partial<Profile>): Promise<Profile>
   return data;
 }
 
-export async function updateProfile(updates: Partial<Profile>): Promise<Profile> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+export async function updateProfile(updates: Partial<Profile>, user?: User): Promise<Profile> {
+  // Use provided user or get from session
+  const userId = user?.id;
+  
+  if (!userId) {
+    const { data: { user: sessionUser } } = await supabase.auth.getUser();
+    if (!sessionUser) throw new Error('Not authenticated');
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', sessionUser.id)
+      .select()
+      .single();
 
+    if (error) throw error;
+    return data;
+  }
+  
   const { data, error } = await supabase
     .from('profiles')
     .update(updates)
-    .eq('id', user.id)
+    .eq('id', userId)
     .select()
     .single();
 
@@ -86,26 +118,54 @@ export async function isAdminUser(): Promise<boolean> {
   return data?.is_admin || false;
 }
 
-export async function updateNotificationPreferences(preferences: NotificationPreferences): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+export async function updateNotificationPreferences(preferences: NotificationPreferences, user?: User): Promise<void> {
+  // Use provided user or get from session
+  const userId = user?.id;
+  
+  if (!userId) {
+    const { data: { user: sessionUser } } = await supabase.auth.getUser();
+    if (!sessionUser) throw new Error('Not authenticated');
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ notification_preferences: preferences })
+      .eq('id', sessionUser.id);
 
+    if (error) throw error;
+    return;
+  }
+  
   const { error } = await supabase
     .from('profiles')
     .update({ notification_preferences: preferences })
-    .eq('id', user.id);
+    .eq('id', userId);
 
   if (error) throw error;
 }
 
-export async function updatePreferences(updates: Partial<Profile>): Promise<Profile> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+export async function updatePreferences(updates: Partial<Profile>, user?: User): Promise<Profile> {
+  // Use provided user or get from session
+  const userId = user?.id;
+  
+  if (!userId) {
+    const { data: { user: sessionUser } } = await supabase.auth.getUser();
+    if (!sessionUser) throw new Error('Not authenticated');
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', sessionUser.id)
+      .select()
+      .single();
 
+    if (error) throw error;
+    return data;
+  }
+  
   const { data, error } = await supabase
     .from('profiles')
     .update(updates)
-    .eq('id', user.id)
+    .eq('id', userId)
     .select()
     .single();
 

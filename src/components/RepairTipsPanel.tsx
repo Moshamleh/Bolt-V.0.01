@@ -4,22 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, ServiceRecord, getUserVehicles, getAllServiceRecords, Notification, getUserNotifications, markNotificationAsRead } from '../lib/supabase';
 import MaintenanceReminder from './MaintenanceReminder';
 import MaintenanceRemindersPanel from './MaintenanceRemindersPanel';
-
-interface RepairTip {
-  id: string;
-  title: string;
-  description: string;
-  priority: 'high' | 'medium' | 'low';
-  vehicleId: string;
-  vehicleName: string;
-  dueDate?: string;
-  mileage?: number;
-}
+import { generatePersonalizedTips } from '../lib/maintenanceUtils';
+import { useAuth } from '../context/AuthContext';
 
 const RepairTipsPanel: React.FC = () => {
+  const { user } = useAuth();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [serviceRecords, setServiceRecords] = useState<ServiceRecord[]>([]);
-  const [repairTips, setRepairTips] = useState<RepairTip[]>([]);
+  const [repairTips, setRepairTips] = useState<ReturnType<typeof generatePersonalizedTips>>([]);
   const [maintenanceReminders, setMaintenanceReminders] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,9 +22,9 @@ const RepairTipsPanel: React.FC = () => {
     const loadData = async () => {
       try {
         const [vehiclesData, recordsData, notificationsData] = await Promise.all([
-          getUserVehicles(),
+          getUserVehicles(user),
           getAllServiceRecords(),
-          getUserNotifications(50, false)
+          getUserNotifications(50, false, user)
         ]);
         
         setVehicles(vehiclesData);
@@ -56,151 +48,7 @@ const RepairTipsPanel: React.FC = () => {
     };
 
     loadData();
-  }, []);
-
-  const generatePersonalizedTips = (vehicles: Vehicle[], records: ServiceRecord[]): RepairTip[] => {
-    const tips: RepairTip[] = [];
-    
-    vehicles.forEach(vehicle => {
-      const vehicleRecords = records.filter(record => record.vehicle_id === vehicle.id);
-      const vehicleName = vehicle.other_vehicle_description || 
-        `${vehicle.year} ${vehicle.make} ${vehicle.model}${vehicle.trim ? ` ${vehicle.trim}` : ''}`;
-      
-      // Check for oil change recommendation
-      const lastOilChange = vehicleRecords
-        .filter(record => record.service_type.toLowerCase().includes('oil'))
-        .sort((a, b) => new Date(b.service_date).getTime() - new Date(a.service_date).getTime())[0];
-      
-      if (lastOilChange) {
-        const lastOilChangeDate = new Date(lastOilChange.service_date);
-        const monthsSinceOilChange = Math.floor((new Date().getTime() - lastOilChangeDate.getTime()) / (30 * 24 * 60 * 60 * 1000));
-        
-        if (monthsSinceOilChange >= 5) {
-          tips.push({
-            id: `oil-${vehicle.id}`,
-            title: '🛢️ Oil Refresh',
-            description: `Your ${vehicleName} is due for an oil change. It's been ${monthsSinceOilChange} months since your last oil change.`,
-            priority: monthsSinceOilChange >= 7 ? 'high' : 'medium',
-            vehicleId: vehicle.id,
-            vehicleName,
-            dueDate: new Date(lastOilChangeDate.getTime() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-          });
-        }
-      } else if (vehicle.year) {
-        // If no oil change record exists, suggest one for vehicles with year data
-        tips.push({
-          id: `first-oil-${vehicle.id}`,
-          title: '🛢️ Oil Refresh',
-          description: `We recommend regular oil changes for your ${vehicleName} to maintain optimal engine performance.`,
-          priority: 'medium',
-          vehicleId: vehicle.id,
-          vehicleName
-        });
-      }
-      
-      // Check for tire rotation
-      const lastTireRotation = vehicleRecords
-        .filter(record => record.service_type.toLowerCase().includes('tire') && record.service_type.toLowerCase().includes('rotation'))
-        .sort((a, b) => new Date(b.service_date).getTime() - new Date(a.service_date).getTime())[0];
-      
-      if (lastTireRotation) {
-        const lastRotationDate = new Date(lastTireRotation.service_date);
-        const monthsSinceRotation = Math.floor((new Date().getTime() - lastRotationDate.getTime()) / (30 * 24 * 60 * 60 * 1000));
-        
-        if (monthsSinceRotation >= 6) {
-          tips.push({
-            id: `tire-${vehicle.id}`,
-            title: 'Tire Rotation Recommended',
-            description: `Your ${vehicleName} is due for a tire rotation. Regular rotations help ensure even tire wear and extend tire life.`,
-            priority: 'medium',
-            vehicleId: vehicle.id,
-            vehicleName
-          });
-        }
-      }
-      
-      // Check for brake service
-      const lastBrakeService = vehicleRecords
-        .filter(record => record.service_type.toLowerCase().includes('brake'))
-        .sort((a, b) => new Date(b.service_date).getTime() - new Date(a.service_date).getTime())[0];
-      
-      if (lastBrakeService) {
-        const lastBrakeDate = new Date(lastBrakeService.service_date);
-        const monthsSinceBrakeService = Math.floor((new Date().getTime() - lastBrakeDate.getTime()) / (30 * 24 * 60 * 60 * 1000));
-        
-        if (monthsSinceBrakeService >= 12) {
-          tips.push({
-            id: `brake-${vehicle.id}`,
-            title: 'Brake Inspection Due',
-            description: `It's been over a year since your last brake service for your ${vehicleName}. We recommend a brake inspection to ensure safety.`,
-            priority: 'high',
-            vehicleId: vehicle.id,
-            vehicleName
-          });
-        }
-      }
-      
-      // Seasonal tips based on current month
-      const currentMonth = new Date().getMonth();
-      
-      // Winter preparation (October-November)
-      if (currentMonth >= 9 && currentMonth <= 10) {
-        tips.push({
-          id: `winter-${vehicle.id}`,
-          title: 'Winter Preparation',
-          description: `Winter is coming! Consider checking your ${vehicleName}'s battery, antifreeze levels, and tire condition before cold weather arrives.`,
-          priority: 'medium',
-          vehicleId: vehicle.id,
-          vehicleName
-        });
-      }
-      
-      // Summer preparation (April-May)
-      if (currentMonth >= 3 && currentMonth <= 4) {
-        tips.push({
-          id: `summer-${vehicle.id}`,
-          title: 'Summer Preparation',
-          description: `As temperatures rise, ensure your ${vehicleName}'s air conditioning system is working properly and check coolant levels to prevent overheating.`,
-          priority: 'medium',
-          vehicleId: vehicle.id,
-          vehicleName
-        });
-      }
-      
-      // Vehicle age-based tips
-      if (vehicle.year) {
-        const vehicleAge = new Date().getFullYear() - vehicle.year;
-        
-        if (vehicleAge >= 5 && vehicleAge < 10) {
-          tips.push({
-            id: `age5-${vehicle.id}`,
-            title: 'Timing Belt Inspection',
-            description: `Your ${vehicleName} is ${vehicleAge} years old. Many vehicles need timing belt replacement between 60,000-100,000 miles. Consider having it inspected.`,
-            priority: 'medium',
-            vehicleId: vehicle.id,
-            vehicleName
-          });
-        }
-        
-        if (vehicleAge >= 3) {
-          tips.push({
-            id: `battery-${vehicle.id}`,
-            title: '🔋 Battery Checkup',
-            description: `Your ${vehicleName} is ${vehicleAge} years old. Car batteries typically last 3-5 years. Consider having your battery tested.`,
-            priority: vehicleAge >= 4 ? 'high' : 'low',
-            vehicleId: vehicle.id,
-            vehicleName
-          });
-        }
-      }
-    });
-    
-    // Sort tips by priority
-    return tips.sort((a, b) => {
-      const priorityOrder = { high: 0, medium: 1, low: 2 };
-      return priorityOrder[a.priority] - priorityOrder[b.priority];
-    });
-  };
+  }, [user]);
 
   const handleFeedback = (tipId: string, helpful: boolean) => {
     setFeedbackSubmitting(tipId);

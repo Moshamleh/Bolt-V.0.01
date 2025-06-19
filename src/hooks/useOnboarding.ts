@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase, getProfile } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 export function useOnboarding() {
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     const checkOnboardingStatus = async () => {
@@ -12,14 +14,13 @@ export function useOnboarding() {
         setIsLoading(true);
         
         // Check if user is authenticated
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
+        if (!user || authLoading) {
           setShowOnboarding(false);
           return;
         }
 
         // Get user profile
-        const profile = await getProfile();
+        const profile = await getProfile(user);
         
         // If profile exists and initial_setup_complete is false, show onboarding
         if (profile && profile.initial_setup_complete === false) {
@@ -38,7 +39,7 @@ export function useOnboarding() {
     };
 
     checkOnboardingStatus();
-  }, []);
+  }, [user, authLoading]);
 
   const completeOnboarding = () => {
     setShowOnboarding(false);

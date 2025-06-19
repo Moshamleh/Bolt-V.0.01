@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { getUserXp, getXpProgress, getLevelName } from '../lib/xpSystem';
+import { useAuth } from '../context/AuthContext';
 
 interface XpData {
   xp: number;
@@ -15,6 +16,7 @@ interface XpData {
 }
 
 export function useXp(): XpData {
+  const { user } = useAuth();
   const [xp, setXp] = useState(0);
   const [level, setLevel] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -25,8 +27,6 @@ export function useXp(): XpData {
       try {
         setLoading(true);
         
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           throw new Error('User not authenticated');
         }
@@ -50,27 +50,31 @@ export function useXp(): XpData {
       }
     };
     
-    loadXpData();
-    
-    // Set up real-time subscription for XP changes
-    const channel = supabase
-      .channel('xp-changes')
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'users',
-        filter: `id=eq.${supabase.auth.getUser().then(({ data }) => data.user?.id)}`,
-      }, (payload) => {
-        const newData = payload.new as { xp: number; level: number };
-        setXp(newData.xp || 0);
-        setLevel(newData.level || 1);
-      })
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+    if (user) {
+      loadXpData();
+      
+      // Set up real-time subscription for XP changes
+      const channel = supabase
+        .channel('xp-changes')
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'users',
+          filter: `id=eq.${user.id}`,
+        }, (payload) => {
+          const newData = payload.new as { xp: number; level: number };
+          setXp(newData.xp || 0);
+          setLevel(newData.level || 1);
+        })
+        .subscribe();
+      
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
   // Calculate XP progress
   const { currentXp, maxXp, percentage, nextLevel } = getXpProgress(xp, level);

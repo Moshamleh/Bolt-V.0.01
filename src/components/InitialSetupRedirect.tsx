@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { getProfile } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * Component that redirects users to the appropriate setup page if they haven't completed initial setup
@@ -11,6 +12,7 @@ const InitialSetupRedirect: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isChecking, setIsChecking] = useState(true);
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     const checkSetupStatus = async () => {
@@ -28,7 +30,18 @@ const InitialSetupRedirect: React.FC = () => {
           return;
         }
 
-        const profile = await getProfile();
+        // Wait for auth to finish loading
+        if (authLoading) {
+          return;
+        }
+
+        // If no user, redirect to login
+        if (!user) {
+          navigate('/login');
+          return;
+        }
+
+        const profile = await getProfile(user);
         
         // If no profile exists, redirect to profile setup
         if (!profile) {
@@ -48,7 +61,7 @@ const InitialSetupRedirect: React.FC = () => {
     };
 
     checkSetupStatus();
-  }, [navigate, location.pathname]);
+  }, [navigate, location.pathname, user, authLoading]);
 
   // Don't render anything, just handle the redirect
   return isChecking ? (

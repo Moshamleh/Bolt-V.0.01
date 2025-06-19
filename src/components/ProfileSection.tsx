@@ -4,14 +4,15 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Profile, updateProfile, uploadAvatar } from '../lib/supabase';
 import AdminSection from './AdminSection';
+import { useAuth } from '../context/AuthContext';
 
 interface ProfileSectionProps {
   profile: Profile | null;
-  email: string;
   onProfileUpdate: (profile: Profile) => void;
 }
 
-const ProfileSection: React.FC<ProfileSectionProps> = ({ profile, email, onProfileUpdate }) => {
+const ProfileSection: React.FC<ProfileSectionProps> = ({ profile, onProfileUpdate }) => {
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -33,7 +34,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ profile, email, onProfi
     try {
       setSaving(true);
       const avatarUrl = await uploadAvatar(file);
-      const updatedProfile = await updateProfile({ avatar_url: avatarUrl });
+      const updatedProfile = await updateProfile({ avatar_url: avatarUrl }, user);
       onProfileUpdate(updatedProfile);
       toast.success('Avatar updated successfully');
     } catch (err) {
@@ -53,7 +54,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ profile, email, onProfi
     setSaving(true);
 
     try {
-      const updatedProfile = await updateProfile(formData);
+      const updatedProfile = await updateProfile(formData, user);
       onProfileUpdate(updatedProfile);
       toast.success('Profile updated successfully');
     } catch (err) {
@@ -128,7 +129,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ profile, email, onProfi
           </h2>
           <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mt-1">
             <Mail className="h-4 w-4" />
-            <span>{email}</span>
+            <span>{user?.email}</span>
           </div>
         </div>
       </div>

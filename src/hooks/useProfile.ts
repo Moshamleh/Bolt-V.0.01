@@ -1,5 +1,6 @@
 import useSWR from 'swr';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 export interface Profile {
   id: string;
@@ -12,15 +13,12 @@ export interface Profile {
   is_admin: boolean;
 }
 
-const fetchProfile = async (): Promise<Profile | null> => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return null;
-
+const fetchProfile = async (userId: string): Promise<Profile | null> {
   try {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', session.user.id)
+      .eq('id', userId)
       .single();
 
     if (error) {
@@ -39,12 +37,22 @@ const fetchProfile = async (): Promise<Profile | null> => {
 };
 
 export function useProfile() {
-  const { data, error, isLoading, mutate } = useSWR<Profile | null>('profile', fetchProfile);
+  const { user, loading: authLoading } = useAuth();
+  
+  const { data, error, isLoading, mutate } = useSWR<Profile | null>(
+    user ? ['profile', user.id] : null,
+    () => user ? fetchProfile(user.id) : null,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 60000, // 1 minute
+    }
+  );
 
   return {
     profile: data,
     isAdmin: data?.is_admin || false,
-    isLoading,
+    isLoading: isLoading || authLoading,
     error,
     mutate
   };

@@ -13,6 +13,7 @@ import {
   deleteNotification,
   supabase
 } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 const NotificationDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,6 +24,7 @@ const NotificationDropdown: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     const loadNotifications = async () => {
@@ -30,9 +32,7 @@ const NotificationDropdown: React.FC = () => {
         setLoading(true);
         
         // Check for valid session before making requests
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError || !session) {
+        if (!user) {
           console.log('No valid session found, skipping notification load');
           setNotifications([]);
           setUnreadCount(0);
@@ -41,8 +41,8 @@ const NotificationDropdown: React.FC = () => {
         }
 
         const [notificationsData, count] = await Promise.all([
-          getUserNotifications(10, true),
-          getUnreadNotificationCount()
+          getUserNotifications(10, true, user),
+          getUnreadNotificationCount(user)
         ]);
         setNotifications(notificationsData);
         setUnreadCount(count);
@@ -77,9 +77,7 @@ const NotificationDropdown: React.FC = () => {
       }
 
       // Check for valid session before setting up subscription
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
+      if (!user) {
         console.log('No valid session found, skipping subscription setup');
         return;
       }
@@ -94,7 +92,7 @@ const NotificationDropdown: React.FC = () => {
         }, (payload) => {
           // Check if the notification is for the current user
           const notification = payload.new as Notification;
-          if (session.user && notification.user_id === session.user.id) {
+          if (user && notification.user_id === user.id) {
             setNotifications(prev => [notification, ...prev]);
             setUnreadCount(prev => prev + 1);
             
@@ -134,7 +132,7 @@ const NotificationDropdown: React.FC = () => {
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, [navigate]);
+  }, [navigate, user]);
 
   const handleToggleDropdown = () => {
     setIsOpen(!isOpen);
@@ -142,16 +140,8 @@ const NotificationDropdown: React.FC = () => {
 
   const handleNotificationClick = async (notification: Notification) => {
     try {
-      // Check for valid session before making requests
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        console.log('No valid session found, cannot mark notification as read');
-        return;
-      }
-
       // Mark as read
-      await markNotificationAsRead(notification.id);
+      await markNotificationAsRead(notification.id, user);
       
       // Update local state
       setNotifications(prev => 
@@ -174,15 +164,7 @@ const NotificationDropdown: React.FC = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      // Check for valid session before making requests
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        console.log('No valid session found, cannot mark all notifications as read');
-        return;
-      }
-
-      await markAllNotificationsAsRead();
+      await markAllNotificationsAsRead(user);
       
       // Update local state
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
@@ -195,15 +177,7 @@ const NotificationDropdown: React.FC = () => {
   const handleDeleteNotification = async (e: React.MouseEvent, notificationId: string) => {
     e.stopPropagation();
     try {
-      // Check for valid session before making requests
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        console.log('No valid session found, cannot delete notification');
-        return;
-      }
-
-      await deleteNotification(notificationId);
+      await deleteNotification(notificationId, user);
       
       // Update local state
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
@@ -320,45 +294,47 @@ const NotificationDropdown: React.FC = () => {
                 </div>
               ) : (
                 <ul className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {notifications.map((notification) => (
-                    <li
-                      key={notification.id}
-                      onClick={() => handleNotificationClick(notification)}
-                      className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors ${
-                        !notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {getNotificationIcon(notification.type)}
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm ${
-                            !notification.read 
-                              ? 'font-medium text-gray-900 dark:text-white' 
-                              : 'text-gray-600 dark:text-gray-400'
-                          }`}>
-                            {notification.message}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1 flex items-center">
-                            {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                            {notification.link && (
-                              <ExternalLink className="h-3 w-3 ml-1" />
+                  <AnimatePresence initial={false}>
+                    {notifications.map((notification) => (
+                      <li
+                        key={notification.id}
+                        onClick={() => handleNotificationClick(notification)}
+                        className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors ${
+                          !notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          {getNotificationIcon(notification.type)}
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm ${
+                              !notification.read 
+                                ? 'font-medium text-gray-900 dark:text-white' 
+                                : 'text-gray-600 dark:text-gray-400'
+                            }`}>
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1 flex items-center">
+                              {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                              {notification.link && (
+                                <ExternalLink className="h-3 w-3 ml-1" />
+                              )}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {!notification.read && (
+                              <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
                             )}
-                          </p>
+                            <button
+                              onClick={(e) => handleDeleteNotification(e, notification.id)}
+                              className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded-full transition-colors"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          {!notification.read && (
-                            <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
-                          )}
-                          <button
-                            onClick={(e) => handleDeleteNotification(e, notification.id)}
-                            className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded-full transition-colors"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
+                      </li>
+                    ))}
+                  </AnimatePresence>
                 </ul>
               )}
             </div>
