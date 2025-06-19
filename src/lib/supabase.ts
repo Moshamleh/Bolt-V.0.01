@@ -501,6 +501,28 @@ export const getUserDiagnoses = async (vehicleId: string): Promise<Diagnosis[]> 
   return data || [];
 };
 
+// New function to get all diagnoses with vehicle info
+export const getAllUserDiagnosesWithVehicles = async (): Promise<Diagnosis[]> => {
+  const { data, error } = await supabase
+    .from('diagnoses')
+    .select(`
+      *,
+      vehicle:vehicle_id (
+        id,
+        make,
+        model,
+        year,
+        trim,
+        other_vehicle_description,
+        nickname
+      )
+    `)
+    .order('timestamp', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+};
+
 export const sendDiagnosticPrompt = async (vehicleId: string, prompt: string): Promise<Diagnosis> => {
   // First, get vehicle details to include in the context
   const { data: vehicleData, error: vehicleError } = await supabase
@@ -1709,7 +1731,9 @@ export const awardBadge = async (userId: string, badgeName: string, note?: strin
       user_id: userId,
       badge_id: badge.id,
       note
-    });
+    })
+    .on_conflict(['user_id', 'badge_id'])
+    .ignore();
 
   if (error) {
     // If the error is a unique constraint violation, the user already has this badge

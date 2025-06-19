@@ -2,7 +2,7 @@ import React, { useEffect, useState, lazy, Suspense, useRef } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Car, Loader2, Lightbulb, Menu, History, MessageSquare, Wrench, Sparkles, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Vehicle, getUserVehicles, getUserDiagnoses, Diagnosis, updateProfile, awardBadge, sendDiagnosticPrompt, subscribeToDiagnosisUpdates } from '../lib/supabase';
+import { Vehicle, getUserVehicles, getAllUserDiagnosesWithVehicles, Diagnosis, updateProfile, awardBadge, sendDiagnosticPrompt, subscribeToDiagnosisUpdates } from '../lib/supabase';
 import { useOnboarding } from '../hooks/useOnboarding';
 import WelcomeModal from '../components/WelcomeModal';
 import { useProfile } from '../hooks/useProfile';
@@ -13,10 +13,9 @@ import Confetti from '../components/Confetti';
 // Lazy load components
 const ChatInterface = lazy(() => import('../components/ChatInterface'));
 const MobileTopNavBar = lazy(() => import('../components/MobileTopNavBar'));
-const MobilePageMenu = lazy(() => import('../components/MobilePageMenu'));
+const MobileCollapsibleMenu = lazy(() => import('../components/MobileCollapsibleMenu'));
 const ChatHistory = lazy(() => import('../components/ChatHistory'));
 const RepairTipsPanel = lazy(() => import('../components/RepairTipsPanel'));
-const MobileCollapsibleMenu = lazy(() => import('../components/MobileCollapsibleMenu'));
 
 // Loading fallback component
 const ComponentLoader = () => (
@@ -37,11 +36,18 @@ interface ChatMessage {
   hasFeedback?: boolean;
 }
 
+// Interface for grouped diagnoses
+interface VehicleDiagnoses {
+  vehicle: Vehicle;
+  diagnoses: Diagnosis[];
+}
+
 const DiagnosticPage: React.FC = () => {
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
   const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
+  const [groupedDiagnoses, setGroupedDiagnoses] = useState<VehicleDiagnoses[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isHistoryMenuOpen, setIsHistoryMenuOpen] = useState(false);
@@ -104,12 +110,43 @@ const DiagnosticPage: React.FC = () => {
       if (!selectedVehicleId) return;
       
       try {
-        const data = await getUserDiagnoses(selectedVehicleId);
-        setDiagnoses(data);
+        // Load all diagnoses with vehicle info
+        const allDiagnoses = await getAllUserDiagnosesWithVehicles();
+        
+        // Filter diagnoses for the selected vehicle
+        const vehicleDiagnoses = allDiagnoses.filter(d => d.vehicle_id === selectedVehicleId);
+        setDiagnoses(vehicleDiagnoses);
+
+        // Group diagnoses by vehicle
+        const groupedByVehicle: Record<string, VehicleDiagnoses> = {};
+        
+        allDiagnoses.forEach(diagnosis => {
+          if (diagnosis.vehicle) {
+            const vehicleId = diagnosis.vehicle.id;
+            
+            if (!groupedByVehicle[vehicleId]) {
+              groupedByVehicle[vehicleId] = {
+                vehicle: diagnosis.vehicle,
+                diagnoses: []
+              };
+            }
+            
+            groupedByVehicle[vehicleId].diagnoses.push(diagnosis);
+          }
+        });
+        
+        // Convert to array and sort by most recent diagnosis
+        const groupedArray = Object.values(groupedByVehicle).sort((a, b) => {
+          const aLatest = new Date(a.diagnoses[0]?.timestamp || 0).getTime();
+          const bLatest = new Date(b.diagnoses[0]?.timestamp || 0).getTime();
+          return bLatest - aLatest;
+        });
+        
+        setGroupedDiagnoses(groupedArray);
 
         // Initialize chat with most recent diagnosis if available
-        if (data.length > 0) {
-          const mostRecent = data[0];
+        if (vehicleDiagnoses.length > 0) {
+          const mostRecent = vehicleDiagnoses[0];
           const messages: ChatMessage[] = [
             {
               id: `user-${mostRecent.id}`,
@@ -176,6 +213,38 @@ const DiagnosticPage: React.FC = () => {
   const handleDiagnosisAdded = async (diagnosis: Diagnosis) => {
     setDiagnoses(prev => [diagnosis, ...prev]);
     
+    // Update grouped diagnoses
+    setGroupedDiagnoses(prev => {
+      const vehicleId = diagnosis.vehicle_id;
+      const vehicleGroup = prev.find(g => g.vehicle.id === vehicleId);
+      
+      if (vehicleGroup) {
+        // Update existing group
+        return prev.map(group => {
+          if (group.vehicle.id === vehicleId) {
+            return {
+              ...group,
+              diagnoses: [diagnosis, ...group.diagnoses]
+            };
+          }
+          return group;
+        });
+      } else {
+        // Create new group if vehicle info is available
+        const vehicle = vehicles.find(v => v.id === vehicleId);
+        if (vehicle) {
+          return [
+            {
+              vehicle,
+              diagnoses: [diagnosis]
+            },
+            ...prev
+          ];
+        }
+        return prev;
+      }
+    });
+    
     // Check if this is the first diagnostic and award badge
     if (!hasCompletedFirstDiagnostic()) {
       markFirstDiagnosticCompleted();
@@ -212,9 +281,20 @@ const DiagnosticPage: React.FC = () => {
   };
 
   const handleDiagnosisStatusChange = async (diagnosisId: string, resolved: boolean) => {
+    // Update local state
     setDiagnoses(prev => prev.map(d => 
       d.id === diagnosisId ? { ...d, resolved } : d
     ));
+    
+    // Update grouped diagnoses
+    setGroupedDiagnoses(prev => 
+      prev.map(group => ({
+        ...group,
+        diagnoses: group.diagnoses.map(d => 
+          d.id === diagnosisId ? { ...d, resolved } : d
+        )
+      }))
+    );
     
     // Award XP for resolving a diagnostic
     if (resolved) {
