@@ -1977,4 +1977,62 @@ export const getDashboardStats = async (): Promise<{
   };
 };
 
+// Function to check and set trusted seller status
+export const checkAndSetTrustedSeller = async (userId: string): Promise<boolean> => {
+  try {
+    // Get user's KYC status
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('kyc_verified')
+      .eq('id', userId)
+      .single();
+    
+    if (profileError) throw profileError;
+    
+    // If KYC is not verified, user can't be trusted
+    if (!profile.kyc_verified) {
+      return false;
+    }
+    
+    // Count approved parts by this user
+    const { count: approvedPartsCount, error: partsError } = await supabase
+      .from('parts')
+      .select('*', { count: 'exact', head: true })
+      .eq('seller_id', userId)
+      .eq('approved', true);
+    
+    if (partsError) throw partsError;
+    
+    // Check if user meets the criteria (KYC approved and 3+ approved parts)
+    const shouldBeTrusted = profile.kyc_verified && approvedPartsCount >= 3;
+    
+    if (shouldBeTrusted) {
+      // Update user's trusted status
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ is_trusted: true })
+        .eq('id', userId);
+      
+      if (updateError) throw updateError;
+      
+      // Create notification for the user
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: userId,
+          type: 'trusted_seller',
+          message: 'Congratulations! You are now a Verified Seller. Your listings will display a verification badge.',
+          read: false
+        });
+      
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error checking trusted seller status:', error);
+    return false;
+  }
+};
+
 export default supabase;

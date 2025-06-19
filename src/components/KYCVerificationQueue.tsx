@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { KYCUser, getPendingKycUsers, updateUserKycStatus } from '../lib/supabase';
+import { KYCUser, getPendingKycUsers, updateUserKycStatus, checkAndSetTrustedSeller } from '../lib/supabase';
 import useSWR from 'swr';
 
 const KYCVerificationQueue: React.FC = () => {
@@ -13,6 +13,12 @@ const KYCVerificationQueue: React.FC = () => {
     setProcessingId(userId);
     try {
       await updateUserKycStatus(userId, approve);
+      
+      // If approved, check if the user should be marked as trusted
+      if (approve) {
+        await checkAndSetTrustedSeller(userId);
+      }
+      
       await mutate();
       toast.success(approve ? 'User KYC approved' : 'User KYC rejected');
     } catch (err) {

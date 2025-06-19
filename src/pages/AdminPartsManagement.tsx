@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import { useProfile } from '../hooks/useProfile';
-import { Part, getAllParts, updatePart, deletePart } from '../lib/supabase';
+import { Part, getAllParts, updatePart, deletePart, checkAndSetTrustedSeller } from '../lib/supabase';
 import ModerationStatusDisplay from '../components/ModerationStatusDisplay';
 
 const ITEMS_PER_PAGE = 10;
@@ -82,6 +82,16 @@ const AdminPartsManagement: React.FC = () => {
     setProcessingId(partId);
     try {
       await updatePart(partId, { approved: !currentStatus });
+      
+      // If we're approving a part, check if the seller should be marked as trusted
+      if (!currentStatus) {
+        // Get the part to find the seller_id
+        const part = parts.find(p => p.id === partId);
+        if (part && part.seller_id) {
+          await checkAndSetTrustedSeller(part.seller_id);
+        }
+      }
+      
       setParts(prev => prev.map(part => 
         part.id === partId ? { ...part, approved: !currentStatus } : part
       ));
