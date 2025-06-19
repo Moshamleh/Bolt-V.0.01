@@ -49,6 +49,17 @@ export interface Vehicle {
   mileage?: number;
 }
 
+export interface Diagnosis {
+  id: string;
+  user_id: string;
+  vehicle_id: string;
+  prompt: string;
+  response: string;
+  timestamp: string;
+  resolved?: boolean;
+  vehicle?: Vehicle;
+}
+
 export interface Part {
   id: string;
   seller_id?: string;
@@ -71,17 +82,6 @@ export interface Part {
   approved?: boolean;
   is_boosted?: boolean;
   boost_expires_at?: string;
-}
-
-export interface Diagnosis {
-  id: string;
-  user_id: string;
-  vehicle_id: string;
-  prompt: string;
-  response: string;
-  timestamp: string;
-  resolved?: boolean;
-  vehicle?: Vehicle;
 }
 
 export interface Badge {
@@ -389,20 +389,20 @@ export async function awardBadge(userId: string | undefined, badgeName: string, 
     .eq('name', badgeName)
     .single();
 
-  if (badgeError) {
+  if (badgeError || !badge) {
     console.error('Badge not found:', badgeName);
     return;
   }
 
   // Check if user already has this badge
-  const { data: existingBadge } = await supabase
+  const { data: existing } = await supabase
     .from('user_badges')
     .select('id')
     .eq('user_id', targetUserId)
     .eq('badge_id', badge.id)
     .single();
 
-  if (existingBadge) {
+  if (existing) {
     // User already has this badge
     return;
   }
@@ -413,11 +413,12 @@ export async function awardBadge(userId: string | undefined, badgeName: string, 
     .insert({
       user_id: targetUserId,
       badge_id: badge.id,
-      note
+      note: note || null
     });
 
   if (error) {
     console.error('Error awarding badge:', error);
+    throw error;
   }
 }
 
@@ -426,7 +427,7 @@ export async function hasUserAchievementBeenAwarded(userId: string | undefined, 
   const { data: { user } } = await supabase.auth.getUser();
   const targetUserId = userId || user?.id;
   
-  if (!targetUserId) throw new Error('Not authenticated');
+  if (!targetUserId) return false;
 
   const { data, error } = await supabase
     .from('user_achievements')
@@ -467,15 +468,16 @@ export async function recordUserAchievement(
       user_id: targetUserId,
       achievement_id: achievementId,
       xp_awarded: xp,
-      badge_awarded: badge?.id
+      badge_awarded: badge?.id || null
     });
 
   if (error) {
     console.error('Error recording achievement:', error);
+    throw error;
   }
 }
 
-// Admin check function
+// Helper function to check if user is admin
 export async function isAdminUser(): Promise<boolean> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
@@ -488,10 +490,4 @@ export async function isAdminUser(): Promise<boolean> {
 
   if (error) return false;
   return data?.is_admin || false;
-}
-
-// Helper function to get current user ID
-export async function getCurrentUserId(): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  return user?.id || null;
 }
