@@ -33,6 +33,21 @@ interface ChatInterfaceProps {
   userName?: string;
 }
 
+// AI flair messages to randomly append to responses
+const AI_FLAIRS = [
+  "– Bolt ⚡🔧",
+  "Let's fix that 💪",
+  "Classic issue — easy win 🧠",
+  "Hope that helps! ⚡",
+  "You've got this! 🔧",
+  "Happy wrenching! 🛠️",
+  "Drive safe! 🚗",
+  "Bolt's got your back 🔩",
+  "That should do the trick 👍",
+  "Let me know how it goes! 🤔",
+  "Sounds like a plan? 🧰"
+];
+
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   selectedVehicleId,
   onDiagnosisAdded,
@@ -322,6 +337,15 @@ Try saying: "My car makes a weird clicking sound when I turn."`;
 
       unsubscribeRef.current = subscribeToDiagnosisUpdates(diagnosis.id, (updatedDiagnosis) => {
         if (updatedDiagnosis.response) {
+          // Randomly decide whether to add a flair message (50% chance)
+          let responseText = updatedDiagnosis.response;
+          if (Math.random() > 0.5) {
+            // Select a random flair message
+            const randomFlair = AI_FLAIRS[Math.floor(Math.random() * AI_FLAIRS.length)];
+            // Append the flair to the response
+            responseText = `${responseText}\n\n${randomFlair}`;
+          }
+
           setMessages(prev => {
             // Remove typing indicator
             const filteredMessages = prev.filter(msg => !msg.isTypingIndicator);
@@ -336,14 +360,14 @@ Try saying: "My car makes a weird clicking sound when I turn."`;
               const updatedMessages = [...filteredMessages];
               updatedMessages[aiMessageIndex] = {
                 ...updatedMessages[aiMessageIndex],
-                text: updatedDiagnosis.response!
+                text: responseText
               };
               return updatedMessages;
             } else {
               // Add new AI message
               return [...filteredMessages, {
                 id: `ai-${Date.now()}`,
-                text: updatedDiagnosis.response!,
+                text: responseText,
                 isUser: false,
                 timestamp: new Date(),
                 diagnosisId: updatedDiagnosis.id
