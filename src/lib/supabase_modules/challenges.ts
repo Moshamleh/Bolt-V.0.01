@@ -96,6 +96,20 @@ export async function getChallengeById(challengeId: string): Promise<Challenge> 
 }
 
 /**
+ * Get a specific challenge by name
+ */
+export async function getChallengeByName(challengeName: string): Promise<Challenge | null> {
+  const { data, error } = await supabase
+    .from('challenges')
+    .select('*')
+    .eq('name', challengeName)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
  * Get a user's progress on a specific challenge
  */
 export async function getUserChallengeProgress(
@@ -115,7 +129,7 @@ export async function getUserChallengeProgress(
     `)
     .eq('user_id', targetUserId)
     .eq('challenge_id', challengeId)
-    .single();
+    .maybeSingle();
 
   if (error && error.code !== 'PGRST116') {
     throw error;
@@ -136,25 +150,18 @@ export async function startChallenge(
   
   if (!targetUserId) throw new Error('Not authenticated');
 
-  // Check if user already has this challenge
-  const { data: existingChallenge } = await supabase
-    .from('user_challenges')
-    .select('id')
-    .eq('user_id', targetUserId)
-    .eq('challenge_id', challengeId)
-    .single();
-
-  if (existingChallenge) {
-    throw new Error('Challenge already started');
-  }
-
+  // Use upsert to handle the case where the challenge already exists
   const { data, error } = await supabase
     .from('user_challenges')
-    .insert({
+    .upsert({
       user_id: targetUserId,
       challenge_id: challengeId,
       current_progress: 0,
-      completed: false
+      completed: false,
+      last_updated: new Date().toISOString()
+    }, {
+      onConflict: 'user_id,challenge_id',
+      ignoreDuplicates: true
     })
     .select()
     .single();
@@ -176,29 +183,18 @@ export async function updateChallengeProgress(
   
   if (!targetUserId) throw new Error('Not authenticated');
 
-  // Get current challenge progress
-  const { data: currentProgress, error: progressError } = await supabase
-    .from('user_challenges')
-    .select('*')
-    .eq('user_id', targetUserId)
-    .eq('challenge_id', challengeId)
-    .single();
-
-  // If challenge doesn't exist for user, create it
-  if (progressError && progressError.code === 'PGRST116') {
-    return startChallenge(challengeId, targetUserId);
-  } else if (progressError) {
-    throw progressError;
-  }
-
-  // Update progress
+  // Use upsert to handle both insert and update cases
   const { data, error } = await supabase
     .from('user_challenges')
-    .update({
+    .upsert({
+      user_id: targetUserId,
+      challenge_id: challengeId,
       current_progress: progress,
       last_updated: new Date().toISOString()
+    }, {
+      onConflict: 'user_id,challenge_id',
+      ignoreDuplicates: false
     })
-    .eq('id', currentProgress.id)
     .select()
     .single();
 
@@ -214,63 +210,73 @@ export async function incrementChallengeProgress(
   incrementBy: number = 1,
   userId?: string
 ): Promise<UserChallenge> {
-  const { data: { user } } = await supabase.auth.getUser();
-  const targetUserId = userId || user?.id;
-  
-  if (!targetUserId) throw new Error('Not authenticated');
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    const targetUserId = userId || user?.id;
+    
+    if (!targetUserId) throw new Error('Not authenticated');
 
-  // First, get the challenge ID by name
-  const { data: challenge, error: challengeError } = await supabase
-    .from('challenges')
-    .select('id')
-    .eq('name', challengeName)
-    .maybeSingle(); // Use maybeSingle instead of single to handle case where no record is found
+    // First, get the challenge ID by name
+    const { data: challenge, error: challengeError } = await supabase
+      .from('challenges')
+      .select('id')
+      .eq('name', challengeName)
+      .maybeSingle();
 
-  if (challengeError) throw challengeError;
-  if (!challenge) throw new Error(`Challenge not found: ${challengeName}`);
+    if (challengeError) throw challengeError;
+    if (!challenge) throw new Error(`Challenge not found: ${challengeName}`);
 
-  const challengeId = challenge.id;
+    const challengeId = challenge.id;
 
-  // Get current challenge progress
-  const { data: currentProgress, error: progressError } = await supabase
-    .from('user_challenges')
-    .select('*')
-    .eq('user_id', targetUserId)
-    .eq('challenge_id', challengeId)
-    .single();
+    // Get current challenge progress
+    const { data: currentProgress, error: progressError } = await supabase
+      .from('user_challenges')
+      .select('*')
+      .eq('user_id', targetUserId)
+      .eq('challenge_id', challengeId)
+      .maybeSingle();
 
-  // If challenge doesn't exist for user, create it with initial progress
-  if (progressError && progressError.code === 'PGRST116') {
+    // If challenge doesn't exist for user or there was an error, create it with initial progress
+    if (!currentProgress) {
+      // Use upsert to handle the case where the challenge might have been created in the meantime
+      const { data, error } = await supabase
+        .from('user_challenges')
+        .upsert({
+          user_id: targetUserId,
+          challenge_id: challengeId,
+          current_progress: incrementBy,
+          completed: false,
+          last_updated: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,challenge_id',
+          ignoreDuplicates: false
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+
+    // Update progress
+    const newProgress = currentProgress.current_progress + incrementBy;
     const { data, error } = await supabase
       .from('user_challenges')
-      .insert({
-        user_id: targetUserId,
-        challenge_id: challengeId,
-        current_progress: incrementBy,
-        completed: false
+      .update({
+        current_progress: newProgress,
+        last_updated: new Date().toISOString()
       })
+      .eq('user_id', targetUserId)
+      .eq('challenge_id', challengeId)
       .select()
       .single();
 
     if (error) throw error;
     return data;
-  } else if (progressError) {
-    throw progressError;
+  } catch (error) {
+    console.error('Error incrementing challenge progress:', error);
+    throw error;
   }
-
-  // Update progress
-  const { data, error } = await supabase
-    .from('user_challenges')
-    .update({
-      current_progress: currentProgress.current_progress + incrementBy,
-      last_updated: new Date().toISOString()
-    })
-    .eq('id', currentProgress.id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
 }
 
 /**
