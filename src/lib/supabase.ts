@@ -33,6 +33,7 @@ export interface Profile {
   first_club_joined?: boolean;
   first_part_listed?: boolean;
   wants_pro?: boolean;
+  notification_preferences?: NotificationPreferences;
 }
 
 export interface Vehicle {
@@ -97,6 +98,8 @@ export interface Part {
   approved?: boolean;
   is_boosted?: boolean;
   boost_expires_at?: string;
+  seller_is_trusted?: boolean; // Flattened from seller:profiles(is_trusted)
+  seller_email?: string; // Flattened from seller:profiles(email)
 }
 
 export interface Badge {
@@ -130,548 +133,192 @@ export interface Notification {
   link?: string;
 }
 
-// Auth functions
-export async function signUp(email: string, password: string, invitedBy?: string) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: invitedBy ? { invited_by: invitedBy } : undefined
-    }
-  });
-  
-  return { data, error };
+export interface Club {
+  id: string;
+  name: string;
+  description?: string;
+  region?: string;
+  image_url?: string;
+  created_at?: string;
+  topic?: string;
+  member_count?: number; // Added for convenience
 }
 
-// Profile functions
-export async function getProfile(): Promise<Profile | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  if (error && error.code !== 'PGRST116') {
-    throw error;
-  }
-
-  return data;
+export interface ClubMessage {
+  id: string;
+  club_id: string;
+  sender_id: string;
+  sender_email?: string;
+  sender_avatar_url?: string;
+  content: string;
+  created_at: string;
 }
 
-export async function createProfile(profile: Partial<Profile>): Promise<Profile> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .upsert(profile)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+export interface KYCUser {
+  id: string;
+  full_name: string;
+  email: string;
+  avatar_url: string | null;
+  location: string | null;
+  kyc_status: string;
 }
 
-export async function updateProfile(updates: Partial<Profile>): Promise<Profile> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .update(updates)
-    .eq('id', user.id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+export interface DashboardStats {
+  totalUsers: number;
+  pendingKyc: number;
+  pendingMechanics: number;
+  reportedParts: number;
+  totalDiagnoses: number;
+  totalPartsListed: number;
+  kycApprovedThisMonth: number;
 }
 
-export async function uploadAvatar(file: File): Promise<string> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-  const filePath = `avatars/${fileName}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from('avatars')
-    .upload(filePath, file);
-
-  if (uploadError) throw uploadError;
-
-  const { data } = supabase.storage
-    .from('avatars')
-    .getPublicUrl(filePath);
-
-  return data.publicUrl;
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 }
 
-// Vehicle functions
-export async function getUserVehicles(): Promise<Vehicle[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('vehicles')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return data || [];
+export interface PartFilters {
+  search?: string;
+  make?: string;
+  condition?: string;
+  category?: string;
+  partNumber?: string;
+  oemNumber?: string;
+  approvalStatus?: 'approved' | 'unapproved';
+  isTrustedSeller?: boolean;
 }
 
-export async function createVehicle(vehicle: Partial<Vehicle>): Promise<Vehicle> {
-  const { data, error } = await supabase
-    .from('vehicles')
-    .insert(vehicle)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+export interface ReportedPart {
+  id: string;
+  part_id: string;
+  reporter_id: string;
+  reason: string;
+  message: string | null;
+  created_at: string;
+  part: Part;
+  reporter: Profile;
 }
 
-// Service Record functions
-export async function getAllServiceRecords(): Promise<ServiceRecord[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('service_records')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('service_date', { ascending: false });
-
-  if (error) throw error;
-  return data || [];
+export interface PartChatPreview {
+  id: string;
+  created_at: string;
+  part: Part;
+  other_user: Profile;
+  last_message: {
+    content: string;
+    created_at: string;
+  } | null;
 }
 
-export async function createServiceRecord(serviceRecord: Partial<ServiceRecord>): Promise<ServiceRecord> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('service_records')
-    .insert({
-      ...serviceRecord,
-      user_id: user.id
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+export interface PartMessage {
+  id: string;
+  chat_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  sender_avatar_url?: string;
 }
 
-export async function updateServiceRecord(id: string, updates: Partial<ServiceRecord>): Promise<ServiceRecord> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('service_records')
-    .update(updates)
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+export interface AiFeedbackLog {
+  id: string;
+  diagnosis_id: string;
+  user_id: string;
+  was_helpful: boolean;
+  timestamp: string;
+  diagnosis: Diagnosis;
+  user: Profile;
 }
 
-export async function deleteServiceRecord(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { error } = await supabase
-    .from('service_records')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
-
-  if (error) throw error;
+export interface SellerReview {
+  id: string;
+  seller_id: string;
+  buyer_id: string;
+  part_id: string | null;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  buyer?: Profile; // Joined profile data
 }
 
-// Diagnosis functions
-export async function getAllUserDiagnosesWithVehicles(): Promise<Diagnosis[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('diagnoses')
-    .select(`
-      *,
-      vehicle:vehicles(*)
-    `)
-    .eq('user_id', user.id)
-    .order('timestamp', { ascending: false });
-
-  if (error) throw error;
-  return data || [];
+export interface SellerRatingStats {
+  seller_id: string;
+  review_count: number;
+  average_rating: number;
+  five_star_count: number;
+  four_star_count: number;
+  three_star_count: number;
+  two_star_count: number;
+  one_star_count: number;
 }
 
-export async function sendDiagnosticPrompt(vehicleId: string, prompt: string): Promise<Diagnosis> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  // Create initial diagnosis record
-  const { data: diagnosis, error } = await supabase
-    .from('diagnoses')
-    .insert({
-      user_id: user.id,
-      vehicle_id: vehicleId,
-      prompt,
-      response: '',
-      resolved: false
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-
-  // Call the edge function to process the diagnosis
-  const { error: functionError } = await supabase.functions.invoke('diagnose', {
-    body: {
-      diagnosisId: diagnosis.id,
-      vehicleId,
-      prompt
-    }
-  });
-
-  if (functionError) {
-    console.error('Error calling diagnose function:', functionError);
-  }
-
-  return diagnosis;
+export interface LeaderboardEntry {
+  id: string;
+  full_name: string;
+  username: string;
+  avatar_url: string;
+  location: string;
+  rank: number;
+  total_score: number;
+  total_diagnoses: number;
+  resolved_diagnoses: number;
+  helpful_feedback: number;
+  parts_listed: number;
+  parts_sold: number;
+  total_sales_value: number;
+  clubs_founded: number;
+  clubs_joined: number;
+  total_badges: number;
+  rare_badges: number;
+  service_records: number;
+  total_maintenance_cost: number;
 }
 
-export async function updateDiagnosisResolved(diagnosisId: string, resolved: boolean): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { error } = await supabase
-    .from('diagnoses')
-    .update({ resolved })
-    .eq('id', diagnosisId)
-    .eq('user_id', user.id);
-
-  if (error) throw error;
-}
-
-export async function recordAiFeedback(diagnosisId: string, wasHelpful: boolean): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  // Insert feedback into ai_logs table
-  const { error } = await supabase
-    .from('ai_logs')
-    .insert({
-      diagnosis_id: diagnosisId,
-      user_id: user.id,
-      was_helpful: wasHelpful
-    })
-    .select();
-
-  if (error) throw error;
-}
-
-export function subscribeToDiagnosisUpdates(diagnosisId: string, callback: (diagnosis: Diagnosis) => void) {
-  const subscription = supabase
-    .channel(`diagnosis-${diagnosisId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'diagnoses',
-        filter: `id=eq.${diagnosisId}`
-      },
-      (payload) => {
-        callback(payload.new as Diagnosis);
-      }
-    )
-    .subscribe();
-
-  return () => {
-    subscription.unsubscribe();
+export interface LeaderboardData {
+  overall: LeaderboardEntry[];
+  diagnosticians: LeaderboardEntry[];
+  sellers: LeaderboardEntry[];
+  contributors: LeaderboardEntry[];
+  userRank?: {
+    overall: number | null;
+    diagnosticians: number | null;
+    sellers: number | null;
+    contributors: number | null;
   };
 }
 
-// Parts functions
-export async function createPart(part: Partial<Part>): Promise<Part> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('parts')
-    .insert({
-      ...part,
-      seller_id: user.id
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+export interface WeeklyStats {
+  diagnoses: number;
+  partsListed: number;
+  clubsJoined: number;
+  messagesExchanged: number;
+  serviceRecordsAdded: number;
 }
 
-export async function boostPart(partId: string, days: number = 7): Promise<Part> {
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + days);
-  
-  const { data, error } = await supabase
-    .from('parts')
-    .update({ 
-      is_boosted: true,
-      boost_expires_at: expiresAt.toISOString()
-    })
-    .eq('id', partId)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data;
+export interface NotificationPreferences {
+  chat_messages: boolean;
+  ai_repair_tips: boolean;
+  club_activity: boolean;
+  service_reminders: boolean;
+  marketplace_activity: boolean;
 }
 
-// Notification functions
-export async function getUserNotifications(): Promise<Notification[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('notifications')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return data || [];
-}
-
-export async function getUnreadNotificationCount(): Promise<number> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { count, error } = await supabase
-    .from('notifications')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('read', false);
-
-  if (error) throw error;
-  return count || 0;
-}
-
-export async function markNotificationAsRead(notificationId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { error } = await supabase
-    .from('notifications')
-    .update({ read: true })
-    .eq('id', notificationId)
-    .eq('user_id', user.id);
-
-  if (error) throw error;
-}
-
-export async function markAllNotificationsAsRead(): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { error } = await supabase
-    .from('notifications')
-    .update({ read: true })
-    .eq('user_id', user.id)
-    .eq('read', false);
-
-  if (error) throw error;
-}
-
-export async function deleteNotification(notificationId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { error } = await supabase
-    .from('notifications')
-    .delete()
-    .eq('id', notificationId)
-    .eq('user_id', user.id);
-
-  if (error) throw error;
-}
-
-// KYC functions
-export async function checkKycStatus(): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('kyc_verified')
-    .eq('id', user.id)
-    .single();
-
-  if (error) throw error;
-  return data?.kyc_verified || false;
-}
-
-// Badge functions
-export async function getUserBadges(userId?: string): Promise<UserEarnedBadge[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  const targetUserId = userId || user?.id;
-  
-  if (!targetUserId) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('user_badges')
-    .select(`
-      *,
-      badge:badges(*)
-    `)
-    .eq('user_id', targetUserId)
-    .order('awarded_at', { ascending: false });
-
-  if (error) throw error;
-
-  return (data || []).map(item => ({
-    id: item.id,
-    user_id: item.user_id,
-    badge_id: item.badge_id,
-    name: item.badge.name,
-    description: item.badge.description,
-    icon_url: item.badge.icon_url,
-    rarity: item.badge.rarity,
-    awarded_at: item.awarded_at,
-    note: item.note
-  }));
-}
-
-export async function getAllBadges(): Promise<Badge[]> {
-  const { data, error } = await supabase
-    .from('badges')
-    .select('*')
-    .order('name');
-
-  if (error) throw error;
-  return data || [];
-}
-
-export async function awardBadge(userId: string | undefined, badgeName: string, note?: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  const targetUserId = userId || user?.id;
-  
-  if (!targetUserId) throw new Error('Not authenticated');
-
-  // First, get the badge by name
-  const { data: badge, error: badgeError } = await supabase
-    .from('badges')
-    .select('id')
-    .eq('name', badgeName)
-    .single();
-
-  if (badgeError || !badge) {
-    console.error('Badge not found:', badgeName);
-    return;
-  }
-
-  // Check if user already has this badge
-  const { data: existing } = await supabase
-    .from('user_badges')
-    .select('id')
-    .eq('user_id', targetUserId)
-    .eq('badge_id', badge.id)
-    .single();
-
-  if (existing) {
-    // User already has this badge
-    return;
-  }
-
-  // Award the badge
-  const { error } = await supabase
-    .from('user_badges')
-    .insert({
-      user_id: targetUserId,
-      badge_id: badge.id,
-      note: note || null
-    });
-
-  if (error) {
-    console.error('Error awarding badge:', error);
-    throw error;
-  }
-}
-
-// Achievement functions
-export async function hasUserAchievementBeenAwarded(userId: string | undefined, achievementId: string): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
-  const targetUserId = userId || user?.id;
-  
-  if (!targetUserId) return false;
-
-  const { data, error } = await supabase
-    .from('user_achievements')
-    .select('id')
-    .eq('user_id', targetUserId)
-    .eq('achievement_id', achievementId)
-    .single();
-
-  if (error && error.code !== 'PGRST116') {
-    console.error('Error checking achievement:', error);
-    return false;
-  }
-
-  return !!data;
-}
-
-export async function recordUserAchievement(
-  userId: string | undefined, 
-  achievementId: string, 
-  xp: number, 
-  badgeName: string
-): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  const targetUserId = userId || user?.id;
-  
-  if (!targetUserId) throw new Error('Not authenticated');
-
-  // Get badge ID
-  const { data: badge } = await supabase
-    .from('badges')
-    .select('id')
-    .eq('name', badgeName)
-    .single();
-
-  const { error } = await supabase
-    .from('user_achievements')
-    .insert({
-      user_id: targetUserId,
-      achievement_id: achievementId,
-      xp_awarded: xp,
-      badge_awarded: badge?.id || null
-    });
-
-  if (error) {
-    console.error('Error recording achievement:', error);
-    throw error;
-  }
-}
-
-// Helper function to check if user is admin
-export async function isAdminUser(): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single();
-
-  if (error) return false;
-  return data?.is_admin || false;
-}
+// Re-export all functions from modularized files
+export * from './supabase_modules/auth';
+export * from './supabase_modules/profile';
+export * from './supabase_modules/vehicles';
+export * from './supabase_modules/serviceRecords';
+export * from './supabase_modules/diagnostics';
+export * from './supabase_modules/parts';
+export * from './supabase_modules/notifications';
+export * from './supabase_modules/kyc';
+export * from './supabase_modules/badges';
+export * from './supabase_modules/achievements';
+export * from './supabase_modules/mechanics';
+export * from './supabase_modules/clubs';
+export * from './supabase_modules/reviews';
+export * from './supabase_modules/utils'; // For dashboard stats, etc.

@@ -66,7 +66,10 @@ Deno.serve(async (req) => {
       // Update the part to be boosted
       await supabaseClient
         .from('parts')
-        .update({ is_boosted: true })
+        .update({ 
+          is_boosted: true,
+          boost_expires_at: expiresAt.toISOString() // Set boost_expires_at here
+        })
         .eq('id', partId);
       
       // Create a notification for the user
