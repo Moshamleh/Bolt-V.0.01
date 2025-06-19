@@ -361,6 +361,23 @@ export async function updateDiagnosisResolved(diagnosisId: string, resolved: boo
   if (error) throw error;
 }
 
+export async function recordAiFeedback(diagnosisId: string, wasHelpful: boolean): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Insert feedback into ai_logs table
+  const { error } = await supabase
+    .from('ai_logs')
+    .insert({
+      diagnosis_id: diagnosisId,
+      user_id: user.id,
+      was_helpful: wasHelpful
+    })
+    .select();
+
+  if (error) throw error;
+}
+
 export function subscribeToDiagnosisUpdates(diagnosisId: string, callback: (diagnosis: Diagnosis) => void) {
   const subscription = supabase
     .channel(`diagnosis-${diagnosisId}`)
