@@ -1,14 +1,24 @@
-import React, { useEffect, useState, lazy, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Car, Plus, Settings, Wrench, Loader2, FileText, Calendar, Lightbulb, Menu, Zap, PenTool as Tool } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, getUserVehicles, getProfile } from '../lib/supabase';
 import MobilePageMenu from '../components/MobilePageMenu';
 import VehicleCardSkeleton from '../components/VehicleCardSkeleton';
+import { incrementChallengeProgress } from '../lib/supabase_modules/challenges';
 
 // Lazy load components
 const RepairTipsPanel = lazy(() => import('../components/RepairTipsPanel'));
 const TipCarousel = lazy(() => import('../components/TipCarousel'));
+const ChallengeProgress = lazy(() => import('../components/ChallengeProgress'));
+const MaintenanceRemindersPanel = lazy(() => import('../components/MaintenanceRemindersPanel'));
+
+// Loading fallback component
+const ComponentLoader = () => (
+  <div className="flex items-center justify-center h-full">
+    <Loader2 className="h-6 w-6 text-blue-600 dark:text-blue-400 animate-spin" />
+  </div>
+);
 
 const VehicleManagementPage: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +29,7 @@ const VehicleManagementPage: React.FC = () => {
   const [showRepairTips, setShowRepairTips] = useState(false);
   const [aiTipsEnabled, setAiTipsEnabled] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showMaintenanceReminders, setShowMaintenanceReminders] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -36,6 +47,17 @@ const VehicleManagementPage: React.FC = () => {
           setAiTipsEnabled(profileData.ai_repair_tips_enabled);
           // Show repair tips by default if enabled and there are vehicles
           setShowRepairTips(profileData.ai_repair_tips_enabled && vehiclesData.length > 0);
+          // Show maintenance reminders by default if enabled
+          setShowMaintenanceReminders(profileData.ai_repair_tips_enabled);
+        }
+        
+        // Update Vehicle Collector challenge progress
+        if (vehiclesData.length > 0) {
+          try {
+            await incrementChallengeProgress('Vehicle Collector', vehiclesData.length);
+          } catch (error) {
+            console.error('Failed to update Vehicle Collector challenge:', error);
+          }
         }
       } catch (err) {
         console.error('Failed to load vehicles:', err);
@@ -221,14 +243,70 @@ const VehicleManagementPage: React.FC = () => {
               </motion.div>
             </div>
 
+            {/* Challenge Progress */}
+            <Suspense fallback={<div className="h-12 mb-8"></div>}>
+              <ChallengeProgress limit={1} className="mb-8" />
+            </Suspense>
+
             {/* Tip Carousel */}
             <Suspense fallback={
-              <div className="flex items-center justify-center p-8">
+              <div className="flex items-center justify-center p-8 mb-8">
                 <Loader2 className="h-6 w-6 text-blue-600 dark:text-blue-400 animate-spin" />
               </div>
             }>
               <TipCarousel className="mb-8" />
             </Suspense>
+
+            {/* Maintenance Reminders Section */}
+            {aiTipsEnabled && showMaintenanceReminders && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-8"
+              >
+                <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+                        <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        Maintenance Reminders
+                      </h2>
+                    </div>
+                    <button
+                      onClick={() => setShowMaintenanceReminders(!showMaintenanceReminders)}
+                      className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                    >
+                      {showMaintenanceReminders ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </div>
+
+                <AnimatePresence>
+                  {showMaintenanceReminders && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="p-6">
+                        <Suspense fallback={
+                          <div className="flex items-center justify-center p-8">
+                            <Loader2 className="h-6 w-6 text-blue-600 dark:text-blue-400 animate-spin" />
+                          </div>
+                        }>
+                          <MaintenanceRemindersPanel />
+                        </Suspense>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            )}
 
             {/* AI Repair Tips Section */}
             {aiTipsEnabled && (
@@ -349,7 +427,18 @@ const VehicleManagementPage: React.FC = () => {
           </div>
           
           {aiTipsEnabled && (
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3">
+              <button
+                onClick={() => {
+                  setShowMaintenanceReminders(!showMaintenanceReminders);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-lg font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+              >
+                <Calendar className="h-5 w-5" />
+                <span>{showMaintenanceReminders ? 'Hide Maintenance Reminders' : 'Show Maintenance Reminders'}</span>
+              </button>
+              
               <button
                 onClick={() => {
                   setShowRepairTips(!showRepairTips);

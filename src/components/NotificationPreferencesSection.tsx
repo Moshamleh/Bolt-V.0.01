@@ -7,6 +7,7 @@ import { getProfile, updateNotificationPreferences, NotificationPreferences } fr
 const NotificationPreferencesSection: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<NotificationPreferences>({
     chat_messages: true,
     ai_repair_tips: true,
