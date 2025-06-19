@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Plus, ChevronDown, ChevronUp, Loader2, Menu, X, ShoppingBag, MessageSquare, Settings, Heart, AlertCircle, Package, ChevronLeft, ChevronRight, Mailbox as Toolbox, Wrench, ListFilter, MapPin, Wine as Engine, Disc, CarFront } from 'lucide-react';
+import { Search, Filter, Plus, ChevronDown, ChevronUp, Loader2, Menu, X, ShoppingBag, MessageSquare, Settings, Heart, AlertCircle, Package, ChevronLeft, ChevronRight, Mailbox as Toolbox, Wrench, ListFilter, MapPin, Wine as Engine, Disc, CarFront, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Part, getParts, getOrCreatePartChat, PaginatedResponse } from '../lib/supabase';
 import PartCard from '../components/PartCard';
@@ -31,6 +31,7 @@ const MarketplacePage: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeFilterChipId, setActiveFilterChipId] = useState('all');
+  const [showTrustedSellersOnly, setShowTrustedSellersOnly] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -51,7 +52,8 @@ const MarketplacePage: React.FC = () => {
           ...activeChip.filters,
           search: searchTerm || undefined,
           partNumber: partNumber || undefined,
-          oemNumber: oemNumber || undefined
+          oemNumber: oemNumber || undefined,
+          isTrustedSeller: showTrustedSellersOnly || undefined
         };
         
         const response = await getParts(filters, currentPage, ITEMS_PER_PAGE);
@@ -74,7 +76,8 @@ const MarketplacePage: React.FC = () => {
     partNumber,
     oemNumber,
     currentPage,
-    activeFilterChipId
+    activeFilterChipId,
+    showTrustedSellersOnly
   ]);
 
   const handleSellPart = () => {
@@ -109,6 +112,7 @@ const MarketplacePage: React.FC = () => {
     setSearchTerm('');
     setPartNumber('');
     setOemNumber('');
+    setShowTrustedSellersOnly(false);
     setCurrentPage(1);
     setIsMobileMenuOpen(false);
   };
@@ -148,7 +152,7 @@ const MarketplacePage: React.FC = () => {
   );
 
   const EmptyState = () => {
-    const hasFilters = searchTerm || partNumber || oemNumber || activeFilterChipId !== 'all';
+    const hasFilters = searchTerm || partNumber || oemNumber || activeFilterChipId !== 'all' || showTrustedSellersOnly;
     
     return (
       <motion.div
@@ -343,6 +347,19 @@ const MarketplacePage: React.FC = () => {
                   {chip.label}
                 </button>
               ))}
+              
+              {/* Trusted Sellers Filter */}
+              <button
+                onClick={() => setShowTrustedSellersOnly(!showTrustedSellersOnly)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                  showTrustedSellersOnly
+                    ? 'bg-green-600 text-white shadow-glow'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                <CheckCircle className="h-4 w-4" />
+                Trusted Sellers Only
+              </button>
             </div>
 
             <div className="flex items-center justify-between">
@@ -369,7 +386,7 @@ const MarketplacePage: React.FC = () => {
                 </button>
               </div>
 
-              {(showFilters || searchTerm || partNumber || oemNumber || activeFilterChipId !== 'all') && (
+              {(showFilters || searchTerm || partNumber || oemNumber || activeFilterChipId !== 'all' || showTrustedSellersOnly) && (
                 <button
                   onClick={handleClearFilters}
                   className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
@@ -499,6 +516,23 @@ const MarketplacePage: React.FC = () => {
                     {chip.label}
                   </button>
                 ))}
+              </div>
+              
+              {/* Trusted Sellers Toggle for Mobile */}
+              <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  <span className="text-gray-700 dark:text-gray-300">Trusted Sellers Only</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showTrustedSellersOnly}
+                    onChange={() => setShowTrustedSellersOnly(!showTrustedSellersOnly)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                </label>
               </div>
               
               {/* Part Number Search */}

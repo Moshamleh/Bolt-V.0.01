@@ -95,6 +95,7 @@ export interface PartFilters {
   maxPrice?: number;
   partNumber?: string;
   oemNumber?: string;
+  isTrustedSeller?: boolean;
 }
 
 export interface PaginatedResponse<T> {
@@ -605,13 +606,7 @@ export const getParts = async (
 ): Promise<PaginatedResponse<Part>> => {
   let query = supabase
     .from('parts')
-    .select(`
-      *,
-      seller:seller_id (
-        listing_boost_until,
-        is_trusted
-      )
-    `, { count: 'exact' });
+    .select('*, seller:seller_id(is_trusted, listing_boost_until)', { count: 'exact' });
 
   // Apply search
   if (filters.search) {
@@ -651,6 +646,11 @@ export const getParts = async (
   // Add OEM number search
   if (filters.oemNumber) {
     query = query.ilike('oem_number', `%${filters.oemNumber}%`);
+  }
+
+  // Filter by trusted sellers only
+  if (filters.isTrustedSeller) {
+    query = query.eq('seller.is_trusted', true);
   }
 
   // Only show unsold parts
@@ -764,6 +764,52 @@ export const deletePart = async (partId: string): Promise<void> => {
     .eq('id', partId);
 
   if (error) throw error;
+};
+
+// Check and set trusted seller status
+export const checkAndSetTrustedSeller = async (userId: string): Promise<void> => {
+  try {
+    // Get KYC verification status
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('kyc_verified')
+      .eq('id', userId)
+      .single();
+    
+    if (profileError) throw profileError;
+    
+    // Count approved parts by this seller
+    const { count: approvedPartsCount, error: partsError } = await supabase
+      .from('parts')
+      .select('*', { count: 'exact', head: true })
+      .eq('seller_id', userId)
+      .eq('approved', true);
+    
+    if (partsError) throw partsError;
+    
+    // If KYC is verified and seller has at least 3 approved parts, mark as trusted
+    if (profile.kyc_verified && approvedPartsCount >= 3) {
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ is_trusted: true })
+        .eq('id', userId);
+      
+      if (updateError) throw updateError;
+      
+      // Create notification for the user
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: userId,
+          type: 'trusted_seller',
+          message: 'Congratulations! You are now a Verified Seller. Your listings will display a verification badge.',
+          read: false
+        });
+    }
+  } catch (error) {
+    console.error('Failed to check trusted seller status:', error);
+    // Don't throw the error to prevent breaking the flow
+  }
 };
 
 // Admin functions for parts management
@@ -1994,84 +2040,40 @@ export const getDashboardStats = async (): Promise<{
   };
 };
 
-// Trusted seller functions
-export const checkAndSetTrustedSeller = async (userId: string): Promise<void> => {
-  try {
-    // Get KYC verification status
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('kyc_verified')
-      .eq('id', userId)
-      .single();
-    
-    if (profileError) throw profileError;
-    
-    // Count approved parts by this seller
-    const { count: approvedPartsCount, error: partsError } = await supabase
-      .from('parts')
-      .select('*', { count: 'exact', head: true })
-      .eq('seller_id', userId)
-      .eq('approved', true);
-    
-    if (partsError) throw partsError;
-    
-    // If KYC is verified and seller has at least 3 approved parts, mark as trusted
-    if (profile.kyc_verified && approvedPartsCount >= 3) {
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ is_trusted: true })
-        .eq('id', userId);
-      
-      if (updateError) throw updateError;
-      
-      // Create notification for the user
-      const { error: notificationError } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: userId,
-          type: 'trusted_seller',
-          message: 'Congratulations! You are now a Verified Seller. Your listings will display a verification badge.',
-          read: false
-        });
-      
-      if (notificationError) throw notificationError;
-    }
-  } catch (error) {
-    console.error('Error checking trusted seller status:', error);
-    // Don't throw the error to prevent disrupting the main flow
-  }
-};
+export const getKycStatusCounts = async (): Promise<{
+  pending: number;
+  approved: number;
+  rejected: number;
+}> => {
+  // Get pending count
+  const { count: pending, error: pendingError } = await supabase
+    .from('kyc_requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending');
 
-// KYC Status Counts
-export const getKycStatusCounts = async (): Promise<{ pending: number; approved: number; rejected: number }> => {
-  try {
-    // Get counts for each status
-    const [pendingResult, approvedResult, rejectedResult] = await Promise.all([
-      supabase
-        .from('kyc_requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending'),
-      
-      supabase
-        .from('kyc_requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'approved'),
-      
-      supabase
-        .from('kyc_requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'rejected')
-    ]);
-    
-    return {
-      pending: pendingResult.count || 0,
-      approved: approvedResult.count || 0,
-      rejected: rejectedResult.count || 0
-    };
-  } catch (error) {
-    console.error('Error fetching KYC status counts:', error);
-    throw error;
-  }
+  if (pendingError) throw pendingError;
+
+  // Get approved count
+  const { count: approved, error: approvedError } = await supabase
+    .from('kyc_requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'approved');
+
+  if (approvedError) throw approvedError;
+
+  // Get rejected count
+  const { count: rejected, error: rejectedError } = await supabase
+    .from('kyc_requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'rejected');
+
+  if (rejectedError) throw rejectedError;
+
+  return {
+    pending: pending || 0,
+    approved: approved || 0,
+    rejected: rejected || 0
+  };
 };
 
 export default supabase;
