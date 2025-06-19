@@ -4,6 +4,7 @@ import { Award, ChevronRight, Loader2 } from 'lucide-react';
 import { Challenge, UserChallenge } from '../lib/supabase';
 import { getInProgressChallenges } from '../lib/supabase_modules/challenges';
 import { useNavigate } from 'react-router-dom';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 interface ChallengeProgressProps {
   limit?: number;
@@ -27,7 +28,8 @@ const ChallengeProgress: React.FC<ChallengeProgressProps> = ({
         setChallenges(data);
       } catch (err) {
         console.error('Failed to load challenges:', err);
-        setError('Failed to load challenges');
+        const errorMessage = extractErrorMessage(err);
+        setError(`Failed to load challenges: ${errorMessage}`);
       } finally {
         setLoading(false);
       }

@@ -5,6 +5,7 @@ import { Challenge, UserChallenge } from '../lib/supabase';
 import { getUserChallenges, getInProgressChallenges, getCompletedChallenges } from '../lib/supabase_modules/challenges';
 import ChallengeCard from './ChallengeCard';
 import ChallengeDetailModal from './ChallengeDetailModal';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 interface ChallengesListProps {
   filter?: 'all' | 'active' | 'completed';
@@ -49,7 +50,8 @@ const ChallengesList: React.FC<ChallengesListProps> = ({
         setChallenges(data);
       } catch (err) {
         console.error('Failed to load challenges:', err);
-        setError('Failed to load challenges');
+        const errorMessage = extractErrorMessage(err);
+        setError(`Failed to load challenges: ${errorMessage}`);
       } finally {
         setLoading(false);
       }

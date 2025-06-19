@@ -210,7 +210,7 @@ export async function updateChallengeProgress(
  * Increment progress on a challenge
  */
 export async function incrementChallengeProgress(
-  challengeId: string,
+  challengeName: string,
   incrementBy: number = 1,
   userId?: string
 ): Promise<UserChallenge> {
@@ -218,6 +218,18 @@ export async function incrementChallengeProgress(
   const targetUserId = userId || user?.id;
   
   if (!targetUserId) throw new Error('Not authenticated');
+
+  // First, get the challenge ID by name
+  const { data: challenge, error: challengeError } = await supabase
+    .from('challenges')
+    .select('id')
+    .eq('name', challengeName)
+    .single();
+
+  if (challengeError) throw challengeError;
+  if (!challenge) throw new Error(`Challenge not found: ${challengeName}`);
+
+  const challengeId = challenge.id;
 
   // Get current challenge progress
   const { data: currentProgress, error: progressError } = await supabase

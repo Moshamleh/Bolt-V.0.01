@@ -3,6 +3,7 @@ import { Bell, MessageSquare, Lightbulb, UsersRound, Calendar, ShoppingBag, Load
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { getProfile, updateNotificationPreferences, NotificationPreferences } from '../lib/supabase';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 const NotificationPreferencesSection: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -25,6 +26,8 @@ const NotificationPreferencesSection: React.FC = () => {
         }
       } catch (error) {
         console.error('Failed to load notification preferences:', error);
+        const errorMessage = extractErrorMessage(error);
+        setError(`Failed to load preferences: ${errorMessage}`);
       } finally {
         setLoading(false);
       }
@@ -35,6 +38,7 @@ const NotificationPreferencesSection: React.FC = () => {
 
   const handleToggle = async (key: keyof NotificationPreferences) => {
     setSaving(true);
+    setError(null);
     try {
       const updatedPreferences = {
         ...preferences,
@@ -46,7 +50,9 @@ const NotificationPreferencesSection: React.FC = () => {
       toast.success('Preferences updated');
     } catch (err) {
       console.error('Failed to update preferences:', err);
-      toast.error('Failed to update preferences');
+      const errorMessage = extractErrorMessage(err);
+      setError(`Failed to update preferences: ${errorMessage}`);
+      toast.error(`Failed to update preferences: ${errorMessage}`);
     } finally {
       setSaving(false);
     }
@@ -70,6 +76,12 @@ const NotificationPreferencesSection: React.FC = () => {
           Notification Preferences
         </h2>
       </div>
+
+      {error && (
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300 mb-4">
+          {error}
+        </div>
+      )}
 
       <div className="space-y-4">
         {/* Chat Messages */}
