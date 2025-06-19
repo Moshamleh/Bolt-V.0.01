@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Clock, MessageSquare, Loader2, ArrowUpRight } from 'lucide-react';
 import { Diagnosis, updateDiagnosisResolved } from '../lib/supabase';
@@ -10,6 +10,7 @@ interface ChatHistoryProps {
   error: string | null;
   onStatusChange: (id: string, resolved: boolean) => void;
   onLoadDiagnosis?: (diagnosis: Diagnosis) => void;
+  filterStatus?: 'all' | 'active' | 'resolved';
 }
 
 const ChatHistory: React.FC<ChatHistoryProps> = ({ 
@@ -17,7 +18,8 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
   loading, 
   error,
   onStatusChange,
-  onLoadDiagnosis
+  onLoadDiagnosis,
+  filterStatus = 'all'
 }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -37,6 +39,14 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
       setUpdatingId(null);
     }
   };
+
+  // Filter diagnoses based on filterStatus
+  const filteredDiagnoses = diagnoses.filter(diagnosis => {
+    if (filterStatus === 'all') return true;
+    if (filterStatus === 'active') return !diagnosis.resolved;
+    if (filterStatus === 'resolved') return diagnosis.resolved;
+    return true;
+  });
 
   if (loading && diagnoses.length === 0) {
     return (
@@ -60,14 +70,18 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
 
   return (
     <div className="p-4 space-y-4">
-      {diagnoses.length === 0 ? (
+      {filteredDiagnoses.length === 0 ? (
         <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-          No diagnostic history yet.
+          {filterStatus === 'all' 
+            ? 'No diagnostic history yet.' 
+            : filterStatus === 'active' 
+              ? 'No active diagnostics found.' 
+              : 'No resolved diagnostics found.'}
         </div>
       ) : (
         <AnimatePresence>
           <div className="space-y-4">
-            {diagnoses.map((diagnosis) => (
+            {filteredDiagnoses.map((diagnosis) => (
               <motion.div
                 key={diagnosis.id}
                 initial={{ opacity: 0 }}
@@ -90,17 +104,21 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
                     {diagnosis.resolved ? (
                       <span className="flex items-center text-green-600 dark:text-green-400 text-sm">
                         <CheckCircle className="h-4 w-4 mr-1" />
-                        Resolved
+                        ✅ Fixed
                       </span>
                     ) : (
                       <span className="flex items-center text-amber-600 dark:text-amber-400 text-sm">
                         <Clock className="h-4 w-4 mr-1" />
-                        Pending
+                        ⏳ Unresolved
                       </span>
                     )}
                   </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {formatDistanceToNow(new Date(diagnosis.timestamp), { addSuffix: true })}
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    {format(new Date(diagnosis.timestamp), 'MMM d, yyyy • h:mm a')}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                    {diagnosis.response.substring(0, 100)}
+                    {diagnosis.response.length > 100 ? '...' : ''}
                   </div>
                 </div>
                 
@@ -152,7 +170,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
                           ) : diagnosis.resolved ? (
                             'Mark as Unresolved'
                           ) : (
-                            'Mark as Resolved'
+                            'Mark as Fixed'
                           )}
                         </button>
                       </div>

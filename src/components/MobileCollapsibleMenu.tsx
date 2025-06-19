@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, Filter } from 'lucide-react';
 import ChatHistory from './ChatHistory';
 import { Diagnosis } from '../lib/supabase';
 
@@ -12,6 +12,8 @@ interface MobileCollapsibleMenuProps {
   error: string | null;
   onStatusChange: (id: string, resolved: boolean) => void;
   onLoadDiagnosis?: (diagnosis: Diagnosis) => void;
+  filterStatus: 'all' | 'active' | 'resolved';
+  onFilterChange: (status: 'all' | 'active' | 'resolved') => void;
 }
 
 const MobileCollapsibleMenu: React.FC<MobileCollapsibleMenuProps> = ({
@@ -22,6 +24,8 @@ const MobileCollapsibleMenu: React.FC<MobileCollapsibleMenuProps> = ({
   error,
   onStatusChange,
   onLoadDiagnosis,
+  filterStatus,
+  onFilterChange
 }) => {
   const handleLoadDiagnosis = (diagnosis: Diagnosis) => {
     if (onLoadDiagnosis) {
@@ -60,13 +64,55 @@ const MobileCollapsibleMenu: React.FC<MobileCollapsibleMenuProps> = ({
               </button>
             </div>
 
-            <div className="overflow-y-auto h-[calc(100vh-64px)]">
+            <div className="p-4 border-b border-neutral-200 dark:border-gray-700">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Filter</h3>
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                </div>
+              </div>
+              <div className="flex mt-2 gap-2">
+                <button
+                  onClick={() => onFilterChange('all')}
+                  className={`px-3 py-1.5 text-sm rounded-full ${
+                    filterStatus === 'all'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  Show All
+                </button>
+                <button
+                  onClick={() => onFilterChange('active')}
+                  className={`px-3 py-1.5 text-sm rounded-full ${
+                    filterStatus === 'active'
+                      ? 'bg-amber-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  Only Active
+                </button>
+                <button
+                  onClick={() => onFilterChange('resolved')}
+                  className={`px-3 py-1.5 text-sm rounded-full ${
+                    filterStatus === 'resolved'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  Only Resolved
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto h-[calc(100vh-144px)]">
               <ChatHistory
                 diagnoses={diagnoses}
                 loading={loading}
                 error={error}
                 onStatusChange={onStatusChange}
                 onLoadDiagnosis={handleLoadDiagnosis}
+                filterStatus={filterStatus}
               />
             </div>
           </motion.div>

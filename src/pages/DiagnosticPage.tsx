@@ -1,9 +1,9 @@
 import React, { useEffect, useState, lazy, Suspense, useRef } from 'react';
-import { Car, Loader2, Lightbulb, Menu, History, MessageSquare, Wrench, Sparkles } from 'lucide-react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Car, Loader2, Lightbulb, Menu, History, MessageSquare, Wrench, Sparkles, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, getUserVehicles, getUserDiagnoses, Diagnosis, updateProfile, awardBadge, sendDiagnosticPrompt, subscribeToDiagnosisUpdates } from '../lib/supabase';
 import { useOnboarding } from '../hooks/useOnboarding';
-import { useNavigate } from 'react-router-dom';
 import WelcomeModal from '../components/WelcomeModal';
 import { useProfile } from '../hooks/useProfile';
 import { hasCompletedFirstDiagnostic, markFirstDiagnosticCompleted } from '../lib/utils';
@@ -53,6 +53,7 @@ const DiagnosticPage: React.FC = () => {
   const [urgentTipLoading, setUrgentTipLoading] = useState(false);
   const [urgentTipVisible, setUrgentTipVisible] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'resolved'>('all');
   const desktopHistoryRef = useRef<HTMLDivElement>(null);
   
   const { showOnboarding, completeOnboarding, isInitialized } = useOnboarding();
@@ -365,12 +366,53 @@ const DiagnosticPage: React.FC = () => {
           onClose={() => setIsHistoryMenuOpen(false)}
           title="Diagnostic History"
         >
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Filter</h3>
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <div className="flex mt-2 gap-2">
+              <button
+                onClick={() => setFilterStatus('all')}
+                className={`px-3 py-1.5 text-sm rounded-full ${
+                  filterStatus === 'all'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                Show All
+              </button>
+              <button
+                onClick={() => setFilterStatus('active')}
+                className={`px-3 py-1.5 text-sm rounded-full ${
+                  filterStatus === 'active'
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                Only Active
+              </button>
+              <button
+                onClick={() => setFilterStatus('resolved')}
+                className={`px-3 py-1.5 text-sm rounded-full ${
+                  filterStatus === 'resolved'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                Only Resolved
+              </button>
+            </div>
+          </div>
           <ChatHistory
             diagnoses={diagnoses}
             loading={loading}
             error={error}
             onStatusChange={handleDiagnosisStatusChange}
             onLoadDiagnosis={handleLoadDiagnosis}
+            filterStatus={filterStatus}
           />
         </MobilePageMenu>
       </Suspense>
@@ -380,9 +422,44 @@ const DiagnosticPage: React.FC = () => {
         {/* Desktop History Sidebar */}
         <div ref={desktopHistoryRef} className="w-80 border-r border-neutral-200 dark:border-gray-700 h-full overflow-y-auto">
           <div className="p-4 border-b border-neutral-200 dark:border-gray-700">
-            <div className="flex items-center gap-2">
-              <History className="h-5 w-5 text-neutral-500 dark:text-gray-400" />
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Diagnostic History</h2>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <History className="h-5 w-5 text-neutral-500 dark:text-gray-400" />
+                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Diagnostic History</h2>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={() => setFilterStatus('all')}
+                className={`px-3 py-1.5 text-sm rounded-full ${
+                  filterStatus === 'all'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                Show All
+              </button>
+              <button
+                onClick={() => setFilterStatus('active')}
+                className={`px-3 py-1.5 text-sm rounded-full ${
+                  filterStatus === 'active'
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                Only Active
+              </button>
+              <button
+                onClick={() => setFilterStatus('resolved')}
+                className={`px-3 py-1.5 text-sm rounded-full ${
+                  filterStatus === 'resolved'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                Only Resolved
+              </button>
             </div>
           </div>
           <Suspense fallback={<ComponentLoader />}>
@@ -392,6 +469,7 @@ const DiagnosticPage: React.FC = () => {
               error={error}
               onStatusChange={handleDiagnosisStatusChange}
               onLoadDiagnosis={handleLoadDiagnosis}
+              filterStatus={filterStatus}
             />
           </Suspense>
         </div>
