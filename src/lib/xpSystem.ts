@@ -53,50 +53,19 @@ export async function awardXp(
       userId = user.id;
     }
 
-    // First get current XP and level
-    const { data: userData, error: fetchError } = await supabase
-      .from('users')
-      .select('xp, level')
-      .eq('id', userId)
-      .single();
-    
-    if (fetchError) throw fetchError;
-    
-    const currentXp = userData?.xp || 0;
-    const currentLevel = userData?.level || 1;
-    
-    // Update the user's XP
-    const { data: updatedUser, error: updateError } = await supabase
-      .from('users')
-      .update({ xp: currentXp + amount })
-      .eq('id', userId)
-      .select('xp, level')
-      .single();
-    
-    if (updateError) throw updateError;
-    
-    // Check if level up occurred
-    const levelUpOccurred = updatedUser.level > currentLevel;
-    
-    // Log the XP award
-    if (reason) {
-      await supabase
-        .from('xp_logs')
-        .insert({
-          user_id: userId,
-          amount,
-          reason,
-          previous_xp: currentXp,
-          new_xp: updatedUser.xp,
-          previous_level: currentLevel,
-          new_level: updatedUser.level
-        });
-    }
+    // Call the PostgreSQL award_xp function
+    const { data, error } = await supabase.rpc('award_xp', {
+      user_id: userId,
+      amount,
+      reason
+    });
+
+    if (error) throw error;
     
     return {
-      xp: updatedUser.xp,
-      level: updatedUser.level,
-      levelUpOccurred
+      xp: data.new_xp,
+      level: data.new_level,
+      levelUpOccurred: data.level_up_occurred
     };
   } catch (error) {
     console.error('Error awarding XP:', error);
@@ -110,7 +79,7 @@ export async function awardXp(
  * @returns The amount of XP required to reach the level
  */
 export function getXpForLevel(level: number): number {
-  // This should match the formula in the SQL function
+  // This should match the formula in the PostgreSQL function
   return Math.floor(100 * Math.pow(level, 1.5));
 }
 
