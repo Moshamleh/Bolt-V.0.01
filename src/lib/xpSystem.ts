@@ -171,20 +171,13 @@ export function getXpProgress(xp: number, level: number): {
  * @returns The name of the level
  */
 export function getLevelName(level: number): string {
-  const levelNames = [
-    'Novice',                // Level 1
-    'Road Wrench 🛠️',        // Level 2
-    'Bolt Apprentice ⚡',     // Level 3
-    'Gear Shifter ⚙️',        // Level 4
-    'Engine Expert 🔧',       // Level 5
-    'Turbo Technician 🔩',    // Level 6
-    'Suspension Specialist 🔌', // Level 7
-    'Diagnostic Detective 🔍', // Level 8
-    'Transmission Guru 🔄',   // Level 9
-    'Master Mechanic 🏆'      // Level 10+
+  const titles = [
+    "Rookie Wrencher 🧰",
+    "Garage Grinder 🔧",
+    "Street Tuner 🏎",
+    "Auto Wizard 🧙‍♂️",
+    "Bolt Master ⚡"
   ];
   
-  if (level <= 0) return levelNames[0];
-  if (level > levelNames.length) return levelNames[levelNames.length - 1];
-  return levelNames[level - 1];
+  return titles[level - 1] || "Legendary Mechanic 🚀";
 }
