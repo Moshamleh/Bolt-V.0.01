@@ -23,7 +23,7 @@ const AdminPartsManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
   const [sortField, setSortField] = useState<string>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -44,13 +44,14 @@ const AdminPartsManagement: React.FC = () => {
       try {
         setLoading(true);
         const response = await getParts({
-          page: currentPage,
-          itemsPerPage: ITEMS_PER_PAGE,
-          sortField,
-          sortDirection,
           search: searchTerm,
-          filters
-        });
+          make: filters.make || undefined,
+          condition: filters.condition || undefined,
+          category: filters.category || undefined,
+          partNumber: filters.partNumber || undefined,
+          oemNumber: filters.oemNumber || undefined,
+          approvalStatus: filters.approvalStatus || undefined
+        }, currentPage, ITEMS_PER_PAGE);
         
         setParts(response.data);
         setTotalItems(response.total);
@@ -105,7 +106,7 @@ const AdminPartsManagement: React.FC = () => {
   };
 
   const handleDeletePart = async (partId: string) => {
-    if (!window.confirm('Are you sure you want to delete this part? This action cannot be undone.')) {
+    if (!window.confirm('Are you sure you want to delete this listing?')) {
       return;
     }
 
