@@ -372,6 +372,19 @@ export async function markNotificationAsRead(notificationId: string): Promise<vo
   if (error) throw error;
 }
 
+export async function markAllNotificationsAsRead(): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read: true })
+    .eq('user_id', user.id)
+    .eq('read', false);
+
+  if (error) throw error;
+}
+
 export async function deleteNotification(notificationId: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
