@@ -2042,4 +2042,36 @@ export const checkAndSetTrustedSeller = async (userId: string): Promise<void> =>
   }
 };
 
+// KYC Status Counts
+export const getKycStatusCounts = async (): Promise<{ pending: number; approved: number; rejected: number }> => {
+  try {
+    // Get counts for each status
+    const [pendingResult, approvedResult, rejectedResult] = await Promise.all([
+      supabase
+        .from('kyc_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending'),
+      
+      supabase
+        .from('kyc_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'approved'),
+      
+      supabase
+        .from('kyc_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'rejected')
+    ]);
+    
+    return {
+      pending: pendingResult.count || 0,
+      approved: approvedResult.count || 0,
+      rejected: rejectedResult.count || 0
+    };
+  } catch (error) {
+    console.error('Error fetching KYC status counts:', error);
+    throw error;
+  }
+};
+
 export default supabase;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Users, ShieldCheck, AlertTriangle, Loader2, Wrench, Zap, Package, CheckCircle } from 'lucide-react';
@@ -6,11 +6,13 @@ import { useProfile } from '../hooks/useProfile';
 import KYCVerificationQueue from '../components/KYCVerificationQueue';
 import MechanicRequestsQueue from '../components/MechanicRequestsQueue';
 import useSWR from 'swr';
-import { getDashboardStats } from '../lib/supabase';
+import { getDashboardStats, getKycStatusCounts } from '../lib/supabase';
+import KycStatusPieChart from '../components/KycStatusPieChart';
 
 const AdminDashboard: React.FC = () => {
   const { profile, isAdmin, isLoading: profileLoading } = useProfile();
   const { data: stats, error: statsError, isLoading: statsLoading } = useSWR('dashboard-stats', getDashboardStats);
+  const { data: kycStats, error: kycStatsError, isLoading: kycStatsLoading } = useSWR('kyc-stats', getKycStatusCounts);
 
   if (profileLoading) {
     return (
@@ -144,19 +146,25 @@ const AdminDashboard: React.FC = () => {
           />
         </div>
 
-        {/* KYC Verification Queue Section */}
-        <div className="mt-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                KYC Verification Queue
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                Review and process pending KYC verification requests
-              </p>
-            </div>
+        {/* KYC Status Chart */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              KYC Verification Status
+            </h2>
+            <KycStatusPieChart 
+              kycData={kycStats || { pending: 0, approved: 0, rejected: 0 }}
+              loading={kycStatsLoading}
+              error={kycStatsError ? "Failed to load KYC stats" : null}
+            />
           </div>
-          <KYCVerificationQueue />
+          
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              KYC Verification Queue
+            </h2>
+            <KYCVerificationQueue />
+          </div>
         </div>
 
         {/* Mechanic Requests Section */}
