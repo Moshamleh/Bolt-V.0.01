@@ -17,6 +17,10 @@ interface AiMetrics {
     helpfulCount: number;
     unhelpfulCount: number;
   }[];
+  dailyDiagnoses: {
+    date: string;
+    count: number;
+  }[];
 }
 
 Deno.serve(async (req) => {
@@ -114,11 +118,48 @@ Deno.serve(async (req) => {
 
     if (vehicleError) throw vehicleError;
 
+    // Get daily diagnoses for the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const { data: dailyData, error: dailyError } = await supabaseClient
+      .from('diagnoses')
+      .select('timestamp')
+      .gte('timestamp', thirtyDaysAgo.toISOString())
+      .order('timestamp', { ascending: true });
+
+    if (dailyError) throw dailyError;
+
+    // Process daily data to get counts per day
+    const dailyCounts: Record<string, number> = {};
+    
+    // Initialize all days in the last 30 days with 0 counts
+    for (let i = 0; i < 30; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      dailyCounts[dateStr] = 0;
+    }
+    
+    // Count diagnoses per day
+    dailyData?.forEach(diagnosis => {
+      const dateStr = diagnosis.timestamp.split('T')[0];
+      if (dailyCounts[dateStr] !== undefined) {
+        dailyCounts[dateStr]++;
+      }
+    });
+    
+    // Convert to array format
+    const dailyDiagnoses = Object.entries(dailyCounts)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
     const metrics: AiMetrics = {
       totalResponses: totalCount || 0,
       helpfulCount: helpfulCount || 0,
       unhelpfulCount: unhelpfulCount || 0,
-      byVehicle: vehicleData || []
+      byVehicle: vehicleData || [],
+      dailyDiagnoses
     };
 
     return new Response(

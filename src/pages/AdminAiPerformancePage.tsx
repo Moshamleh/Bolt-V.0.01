@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, BarChart2, Download, Loader2, ThumbsUp, ThumbsDown,
-  Car, AlertCircle
+  Car, AlertCircle, Calendar
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import DailyDiagnosesChart from '../components/DailyDiagnosesChart';
 
 interface AiMetrics {
   totalResponses: number;
@@ -16,6 +17,10 @@ interface AiMetrics {
     year: number;
     helpfulCount: number;
     unhelpfulCount: number;
+  }[];
+  dailyDiagnoses: {
+    date: string;
+    count: number;
   }[];
 }
 
@@ -88,6 +93,33 @@ const AdminAiPerformancePage: React.FC = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  const handleExportDailyCsv = () => {
+    if (!metrics?.dailyDiagnoses) return;
+
+    // Create CSV content
+    const headers = ['Date', 'Diagnoses Count'];
+    const rows = metrics.dailyDiagnoses.map(day => [
+      day.date,
+      day.count
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    // Create and download the file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `daily-diagnoses-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
   const LoadingSkeleton = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -97,6 +129,10 @@ const AdminAiPerformancePage: React.FC = () => {
             <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
           </div>
         ))}
+      </div>
+      <div className="animate-pulse bg-white dark:bg-gray-800 rounded-xl p-6">
+        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6"></div>
+        <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
       </div>
       <div className="animate-pulse bg-white dark:bg-gray-800 rounded-xl p-6">
         <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6"></div>
@@ -194,6 +230,30 @@ const AdminAiPerformancePage: React.FC = () => {
                   </p>
                   <ThumbsDown className="h-5 w-5 text-red-600 dark:text-red-400" />
                 </div>
+              </div>
+            </div>
+
+            {/* Daily Diagnoses Chart */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+              <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Diagnoses - Last 30 Days
+                    </h2>
+                  </div>
+                  <button
+                    onClick={handleExportDailyCsv}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export CSV
+                  </button>
+                </div>
+              </div>
+              <div className="p-6">
+                <DailyDiagnosesChart data={metrics.dailyDiagnoses} />
               </div>
             </div>
 

@@ -501,21 +501,12 @@ export const getUserDiagnoses = async (vehicleId: string): Promise<Diagnosis[]> 
   return data || [];
 };
 
-// New function to get all diagnoses with vehicle info
 export const getAllUserDiagnosesWithVehicles = async (): Promise<Diagnosis[]> => {
   const { data, error } = await supabase
     .from('diagnoses')
     .select(`
       *,
-      vehicle:vehicle_id (
-        id,
-        make,
-        model,
-        year,
-        trim,
-        other_vehicle_description,
-        nickname
-      )
+      vehicle:vehicle_id (*)
     `)
     .order('timestamp', { ascending: false });
 
@@ -614,7 +605,13 @@ export const getParts = async (
 ): Promise<PaginatedResponse<Part>> => {
   let query = supabase
     .from('parts')
-    .select('*, seller:profiles!seller_id(listing_boost_until, is_trusted)', { count: 'exact' });
+    .select(`
+      *,
+      seller:seller_id (
+        listing_boost_until,
+        is_trusted
+      )
+    `, { count: 'exact' });
 
   // Apply search
   if (filters.search) {
@@ -703,7 +700,7 @@ export const getParts = async (
   };
 };
 
-export const getPartById = async (partId: string): Promise<Part & { seller_email: string }> => {
+export const getPartById = async (partId: string): Promise<Part & { seller_email: string; seller_is_trusted: boolean }> => {
   const { data, error } = await supabase
     .from('parts')
     .select(`
@@ -1731,9 +1728,7 @@ export const awardBadge = async (userId: string, badgeName: string, note?: strin
       user_id: userId,
       badge_id: badge.id,
       note
-    })
-    .on_conflict(['user_id', 'badge_id'])
-    .ignore();
+    });
 
   if (error) {
     // If the error is a unique constraint violation, the user already has this badge
@@ -1976,17 +1971,15 @@ export const getDashboardStats = async (): Promise<{
   if (partsListedError) throw partsListedError;
 
   // Get KYC approved this month count
-  // Calculate first and last day of current month
-  const now = new Date();
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
+  const firstDayOfMonth = new Date();
+  firstDayOfMonth.setDate(1);
+  firstDayOfMonth.setHours(0, 0, 0, 0);
 
   const { count: kycApprovedThisMonth, error: kycApprovedError } = await supabase
     .from('kyc_requests')
     .select('*', { count: 'exact', head: true })
     .eq('status', 'approved')
-    .gte('created_at', firstDayOfMonth)
-    .lte('created_at', lastDayOfMonth);
+    .gte('created_at', firstDayOfMonth.toISOString());
 
   if (kycApprovedError) throw kycApprovedError;
 
@@ -2001,10 +1994,10 @@ export const getDashboardStats = async (): Promise<{
   };
 };
 
-// Function to check and set trusted seller status
-export const checkAndSetTrustedSeller = async (userId: string): Promise<boolean> => {
+// Trusted seller functions
+export const checkAndSetTrustedSeller = async (userId: string): Promise<void> => {
   try {
-    // Get user's KYC status
+    // Get KYC verification status
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('kyc_verified')
@@ -2013,12 +2006,7 @@ export const checkAndSetTrustedSeller = async (userId: string): Promise<boolean>
     
     if (profileError) throw profileError;
     
-    // If KYC is not verified, user can't be trusted
-    if (!profile.kyc_verified) {
-      return false;
-    }
-    
-    // Count approved parts by this user
+    // Count approved parts by this seller
     const { count: approvedPartsCount, error: partsError } = await supabase
       .from('parts')
       .select('*', { count: 'exact', head: true })
@@ -2027,11 +2015,8 @@ export const checkAndSetTrustedSeller = async (userId: string): Promise<boolean>
     
     if (partsError) throw partsError;
     
-    // Check if user meets the criteria (KYC approved and 3+ approved parts)
-    const shouldBeTrusted = profile.kyc_verified && approvedPartsCount >= 3;
-    
-    if (shouldBeTrusted) {
-      // Update user's trusted status
+    // If KYC is verified and seller has at least 3 approved parts, mark as trusted
+    if (profile.kyc_verified && approvedPartsCount >= 3) {
       const { error: updateError } = await supabase
         .from('users')
         .update({ is_trusted: true })
@@ -2040,7 +2025,7 @@ export const checkAndSetTrustedSeller = async (userId: string): Promise<boolean>
       if (updateError) throw updateError;
       
       // Create notification for the user
-      await supabase
+      const { error: notificationError } = await supabase
         .from('notifications')
         .insert({
           user_id: userId,
@@ -2049,13 +2034,11 @@ export const checkAndSetTrustedSeller = async (userId: string): Promise<boolean>
           read: false
         });
       
-      return true;
+      if (notificationError) throw notificationError;
     }
-    
-    return false;
   } catch (error) {
     console.error('Error checking trusted seller status:', error);
-    return false;
+    // Don't throw the error to prevent disrupting the main flow
   }
 };
 
