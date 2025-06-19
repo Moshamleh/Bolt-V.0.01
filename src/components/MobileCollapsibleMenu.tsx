@@ -12,6 +12,7 @@ interface MobileCollapsibleMenuProps {
   error: string | null;
   onStatusChange: (id: string, resolved: boolean) => void;
   onLoadDiagnosis?: (diagnosis: Diagnosis) => void;
+  onRecheckDiagnosis?: (prompt: string) => void;
   filterStatus: 'all' | 'active' | 'resolved';
   onFilterChange: (status: 'all' | 'active' | 'resolved') => void;
 }
@@ -24,6 +25,7 @@ const MobileCollapsibleMenu: React.FC<MobileCollapsibleMenuProps> = ({
   error,
   onStatusChange,
   onLoadDiagnosis,
+  onRecheckDiagnosis,
   filterStatus,
   onFilterChange
 }) => {
@@ -112,6 +114,7 @@ const MobileCollapsibleMenu: React.FC<MobileCollapsibleMenuProps> = ({
                 error={error}
                 onStatusChange={onStatusChange}
                 onLoadDiagnosis={handleLoadDiagnosis}
+                onRecheckDiagnosis={onRecheckDiagnosis}
                 filterStatus={filterStatus}
               />
             </div>

@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, Award, Users, Package, Share2, User } from 'lucide-react';
-import { Profile } from '../lib/supabase';
+import { CheckCircle, Award, Users, Package, Share2, User, Car } from 'lucide-react';
+import { Profile, getUserVehicles, hasUserAchievementBeenAwarded, recordUserAchievement } from '../lib/supabase';
 import { hasCompletedFirstDiagnostic, hasJoinedFirstClub } from '../lib/utils';
+import { awardXp, XP_VALUES } from '../lib/xpSystem';
+import { awardBadge } from '../lib/supabase';
 
 interface AchievementTrackerProps {
   profile: Profile | null;
@@ -20,78 +22,160 @@ interface Achievement {
 }
 
 const AchievementTracker: React.FC<AchievementTrackerProps> = ({ profile, className = '' }) => {
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [completedAchievements, setCompletedAchievements] = useState<string[]>([]);
+
+  useEffect(() => {
+    const loadVehicles = async () => {
+      try {
+        const vehiclesData = await getUserVehicles();
+        setVehicles(vehiclesData);
+      } catch (error) {
+        console.error('Failed to load vehicles:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadVehicles();
+  }, []);
+
+  useEffect(() => {
+    // Check which achievements have already been awarded
+    const checkAchievements = async () => {
+      if (!profile) return;
+
+      const achievementIds = [
+        'profile',
+        'vehicle',
+        'diagnostic',
+        'club',
+        'part'
+      ];
+
+      const awarded = await Promise.all(
+        achievementIds.map(async (id) => {
+          const isAwarded = await hasUserAchievementBeenAwarded(undefined, id);
+          return isAwarded ? id : null;
+        })
+      );
+
+      setCompletedAchievements(awarded.filter(Boolean) as string[]);
+    };
+
+    checkAchievements();
+  }, [profile]);
+
+  useEffect(() => {
+    // Award XP and badges for completed achievements that haven't been awarded yet
+    const awardAchievements = async () => {
+      if (!profile) return;
+
+      const achievements = getAchievements(profile);
+      
+      for (const achievement of achievements) {
+        if (achievement.completed && !completedAchievements.includes(achievement.id)) {
+          try {
+            // Award XP
+            await awardXp(undefined, achievement.xp, `Completed ${achievement.title}`);
+            
+            // Award badge
+            await awardBadge(undefined, achievement.badgeName, `Completed ${achievement.title}`);
+            
+            // Record achievement
+            await recordUserAchievement(undefined, achievement.id, achievement.xp, achievement.badgeName);
+            
+            // Update local state
+            setCompletedAchievements(prev => [...prev, achievement.id]);
+          } catch (error) {
+            console.error(`Failed to award achievement ${achievement.id}:`, error);
+          }
+        }
+      }
+    };
+
+    awardAchievements();
+  }, [profile, completedAchievements]);
+
+  const getAchievements = (profile: Profile | null): Achievement[] => {
+    if (!profile) return [];
+
+    // Check local storage for achievements not stored in the database
+    const firstDiagnosticCompleted = profile.first_diagnostic_completed || hasCompletedFirstDiagnostic();
+    const firstClubJoined = profile.first_club_joined || hasJoinedFirstClub();
+
+    // Calculate profile completion percentage
+    const profileFields = [
+      !!profile.full_name,
+      !!profile.username,
+      !!profile.avatar_url,
+      !!profile.bio,
+      !!profile.location
+    ];
+    const completedProfileFields = profileFields.filter(Boolean).length;
+    const profileComplete = completedProfileFields === profileFields.length;
+
+    return [
+      {
+        id: 'profile',
+        title: 'Complete Your Profile',
+        description: 'Fill out all profile fields',
+        icon: <User className="h-6 w-6 text-blue-600 dark:text-blue-400" />,
+        completed: profileComplete,
+        badgeName: 'Profile Complete',
+        xp: XP_VALUES.COMPLETE_PROFILE
+      },
+      {
+        id: 'vehicle',
+        title: 'Add Your First Vehicle',
+        description: 'Add a vehicle to your garage',
+        icon: <Car className="h-6 w-6 text-green-600 dark:text-green-400" />,
+        completed: vehicles.length > 0,
+        badgeName: 'First Vehicle',
+        xp: XP_VALUES.ADD_VEHICLE
+      },
+      {
+        id: 'diagnostic',
+        title: 'Run First Diagnostic',
+        description: 'Use Bolt AI to diagnose a car issue',
+        icon: <Award className="h-6 w-6 text-amber-600 dark:text-amber-400" />,
+        completed: firstDiagnosticCompleted,
+        badgeName: 'First Diagnosis',
+        xp: XP_VALUES.RUN_DIAGNOSTIC
+      },
+      {
+        id: 'club',
+        title: 'Join a Club',
+        description: 'Connect with other car enthusiasts',
+        icon: <Users className="h-6 w-6 text-green-600 dark:text-green-400" />,
+        completed: firstClubJoined,
+        badgeName: 'Club Member',
+        xp: XP_VALUES.JOIN_CLUB
+      },
+      {
+        id: 'part',
+        title: 'List a Part',
+        description: 'Sell your first part in the marketplace',
+        icon: <Package className="h-6 w-6 text-purple-600 dark:text-purple-400" />,
+        completed: !!profile.first_part_listed,
+        badgeName: 'First Listing',
+        xp: XP_VALUES.LIST_PART
+      }
+    ];
+  };
+
   if (!profile) return null;
 
-  // Check local storage for achievements not stored in the database
-  const firstDiagnosticCompleted = profile.first_diagnostic_completed || hasCompletedFirstDiagnostic();
-  const firstClubJoined = profile.first_club_joined || hasJoinedFirstClub();
-
-  // Calculate profile completion percentage
-  const profileFields = [
-    !!profile.full_name,
-    !!profile.username,
-    !!profile.avatar_url,
-    !!profile.bio,
-    !!profile.location
-  ];
-  const completedProfileFields = profileFields.filter(Boolean).length;
-  const profileComplete = completedProfileFields === profileFields.length;
-
-  const achievements: Achievement[] = [
-    {
-      id: 'profile',
-      title: 'Complete Your Profile',
-      description: 'Fill out all profile fields',
-      icon: <User className="h-6 w-6 text-blue-600 dark:text-blue-400" />,
-      completed: profileComplete,
-      badgeName: 'Profile Complete',
-      xp: 100
-    },
-    {
-      id: 'diagnostic',
-      title: 'Run First Diagnostic',
-      description: 'Use Bolt AI to diagnose a car issue',
-      icon: <Award className="h-6 w-6 text-amber-600 dark:text-amber-400" />,
-      completed: firstDiagnosticCompleted,
-      badgeName: 'First Diagnosis',
-      xp: 150
-    },
-    {
-      id: 'club',
-      title: 'Join a Club',
-      description: 'Connect with other car enthusiasts',
-      icon: <Users className="h-6 w-6 text-green-600 dark:text-green-400" />,
-      completed: firstClubJoined,
-      badgeName: 'Club Member',
-      xp: 125
-    },
-    {
-      id: 'part',
-      title: 'List a Part',
-      description: 'Sell your first part in the marketplace',
-      icon: <Package className="h-6 w-6 text-purple-600 dark:text-purple-400" />,
-      completed: !!profile.first_part_listed,
-      badgeName: 'First Listing',
-      xp: 175
-    },
-    {
-      id: 'invite',
-      title: 'Invite a Friend',
-      description: 'Share Bolt Auto with a friend',
-      icon: <Share2 className="h-6 w-6 text-red-600 dark:text-red-400" />,
-      completed: false, // This will be updated dynamically
-      badgeName: 'Street Starter Badge',
-      xp: 200
-    }
-  ];
-
+  const achievements = getAchievements(profile);
+  
   // Calculate total XP and progress
   const totalXP = achievements.reduce((sum, achievement) => sum + (achievement.completed ? achievement.xp : 0), 0);
   const maxXP = achievements.reduce((sum, achievement) => sum + achievement.xp, 0);
   const xpProgress = Math.round((totalXP / maxXP) * 100);
   
   // Count completed achievements
-  const completedAchievements = achievements.filter(achievement => achievement.completed).length;
+  const completedCount = achievements.filter(achievement => achievement.completed).length;
 
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden ${className}`}>
@@ -107,7 +191,7 @@ const AchievementTracker: React.FC<AchievementTrackerProps> = ({ profile, classN
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {completedAchievements}/{achievements.length} Complete
+              {completedCount}/{achievements.length} Complete
             </span>
           </div>
         </div>
@@ -127,9 +211,9 @@ const AchievementTracker: React.FC<AchievementTrackerProps> = ({ profile, classN
         </div>
         
         <p className="mt-3 text-sm text-blue-600 dark:text-blue-400 font-medium">
-          {completedAchievements === achievements.length 
+          {completedCount === achievements.length 
             ? "You've completed all starter tasks! 🎉" 
-            : `You're ${achievements.length - completedAchievements} ${achievements.length - completedAchievements === 1 ? 'task' : 'tasks'} away from greatness 🧰`}
+            : `You're ${achievements.length - completedCount} ${achievements.length - completedCount === 1 ? 'task' : 'tasks'} away from greatness 🧰`}
         </p>
       </div>
       
