@@ -71,8 +71,8 @@ const PartCard: React.FC<PartCardProps> = ({
           
           {isTrustedSeller && (
             <div 
-              className="flex items-center gap-1 px-2 py-1 bg-blue-100/90 text-blue-800 rounded-full text-xs font-medium shadow-sm backdrop-blur-sm"
-              title="Trusted seller – real parts, good track record"
+              className="group flex items-center gap-1 px-2 py-1 bg-blue-100/90 text-blue-800 rounded-full text-xs font-medium shadow-sm backdrop-blur-sm group-hover:shadow-glow group-hover:scale-105 transition-all duration-300"
+              title="Verified seller – 3+ approved listings + KYC passed"
             >
               <CheckCircle className="h-3 w-3" />
               <span>Verified Seller</span>

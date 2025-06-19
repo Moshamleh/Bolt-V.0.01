@@ -264,8 +264,8 @@ const PartDetailPage: React.FC = () => {
                     </h1>
                     {part.seller_is_trusted && (
                       <div 
-                        className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium"
-                        title="Trusted seller – real parts, good track record"
+                        className="group flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium group-hover:shadow-glow group-hover:scale-105 transition-all duration-300"
+                        title="Verified seller – 3+ approved listings + KYC passed"
                       >
                         <CheckCircle className="h-3 w-3" />
                         <span>Verified Seller</span>
@@ -383,8 +383,8 @@ const PartDetailPage: React.FC = () => {
                     </h3>
                     {part.seller_is_trusted && (
                       <div 
-                        className="flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium"
-                        title="Trusted seller – real parts, good track record"
+                        className="group flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium group-hover:shadow-glow group-hover:scale-105 transition-all duration-300"
+                        title="Verified seller – 3+ approved listings + KYC passed"
                       >
                         <CheckCircle className="h-3 w-3" />
                         <span>Verified</span>
