@@ -61,6 +61,7 @@ const DiagnosticPage: React.FC = () => {
   const [urgentTipVisible, setUrgentTipVisible] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'resolved'>('all');
+  const [recheckPrompt, setRecheckPrompt] = useState<string | null>(null);
   const desktopHistoryRef = useRef<HTMLDivElement>(null);
   
   const { showOnboarding, completeOnboarding, isInitialized } = useOnboarding();
@@ -334,6 +335,18 @@ const DiagnosticPage: React.FC = () => {
     setIsHistoryMenuOpen(false);
   };
 
+  const handleRecheckDiagnosis = (prompt: string) => {
+    // Set the recheck prompt
+    setRecheckPrompt(prompt);
+    
+    // Clear current chat
+    setActiveChatMessages([]);
+    setActiveDiagnosisId(null);
+    
+    // Close the history menu if it's open
+    setIsHistoryMenuOpen(false);
+  };
+
   const handleStartTour = () => {
     setShowWelcomeModal(false);
     // The tour will automatically start since showOnboarding is true
@@ -507,6 +520,7 @@ const DiagnosticPage: React.FC = () => {
               error={error}
               onStatusChange={handleDiagnosisStatusChange}
               onLoadDiagnosis={handleLoadDiagnosis}
+              onRecheckDiagnosis={handleRecheckDiagnosis}
               filterStatus={filterStatus}
             />
           </Suspense>
@@ -634,6 +648,8 @@ const DiagnosticPage: React.FC = () => {
                   activeDiagnosisId={activeDiagnosisId}
                   setActiveDiagnosisId={setActiveDiagnosisId}
                   suggestedPrompts={suggestedPrompts}
+                  recheckPrompt={recheckPrompt}
+                  setRecheckPrompt={setRecheckPrompt}
                 />
               </Suspense>
             </div>
@@ -815,6 +831,8 @@ const DiagnosticPage: React.FC = () => {
             activeDiagnosisId={activeDiagnosisId}
             setActiveDiagnosisId={setActiveDiagnosisId}
             suggestedPrompts={suggestedPrompts}
+            recheckPrompt={recheckPrompt}
+            setRecheckPrompt={setRecheckPrompt}
           />
         </Suspense>
       </div>

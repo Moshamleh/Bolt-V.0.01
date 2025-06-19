@@ -28,6 +28,8 @@ interface ChatInterfaceProps {
   activeDiagnosisId: string | null;
   setActiveDiagnosisId: React.Dispatch<React.SetStateAction<string | null>>;
   suggestedPrompts?: string[];
+  recheckPrompt?: string | null;
+  setRecheckPrompt?: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -37,7 +39,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   setMessages,
   activeDiagnosisId,
   setActiveDiagnosisId,
-  suggestedPrompts = []
+  suggestedPrompts = [],
+  recheckPrompt = null,
+  setRecheckPrompt
 }) => {
   const [input, setInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -69,6 +73,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
     };
   }, []);
+
+  // Handle recheckPrompt changes
+  useEffect(() => {
+    if (recheckPrompt && setRecheckPrompt) {
+      setInput(recheckPrompt);
+      setRecheckPrompt(null); // Clear it after setting input
+    }
+  }, [recheckPrompt, setRecheckPrompt]);
 
   useEffect(() => {
     if (messagesEndRef.current && chatContainerRef.current) {

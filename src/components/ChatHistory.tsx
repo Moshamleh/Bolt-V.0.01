@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, Clock, MessageSquare, Loader2, ArrowUpRight, ChevronDown, ChevronUp, Car } from 'lucide-react';
+import { CheckCircle, Clock, MessageSquare, Loader2, ArrowUpRight, ChevronDown, ChevronUp, Car, Repeat } from 'lucide-react';
 import { Diagnosis, updateDiagnosisResolved, Vehicle } from '../lib/supabase';
 
 interface ChatHistoryProps {
@@ -10,6 +10,7 @@ interface ChatHistoryProps {
   error: string | null;
   onStatusChange: (id: string, resolved: boolean) => void;
   onLoadDiagnosis?: (diagnosis: Diagnosis) => void;
+  onRecheckDiagnosis?: (prompt: string) => void;
   filterStatus?: 'all' | 'active' | 'resolved';
 }
 
@@ -19,6 +20,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
   error,
   onStatusChange,
   onLoadDiagnosis,
+  onRecheckDiagnosis,
   filterStatus = 'all'
 }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -221,6 +223,15 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
                                       >
                                         <ArrowUpRight className="h-4 w-4" />
                                         Continue Chat
+                                      </button>
+                                    )}
+                                    {diagnosis.resolved && onRecheckDiagnosis && (
+                                      <button
+                                        onClick={() => onRecheckDiagnosis(diagnosis.prompt)}
+                                        className="flex items-center gap-1 text-sm px-3 py-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-full hover:bg-amber-200 dark:hover:bg-amber-900 transition-colors"
+                                      >
+                                        <Repeat className="h-4 w-4" />
+                                        Recheck
                                       </button>
                                     )}
                                     <button
