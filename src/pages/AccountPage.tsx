@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { Settings, User, Moon, Shield, HelpCircle, Loader2, Award, Bell, Share2 } from 'lucide-react';
 import { Profile, getProfile, getUserBadges, getAllBadges, UserEarnedBadge, Badge, supabase } from '../lib/supabase';
 import LazyErrorBoundary from '../components/LazyErrorBoundary';
+import { getUserXp, getLevelName } from '../lib/xpSystem';
+import XpProgressBar from '../components/XpProgressBar';
 
 // Lazy load components
 const ProfileSection = lazy(() => import('../components/ProfileSection'));
@@ -34,18 +36,14 @@ const AccountPage = () => {
   const [badgesLoading, setBadgesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('profile');
-
-  // Mock XP data - in a real app, this would come from the user profile
-  const currentXp = 120;
-  const maxXp = 200;
-  const level = 2;
-  const levelName = "Road Wrench 🛠️";
-  const xpPercentage = Math.min(100, Math.round((currentXp / maxXp) * 100));
+  const [xp, setXp] = useState(0);
+  const [level, setLevel] = useState(1);
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        
         if (!session) {
           navigate('/login');
           return;
@@ -54,6 +52,22 @@ const AccountPage = () => {
         setUserEmail(session.user.email || '');
         const profileData = await getProfile();
         setProfile(profileData);
+
+        // Load user XP and level
+        try {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('xp, level')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (userData) {
+            setXp(userData.xp || 0);
+            setLevel(userData.level || 1);
+          }
+        } catch (xpError) {
+          console.error('Failed to load XP data:', xpError);
+        }
 
         // Load user badges and all available badges
         try {
@@ -224,29 +238,7 @@ const AccountPage = () => {
         </motion.div>
 
         {/* XP Progress Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-6"
-        >
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Level {level} – {levelName} ({currentXp}/{maxXp} XP)
-            </h2>
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              {maxXp - currentXp} XP until next level
-            </span>
-          </div>
-          
-          <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: `${xpPercentage}%` }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-              className="h-full bg-glowing-gradient rounded-full shadow-glow"
-            />
-          </div>
-        </motion.div>
+        <XpProgressBar xp={xp} level={level} className="mb-6" />
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
           {/* Scrollable Tab Navigation */}

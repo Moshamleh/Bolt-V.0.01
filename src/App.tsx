@@ -7,6 +7,7 @@ import AuthLayout from './components/AuthLayout';
 import MarketplaceLayout from './components/MarketplaceLayout';
 import ClubLayout from './components/ClubLayout';
 import ErrorBoundary from './components/ErrorBoundary';
+import XpGainToast from './components/XpGainToast';
 
 // Lazy load all page components
 const DiagnosticPage = lazy(() => import('./pages/DiagnosticPage'));
@@ -162,6 +163,9 @@ function App() {
           </Route>
         </Routes>
       </Suspense>
+      
+      {/* XP Gain Toast Notifications */}
+      <XpGainToast />
     </ErrorBoundary>
   );
 }
