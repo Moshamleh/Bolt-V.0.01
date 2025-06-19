@@ -348,6 +348,19 @@ export async function sendDiagnosticPrompt(vehicleId: string, prompt: string): P
   return diagnosis;
 }
 
+export async function updateDiagnosisResolved(diagnosisId: string, resolved: boolean): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('diagnoses')
+    .update({ resolved })
+    .eq('id', diagnosisId)
+    .eq('user_id', user.id);
+
+  if (error) throw error;
+}
+
 export function subscribeToDiagnosisUpdates(diagnosisId: string, callback: (diagnosis: Diagnosis) => void) {
   const subscription = supabase
     .channel(`diagnosis-${diagnosisId}`)
