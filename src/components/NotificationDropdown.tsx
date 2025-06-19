@@ -28,6 +28,18 @@ const NotificationDropdown: React.FC = () => {
     const loadNotifications = async () => {
       try {
         setLoading(true);
+        
+        // Check for valid session before making requests
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session) {
+          console.log('No valid session found, skipping notification load');
+          setNotifications([]);
+          setUnreadCount(0);
+          setLoading(false);
+          return;
+        }
+
         const [notificationsData, count] = await Promise.all([
           getUserNotifications(10, true),
           getUnreadNotificationCount()
@@ -64,6 +76,14 @@ const NotificationDropdown: React.FC = () => {
         await supabase.removeChannel(channelRef.current);
       }
 
+      // Check for valid session before setting up subscription
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.log('No valid session found, skipping subscription setup');
+        return;
+      }
+
       // Create new subscription
       const channel = supabase
         .channel('notifications-channel')
@@ -74,8 +94,7 @@ const NotificationDropdown: React.FC = () => {
         }, (payload) => {
           // Check if the notification is for the current user
           const notification = payload.new as Notification;
-          const { data: { user } } = supabase.auth.getUser();
-          if (user && notification.user_id === user.id) {
+          if (session.user && notification.user_id === session.user.id) {
             setNotifications(prev => [notification, ...prev]);
             setUnreadCount(prev => prev + 1);
             
@@ -123,6 +142,14 @@ const NotificationDropdown: React.FC = () => {
 
   const handleNotificationClick = async (notification: Notification) => {
     try {
+      // Check for valid session before making requests
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.log('No valid session found, cannot mark notification as read');
+        return;
+      }
+
       // Mark as read
       await markNotificationAsRead(notification.id);
       
@@ -147,6 +174,14 @@ const NotificationDropdown: React.FC = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
+      // Check for valid session before making requests
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.log('No valid session found, cannot mark all notifications as read');
+        return;
+      }
+
       await markAllNotificationsAsRead();
       
       // Update local state
@@ -160,6 +195,14 @@ const NotificationDropdown: React.FC = () => {
   const handleDeleteNotification = async (e: React.MouseEvent, notificationId: string) => {
     e.stopPropagation();
     try {
+      // Check for valid session before making requests
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.log('No valid session found, cannot delete notification');
+        return;
+      }
+
       await deleteNotification(notificationId);
       
       // Update local state
