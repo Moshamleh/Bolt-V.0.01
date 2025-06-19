@@ -6,8 +6,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Club, getClubs, getUserClubMemberships, joinClub, leaveClub } from '../lib/supabase';
-import supabase from '../lib/supabase';
+import { Club, getClubs, getUserClubMemberships, joinClub, leaveClub, supabase } from '../lib/supabase';
 import BlurImage from '../components/BlurImage';
 import { extractErrorMessage } from '../lib/errorHandling';
 

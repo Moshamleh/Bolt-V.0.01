@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import { useProfile } from '../hooks/useProfile';
-import { Part, getAllParts, updatePart, deletePart, checkAndSetTrustedSeller } from '../lib/supabase';
+import { Part, getParts, updatePart, deletePart, checkAndSetTrustedSeller } from '../lib/supabase';
 import ModerationStatusDisplay from '../components/ModerationStatusDisplay';
 
 const ITEMS_PER_PAGE = 10;
@@ -43,7 +43,7 @@ const AdminPartsManagement: React.FC = () => {
       
       try {
         setLoading(true);
-        const response = await getAllParts({
+        const response = await getParts({
           page: currentPage,
           itemsPerPage: ITEMS_PER_PAGE,
           sortField,
