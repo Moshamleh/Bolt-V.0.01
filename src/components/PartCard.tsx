@@ -1,6 +1,7 @@
 import React from 'react';
 import { Car, MapPin, CheckCircle, Zap } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import BlurImage from './BlurImage';
 
 export interface PartCardProps {
   id: string;
@@ -58,10 +59,11 @@ const PartCard: React.FC<PartCardProps> = ({
       className="flex flex-col bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg hover:translate-y-[-4px] transition-all duration-300 cursor-pointer h-full"
     >
       <div className="relative aspect-[4/3] overflow-hidden">
-        <img
+        <BlurImage
           src={image || 'https://images.pexels.com/photos/2244746/pexels-photo-2244746.jpeg'}
           alt={title}
-          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="absolute inset-0 w-full h-full group-hover:scale-105 transition-transform duration-300"
+          objectFit="cover"
         />
         <div className="absolute top-2 right-2 flex flex-col gap-2 items-end">
           <span className={`

@@ -28,6 +28,8 @@ import {
 import { playPopSound, hasJoinedFirstClub, markFirstClubJoined } from '../lib/utils';
 import Confetti from '../components/Confetti';
 import { awardXp, XP_VALUES } from '../lib/xpSystem';
+import BlurImage from '../components/BlurImage';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 const ClubDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -71,7 +73,8 @@ const ClubDetailPage: React.FC = () => {
         setIsAdmin(userRole === 'admin');
       } catch (err) {
         console.error('Failed to load club:', err);
-        setError('Failed to load club details');
+        const errorMessage = extractErrorMessage(err);
+        setError(`Failed to load club details: ${errorMessage}`);
       } finally {
         setLoading(false);
       }
@@ -187,8 +190,9 @@ const ClubDetailPage: React.FC = () => {
       }
     } catch (err) {
       console.error('Membership action failed:', err);
-      toast.error(isMember ? 'Failed to leave club' : 'Failed to join club');
-      setError(isMember ? 'Failed to leave club' : 'Failed to join club');
+      const errorMessage = extractErrorMessage(err);
+      toast.error(isMember ? `Failed to leave club: ${errorMessage}` : `Failed to join club: ${errorMessage}`);
+      setError(isMember ? `Failed to leave club: ${errorMessage}` : `Failed to join club: ${errorMessage}`);
     } finally {
       setIsActionLoading(false);
     }
@@ -220,7 +224,8 @@ const ClubDetailPage: React.FC = () => {
       navigate('/clubs');
     } catch (err) {
       console.error('Failed to delete club:', err);
-      toast.error('Failed to delete club');
+      const errorMessage = extractErrorMessage(err);
+      toast.error(`Failed to delete club: ${errorMessage}`);
     } finally {
       setIsActionLoading(false);
     }
@@ -247,7 +252,8 @@ const ClubDetailPage: React.FC = () => {
       playPopSound();
     } catch (err) {
       console.error('Failed to send message:', err);
-      toast.error('Failed to send message');
+      const errorMessage = extractErrorMessage(err);
+      toast.error(`Failed to send message: ${errorMessage}`);
     } finally {
       setIsSendingMessage(false);
     }
@@ -308,14 +314,19 @@ const ClubDetailPage: React.FC = () => {
       {showConfetti && <Confetti duration={3000} onComplete={() => setShowConfetti(false)} />}
       
       <div className="relative h-64 md:h-80 overflow-hidden">
-        <motion.img
+        <motion.div
           initial={{ scale: 1.1, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.5 }}
-          src={club.image_url}
-          alt={club.name}
-          className="w-full h-full object-cover"
-        />
+          className="w-full h-full"
+        >
+          <BlurImage
+            src={club.image_url}
+            alt={club.name}
+            className="w-full h-full"
+            objectFit="cover"
+          />
+        </motion.div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
       </div>
 
@@ -413,6 +424,7 @@ const ClubDetailPage: React.FC = () => {
                           src={member.avatar_url}
                           alt={member.username || member.full_name || 'Member'}
                           className="w-full h-full object-cover"
+                          loading="lazy"
                         />
                       ) : (
                         <div className={`w-full h-full flex items-center justify-center ${getAvatarColor(member.id)} text-white font-medium`}>
@@ -502,87 +514,101 @@ const ClubDetailPage: React.FC = () => {
                   className="h-full overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900"
                 >
                   {messages.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-                      <MessageSquare className="h-12 w-12 mb-4 opacity-50" />
-                      <p className="text-lg font-medium">No messages yet</p>
-                      <p className="text-sm">Be the first to start a conversation!</p>
+                    <div className="h-full flex flex-col items-center justify-center">
+                      <div className="max-w-md w-full rounded-xl bg-blue-50 dark:bg-blue-900/20 p-4 animate-chat-bubble-glow shadow-lg">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 mt-1">
+                            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                              <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                          </div>
+                          <div>
+                            <p className="font-medium text-blue-800 dark:text-blue-200">
+                              No messages yet
+                            </p>
+                            <p className="text-blue-700 dark:text-blue-300 mt-1">
+                              Be the first to start a conversation!
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   ) : (
-                    <>
-                      <AnimatePresence>
-                        {messages.map((message, index) => {
-                          const isCurrentUser = message.sender_email === currentUserEmail;
-                          const showSender = index === 0 || messages[index - 1].sender_id !== message.sender_id;
-                          const senderName = message.sender_email?.split('@')[0] || 'Anonymous';
-                          
-                          return (
-                            <motion.div
-                              key={message.id}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-                            >
-                              <div className={`flex max-w-[80%] ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'} gap-2`}>
-                                {!isCurrentUser && showSender && (
-                                  <div className="flex-shrink-0 mt-1">
-                                    {message.sender_avatar_url ? (
-                                      <img
-                                        src={message.sender_avatar_url}
-                                        alt={senderName}
-                                        className="w-8 h-8 rounded-full object-cover"
-                                      />
-                                    ) : (
-                                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getAvatarColor(message.sender_id)} text-white text-xs font-medium`}>
-                                        {getInitials(senderName)}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                                
-                                <div className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'}`}>
-                                  {showSender && !isCurrentUser && (
-                                    <div className="text-xs font-medium text-gray-700 dark:text-gray-300 ml-1 mb-1">
-                                      {senderName}
+                    <AnimatePresence>
+                      {messages.map((message) => {
+                        const isCurrentUser = message.sender_email === currentUserEmail;
+                        const showSender = index === 0 || messages[index - 1].sender_id !== message.sender_id;
+                        const senderName = message.sender_email?.split('@')[0] || 'Anonymous';
+                        
+                        return (
+                          <motion.div
+                            key={message.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div className={`flex max-w-[80%] ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'} gap-2`}>
+                              {!isCurrentUser && showSender && (
+                                <div className="flex-shrink-0 mt-1">
+                                  {message.sender_avatar_url ? (
+                                    <img
+                                      src={message.sender_avatar_url}
+                                      alt={senderName}
+                                      className="w-8 h-8 rounded-full object-cover"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getAvatarColor(message.sender_id)} text-white text-xs font-medium`}>
+                                      {getInitials(senderName)}
                                     </div>
                                   )}
-                                  
-                                  <div className={`rounded-2xl px-4 py-2 ${
-                                    isCurrentUser
-                                      ? 'bg-blue-600 text-white rounded-tr-sm'
-                                      : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-tl-sm'
-                                  }`}>
-                                    {message.content}
-                                  </div>
-                                  
-                                  <div className={`text-xs text-gray-500 dark:text-gray-400 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
-                                    {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                                  </div>
                                 </div>
-                                
-                                {isCurrentUser && showSender && (
-                                  <div className="flex-shrink-0 mt-1">
-                                    {message.sender_avatar_url ? (
-                                      <img
-                                        src={message.sender_avatar_url}
-                                        alt={senderName}
-                                        className="w-8 h-8 rounded-full object-cover"
-                                      />
-                                    ) : (
-                                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getAvatarColor(message.sender_id)} text-white text-xs font-medium`}>
-                                        {getInitials(senderName)}
-                                      </div>
-                                    )}
+                              )}
+                              
+                              <div className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'}`}>
+                                {showSender && !isCurrentUser && (
+                                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300 ml-1 mb-1">
+                                    {senderName}
                                   </div>
                                 )}
+                                
+                                <div className={`rounded-2xl px-4 py-2 ${
+                                  isCurrentUser
+                                    ? 'bg-blue-600 text-white rounded-tr-sm'
+                                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-tl-sm'
+                                }`}>
+                                  {message.content}
+                                </div>
+                                
+                                <div className={`text-xs text-gray-500 dark:text-gray-400 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
+                                  {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                                </div>
                               </div>
-                            </motion.div>
-                          );
-                        })}
-                      </AnimatePresence>
-                      <div ref={messagesEndRef} />
-                    </>
+                              
+                              {isCurrentUser && showSender && (
+                                <div className="flex-shrink-0 mt-1">
+                                  {message.sender_avatar_url ? (
+                                    <img
+                                      src={message.sender_avatar_url}
+                                      alt={senderName}
+                                      className="w-8 h-8 rounded-full object-cover"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getAvatarColor(message.sender_id)} text-white text-xs font-medium`}>
+                                      {getInitials(senderName)}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
                   )}
+                  <div ref={messagesEndRef} />
                 </div>
 
                 {/* Message Input */}

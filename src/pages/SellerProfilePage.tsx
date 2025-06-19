@@ -9,6 +9,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { supabase, Part, SellerRatingStats, getSellerRatingStats } from '../lib/supabase';
 import SellerRatingStars from '../components/SellerRatingStars';
 import SellerReviewsPanel from '../components/SellerReviewsPanel';
+import OptimizedImage from '../components/OptimizedImage';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 interface SellerProfile {
   id: string;
@@ -64,7 +66,8 @@ const SellerProfilePage: React.FC = () => {
         setRatingStats(stats);
       } catch (err) {
         console.error('Failed to load seller data:', err);
-        setError('Failed to load seller profile');
+        const errorMessage = extractErrorMessage(err);
+        setError(`Failed to load seller profile: ${errorMessage}`);
       } finally {
         setLoading(false);
       }
@@ -128,10 +131,11 @@ const SellerProfilePage: React.FC = () => {
           <div className="flex flex-col md:flex-row items-start gap-6">
             <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
               {seller.avatar_url ? (
-                <img
+                <OptimizedImage
                   src={seller.avatar_url}
                   alt={seller.full_name || 'Seller'}
-                  className="w-full h-full rounded-full object-cover"
+                  className="w-full h-full rounded-full"
+                  objectFit="cover"
                 />
               ) : (
                 <User className="h-12 w-12 text-gray-400 dark:text-gray-500" />
@@ -257,10 +261,11 @@ const SellerProfilePage: React.FC = () => {
                       className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                     >
                       <div className="aspect-video relative">
-                        <img
+                        <BlurImage
                           src={part.image_url || 'https://images.pexels.com/photos/2244746/pexels-photo-2244746.jpeg'}
                           alt={part.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full"
+                          objectFit="cover"
                         />
                         <div className="absolute top-2 right-2">
                           <span className={`

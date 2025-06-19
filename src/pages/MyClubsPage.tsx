@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Club, getUserClubMemberships, getClubs } from '../lib/supabase';
+import BlurImage from '../components/BlurImage';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 const MyClubsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -30,7 +32,8 @@ const MyClubsPage: React.FC = () => {
         setClubs(userClubs);
       } catch (err) {
         console.error('Failed to load clubs:', err);
-        setError('Failed to load your clubs');
+        const errorMessage = extractErrorMessage(err);
+        setError(`Failed to load your clubs: ${errorMessage}`);
       } finally {
         setLoading(false);
       }
@@ -127,10 +130,11 @@ const MyClubsPage: React.FC = () => {
                   className="group bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer"
                 >
                   <div className="relative aspect-video overflow-hidden">
-                    <img
+                    <BlurImage
                       src={club.image_url}
                       alt={club.name}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="absolute inset-0 w-full h-full group-hover:scale-105 transition-transform duration-300"
+                      objectFit="cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     <div className="absolute bottom-4 left-4 right-4">

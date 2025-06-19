@@ -4,6 +4,8 @@ import { ArrowLeft, Heart, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Part, getSavedParts } from '../lib/supabase';
 import PartCard from '../components/PartCard';
+import PartCardSkeleton from '../components/PartCardSkeleton';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 const SavedPartsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -18,7 +20,8 @@ const SavedPartsPage: React.FC = () => {
         setParts(data);
       } catch (err) {
         console.error('Failed to load saved parts:', err);
-        setError('Failed to load saved parts');
+        const errorMessage = extractErrorMessage(err);
+        setError(`Failed to load saved parts: ${errorMessage}`);
       } finally {
         setLoading(false);
       }
@@ -33,8 +36,24 @@ const SavedPartsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center text-gray-600 dark:text-gray-400 mb-6">
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            Back to Marketplace
+          </div>
+          
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Saved Parts</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Your favorite marketplace listings</p>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <PartCardSkeleton key={index} />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

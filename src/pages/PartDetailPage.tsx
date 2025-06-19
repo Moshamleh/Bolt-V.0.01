@@ -11,6 +11,8 @@ import toast from 'react-hot-toast';
 import { Part, getPartById, getOrCreatePartChat, isPartSaved, savePart, unsavePart, boostPart } from '../lib/supabase';
 import ReportPartModal from '../components/ReportPartModal';
 import BoostListingModal from '../components/BoostListingModal';
+import BlurImage from '../components/BlurImage';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 const PartDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -45,7 +47,8 @@ const PartDetailPage: React.FC = () => {
         }
       } catch (err) {
         console.error('Failed to load part:', err);
-        setError('Failed to load part details');
+        const errorMessage = extractErrorMessage(err);
+        setError(`Failed to load part details: ${errorMessage}`);
       } finally {
         setLoading(false);
       }
@@ -63,7 +66,8 @@ const PartDetailPage: React.FC = () => {
       navigate(`/marketplace/messages/${chatId}`);
     } catch (err) {
       console.error('Failed to create chat:', err);
-      toast.error('Failed to start chat');
+      const errorMessage = extractErrorMessage(err);
+      toast.error(`Failed to start chat: ${errorMessage}`);
     } finally {
       setIsMessagingLoading(false);
     }
@@ -98,7 +102,8 @@ const PartDetailPage: React.FC = () => {
       setIsSaved(!isSaved);
     } catch (err) {
       console.error('Failed to save/unsave part:', err);
-      toast.error(isSaved ? 'Failed to remove from saved items' : 'Failed to save part');
+      const errorMessage = extractErrorMessage(err);
+      toast.error(isSaved ? `Failed to remove from saved items: ${errorMessage}` : `Failed to save part: ${errorMessage}`);
     } finally {
       setIsSaving(false);
     }
@@ -233,10 +238,12 @@ const PartDetailPage: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="relative aspect-square bg-white dark:bg-gray-800 rounded-xl overflow-hidden"
           >
-            <img
+            <BlurImage
               src={images[currentImageIndex]}
               alt={part.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full"
+              objectFit="cover"
+              priority={true}
             />
             
             {/* Boosted Badge */}
@@ -272,6 +279,7 @@ const PartDetailPage: React.FC = () => {
                           ? 'bg-white'
                           : 'bg-white/50 hover:bg-white/75'
                       }`}
+                      aria-label={`View image ${index + 1}`}
                     />
                   ))}
                 </div>
@@ -403,12 +411,14 @@ const PartDetailPage: React.FC = () => {
                       ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700'
                   }`}
+                  aria-label={isSaved ? "Remove from saved" : "Save part"}
                 >
                   <Heart className={`h-5 w-5 ${isSaved ? 'fill-current' : ''}`} />
                 </button>
                 <button
                   onClick={handleShare}
                   className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg transition-colors"
+                  aria-label="Share part"
                 >
                   <Share2 className="h-5 w-5" />
                 </button>
@@ -416,6 +426,7 @@ const PartDetailPage: React.FC = () => {
                   onClick={handleReportPart}
                   className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 border border-gray-200 dark:border-gray-700 rounded-lg transition-colors"
                   title="Report this listing"
+                  aria-label="Report part"
                 >
                   <Flag className="h-5 w-5" />
                 </button>

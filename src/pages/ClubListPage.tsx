@@ -8,15 +8,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Club, getClubs, getUserClubMemberships, joinClub, leaveClub } from '../lib/supabase';
 import supabase from '../lib/supabase';
+import BlurImage from '../components/BlurImage';
+import { extractErrorMessage } from '../lib/errorHandling';
 
 type TabType = 'all' | 'joined' | 'regional' | 'vehicle';
 
 // Define filter chips
 const filterChips = [
-  { id: 'all', label: 'All', icon: <Globe className="h-4 w-4" /> },
-  { id: 'joined', label: 'Joined', icon: <CheckCircle className="h-4 w-4" /> },
-  { id: 'regional', label: 'Regional', icon: <MapPin className="h-4 w-4" /> },
-  { id: 'vehicle', label: 'Vehicle-Specific', icon: <Car className="h-4 w-4" /> }
+  { id: 'all', label: 'All', icon: <Globe className="h-4 w-4" />, filters: {} },
+  { id: 'joined', label: 'Joined', icon: <CheckCircle className="h-4 w-4" />, filters: {} },
+  { id: 'regional', label: 'Regional', icon: <MapPin className="h-4 w-4" />, filters: {} },
+  { id: 'vehicle', label: 'Vehicle-Specific', icon: <Car className="h-4 w-4" />, filters: {} }
 ];
 
 const ClubListPage: React.FC = () => {
@@ -50,7 +52,8 @@ const ClubListPage: React.FC = () => {
         setUserClubs(memberships.map(club => club.id));
       } catch (err) {
         console.error('Failed to load clubs:', err);
-        setError('Failed to load clubs');
+        const errorMessage = extractErrorMessage(err);
+        setError(`Failed to load clubs: ${errorMessage}`);
       } finally {
         setLoading(false);
       }
@@ -78,7 +81,8 @@ const ClubListPage: React.FC = () => {
       toast.success('Successfully joined the club');
     } catch (err) {
       console.error('Failed to join club:', err);
-      toast.error('Failed to join club');
+      const errorMessage = extractErrorMessage(err);
+      toast.error(`Failed to join club: ${errorMessage}`);
     } finally {
       setActionInProgress(null);
     }
@@ -95,7 +99,8 @@ const ClubListPage: React.FC = () => {
       toast.success('Successfully left the club');
     } catch (err) {
       console.error('Failed to leave club:', err);
-      toast.error('Failed to leave club');
+      const errorMessage = extractErrorMessage(err);
+      toast.error(`Failed to leave club: ${errorMessage}`);
     } finally {
       setActionInProgress(null);
     }
@@ -244,32 +249,8 @@ const ClubListPage: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              >
-                <Filter className="h-5 w-5" />
-                <span>Filters</span>
-                {showFilters ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </button>
-
-              {(showFilters || selectedRegion || searchTerm || activeTab !== 'all') && (
-                <button
-                  onClick={handleClearFilters}
-                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                >
-                  Clear Filters
-                </button>
-              )}
-            </div>
-
             {/* Filter Chips */}
-            <div className="flex flex-wrap gap-2 mt-4">
+            <div className="flex flex-wrap gap-2 mb-4">
               {filterChips.map((chip) => (
                 <button
                   key={chip.id}
@@ -286,6 +267,30 @@ const ClubListPage: React.FC = () => {
               ))}
             </div>
 
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                <Filter className="h-5 w-5" />
+                <span>Advanced Filters</span>
+                {showFilters ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </button>
+
+              {(showFilters || searchTerm || selectedRegion || selectedTopic || activeTab !== 'all') && (
+                <button
+                  onClick={handleClearFilters}
+                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+
             <AnimatePresence>
               {showFilters && (
                 <motion.div
@@ -295,7 +300,7 @@ const ClubListPage: React.FC = () => {
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                     {activeTab === 'regional' && (
                       <select
                         value={selectedRegion}
@@ -348,14 +353,15 @@ const ClubListPage: React.FC = () => {
                   className="group bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-lg hover:shadow-blue-500/20 transition-all duration-300 cursor-pointer"
                 >
                   <div className="relative aspect-[16/9] overflow-hidden">
-                    <img
+                    <BlurImage
                       src={club.image_url}
                       alt={club.name}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                      className="absolute inset-0 w-full h-full group-hover:scale-102 transition-transform duration-300"
+                      objectFit="cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                     <div className="absolute bottom-4 left-4 right-4">
-                      <h3 className="text-xl font-bold text-white mb-1 drop-shadow-md">
+                      <h3 className="text-xl font-bold text-white mb-1">
                         {club.name}
                       </h3>
                       <div className="flex items-center text-sm text-white/90">
