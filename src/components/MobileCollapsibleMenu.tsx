@@ -48,11 +48,11 @@ const MobileCollapsibleMenu: React.FC<MobileCollapsibleMenuProps> = ({
             className="fixed inset-0 bg-black/50 z-40"
           />
           <motion.div
-            initial={{ x: '-100%' }}
+            initial={{ x: '100%' }}
             animate={{ x: 0 }}
-            exit={{ x: '-100%' }}
+            exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 left-0 bottom-0 w-80 bg-white dark:bg-gray-800 shadow-xl z-50"
+            className="fixed top-0 right-0 bottom-0 w-80 bg-white dark:bg-gray-800 shadow-xl z-50"
           >
             <div className="flex items-center justify-between p-4 border-b border-neutral-200 dark:border-gray-700">
               <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">

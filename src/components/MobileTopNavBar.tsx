@@ -23,26 +23,17 @@ const MobileTopNavBar: React.FC<MobileTopNavBarProps> = ({
     <div className="fixed top-0 left-0 right-0 z-50">
       {/* Bolt Chat Header */}
       <div className="flex items-center justify-between py-3 px-4 bg-white dark:bg-gray-800 border-b border-neutral-200 dark:border-gray-700">
+        <div className="flex items-center gap-2">
+          <Zap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <span className="font-medium text-neutral-900 dark:text-white">Bolt Chat</span>
+        </div>
+        
         <button
           onClick={onMenuToggle}
           className="p-2 text-neutral-600 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white"
         >
           <Menu className="h-5 w-5" />
         </button>
-        
-        <div className="flex items-center gap-2">
-          <Zap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-          <span className="font-medium text-neutral-900 dark:text-white">Bolt Chat</span>
-        </div>
-        
-        {onSettingsToggle && (
-          <button
-            onClick={onSettingsToggle}
-            className="p-2 text-neutral-600 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white"
-          >
-            <Settings className="h-5 w-5" />
-          </button>
-        )}
       </div>
 
       {/* Vehicle Selection Bar */}
