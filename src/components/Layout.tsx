@@ -229,29 +229,17 @@ const Layout: React.FC = () => {
       </main>
 
       {/* Bottom Navigation - Mobile Only */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-neutral-100 dark:bg-gray-800 border-t border-neutral-200 dark:border-gray-700 py-2 px-4 md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-neutral-200 dark:border-gray-700 py-2 px-4 md:hidden">
         <div className="max-w-md mx-auto flex items-center justify-around">
           <NavLink
-            to="/diagnostic"
-            className={({ isActive }) => `
-              flex flex-col items-center gap-1 min-w-[64px]
-              ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-600 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white'}
-            `}
-            data-tour="diagnostic"
-          >
-            <Zap className="h-6 w-6" />
-            <span className="text-[10px]">Bolt Chat</span>
-          </NavLink>
-
-          <NavLink
-            to="/vehicles"
+            to="/mechanic-support"
             className={({ isActive }) => `
               flex flex-col items-center gap-1 min-w-[64px]
               ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-600 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white'}
             `}
           >
-            <Car className="h-6 w-6" />
-            <span className="text-[10px]">Vehicles</span>
+            <Wrench className="h-6 w-6" />
+            <span className="text-[10px]">Live Help</span>
           </NavLink>
 
           <NavLink
@@ -264,6 +252,20 @@ const Layout: React.FC = () => {
           >
             <Store className="h-6 w-6" />
             <span className="text-[10px]">Market</span>
+          </NavLink>
+
+          <NavLink
+            to="/diagnostic"
+            className={({ isActive }) => `
+              flex flex-col items-center gap-1 min-w-[64px]
+              ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-600 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white'}
+            `}
+            data-tour="diagnostic"
+          >
+            <div className="w-10 h-10 rounded-full bg-bolt-gradient flex items-center justify-center shadow-md">
+              <Zap className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-[10px] font-medium">Bolt Chat</span>
           </NavLink>
 
           <NavLink

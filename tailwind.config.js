@@ -25,7 +25,8 @@ export default {
         'glow': '0 0 15px 2px rgba(59, 130, 246, 0.5)'
       },
       backgroundImage: {
-        'glowing-gradient': 'linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899)'
+        'glowing-gradient': 'linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899)',
+        'bolt-gradient': 'linear-gradient(135deg, #3b82f6, #fbbf24, #6b7280)'
       }
     },
   },
