@@ -15,6 +15,7 @@ import BlurImage from '../components/BlurImage';
 import OfferModal from '../components/OfferModal';
 import OffersList from '../components/OffersList';
 import { extractErrorMessage } from '../lib/errorHandling';
+import { subscribeToPartUpdates, subscribeToPartOffers } from '../lib/supabase_modules/marketplaceRealtime';
 
 const PartDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -30,6 +31,7 @@ const PartDetailPage: React.FC = () => {
   const [isBoostModalOpen, setIsBoostModalOpen] = useState(false);
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [isCurrentUserSeller, setIsCurrentUserSeller] = useState(false);
+  const [hasNewOffer, setHasNewOffer] = useState(false);
 
   useEffect(() => {
     const loadPart = async () => {
@@ -59,6 +61,44 @@ const PartDetailPage: React.FC = () => {
 
     loadPart();
   }, [id]);
+
+  // Subscribe to real-time updates for this part
+  useEffect(() => {
+    if (!id) return;
+    
+    // Subscribe to part updates
+    const unsubscribePart = subscribeToPartUpdates(id, (updatedPart) => {
+      setPart(prev => {
+        if (!prev) return null;
+        return { ...prev, ...updatedPart };
+      });
+    });
+    
+    // Subscribe to new offers for this part
+    const unsubscribeOffers = subscribeToPartOffers(id, (newOffer) => {
+      // Show notification for new offer
+      if (isCurrentUserSeller) {
+        setHasNewOffer(true);
+        toast.success('You received a new offer!');
+      }
+    });
+    
+    return () => {
+      unsubscribePart();
+      unsubscribeOffers();
+    };
+  }, [id, isCurrentUserSeller]);
+
+  // Show notification when new offer is received
+  useEffect(() => {
+    if (hasNewOffer) {
+      const timer = setTimeout(() => {
+        setHasNewOffer(false);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [hasNewOffer]);
 
   const handleMessageSeller = async () => {
     if (!part) return;
@@ -561,6 +601,21 @@ const PartDetailPage: React.FC = () => {
           toast.success('Offer sent successfully!');
         }}
       />
+
+      {/* New Offer Notification */}
+      {hasNewOffer && isCurrentUserSeller && (
+        <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-green-200 dark:border-green-800 p-4 animate-bounce">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-full">
+              <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-900 dark:text-white">New Offer Received!</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Someone made an offer on your part.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, DollarSign } from 'lucide-react';
-import { Offer, getPartOffers, subscribeToOfferUpdates } from '../lib/supabase_modules/offers';
-import OfferItem from './OfferItem';
-import CounterOfferModal from './CounterOfferModal';
+import { Offer, getPartOffers } from '../lib/supabase_modules/offers';
+import OfferItem from '../components/OfferItem';
+import CounterOfferModal from '../components/CounterOfferModal';
+import { subscribeToPartOffers } from '../lib/supabase_modules/marketplaceRealtime';
 
 interface OffersListProps {
   partId: string;
@@ -33,22 +34,21 @@ const OffersList: React.FC<OffersListProps> = ({ partId, className = '' }) => {
 
     loadOffers();
 
-    // Set up real-time subscription
-    const unsubscribe = subscribeToOfferUpdates((updatedOffer) => {
-      if (updatedOffer.part_id === partId) {
-        setOffers(prev => {
-          const offerIndex = prev.findIndex(o => o.id === updatedOffer.id);
-          if (offerIndex >= 0) {
-            // Update existing offer
-            const newOffers = [...prev];
-            newOffers[offerIndex] = updatedOffer;
-            return newOffers;
-          } else {
-            // Add new offer
-            return [updatedOffer, ...prev];
-          }
-        });
-      }
+    // Set up real-time subscription for new offers
+    const unsubscribe = subscribeToPartOffers(partId, (newOffer) => {
+      setOffers(prev => {
+        // Check if this offer already exists
+        const offerIndex = prev.findIndex(o => o.id === newOffer.id);
+        if (offerIndex >= 0) {
+          // Update existing offer
+          const newOffers = [...prev];
+          newOffers[offerIndex] = newOffer;
+          return newOffers;
+        } else {
+          // Add new offer
+          return [newOffer, ...prev];
+        }
+      });
     });
 
     return () => {

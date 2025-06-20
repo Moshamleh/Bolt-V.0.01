@@ -6,6 +6,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { Part, getMyParts, deletePart, boostPart } from '../lib/supabase';
 import BoostListingModal from '../components/BoostListingModal';
 import PartCardSkeleton from '../components/PartCardSkeleton';
+import { subscribeToSellerParts } from '../lib/supabase_modules/marketplaceRealtime';
+import { supabase } from '../lib/supabase';
 
 const MyListingsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -15,12 +17,41 @@ const MyListingsPage: React.FC = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedPartForBoost, setSelectedPartForBoost] = useState<Part | null>(null);
   const [isBoostModalOpen, setIsBoostModalOpen] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const loadParts = async () => {
       try {
-        const data = await getMyParts();
-        setParts(data);
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setCurrentUserId(user.id);
+          
+          // Load parts
+          const data = await getMyParts();
+          setParts(data);
+          
+          // Subscribe to real-time updates for seller's parts
+          const unsubscribe = subscribeToSellerParts(user.id, (updatedPart) => {
+            setParts(prev => {
+              // Check if this part already exists in the list
+              const partIndex = prev.findIndex(p => p.id === updatedPart.id);
+              if (partIndex >= 0) {
+                // Update existing part
+                const newParts = [...prev];
+                newParts[partIndex] = updatedPart;
+                return newParts;
+              } else {
+                // Add new part
+                return [...prev, updatedPart];
+              }
+            });
+          });
+          
+          return () => {
+            unsubscribe();
+          };
+        }
       } catch (err) {
         console.error('Failed to load parts:', err);
         setError('Failed to load your listings');
@@ -206,20 +237,20 @@ const MyListingsPage: React.FC = () => {
 
                   <div className="p-4">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-2">
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white line-clamp-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                         {part.title}
                       </h3>
-                      <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                      <span className="flex-shrink-0 text-lg font-bold text-emerald-600 dark:text-emerald-400">
                         {formatPrice(part.price)}
                       </span>
                     </div>
 
                     <div className="space-y-2 mb-4">
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
                         <Car className="h-4 w-4 mr-1" />
                         {part.year} {part.make} {part.model}
                       </div>
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
                         <MapPin className="h-4 w-4 mr-1" />
                         {part.location}
                       </div>

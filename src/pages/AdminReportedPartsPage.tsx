@@ -10,6 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import { useProfile } from '../hooks/useProfile';
 import { ReportedPart, getReportedParts, deleteReport, updatePart } from '../lib/supabase';
+import { subscribeToReportedParts } from '../lib/supabase_modules/adminRealtime';
 
 const AdminReportedPartsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ const AdminReportedPartsPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedReason, setSelectedReason] = useState<string>('');
   const [reportStatus, setReportStatus] = useState<'all' | 'pending' | 'resolved'>('all');
+  const [hasNewReport, setHasNewReport] = useState(false);
 
   useEffect(() => {
     const loadReports = async () => {
@@ -41,8 +43,34 @@ const AdminReportedPartsPage: React.FC = () => {
 
     if (isAdmin) {
       loadReports();
+      
+      // Subscribe to new reported parts
+      const unsubscribe = subscribeToReportedParts((newReport) => {
+        setHasNewReport(true);
+        toast.success('New part reported');
+        
+        // Fetch the complete report with part and reporter details
+        getReportedParts().then(updatedReports => {
+          setReports(updatedReports);
+        });
+      });
+      
+      return () => {
+        unsubscribe();
+      };
     }
   }, [isAdmin, profileLoading]);
+
+  // Reset new report notification after 5 seconds
+  useEffect(() => {
+    if (hasNewReport) {
+      const timer = setTimeout(() => {
+        setHasNewReport(false);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [hasNewReport]);
 
   const handleViewPart = (partId: string) => {
     window.open(`/parts/${partId}`, '_blank');
@@ -333,7 +361,7 @@ const AdminReportedPartsPage: React.FC = () => {
                   className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border ${
                     report.part.approved === false 
                       ? 'border-red-200 dark:border-red-800' 
-                      : 'border-gray-100 dark:border-gray-700'
+                      : hasNewReport ? 'border-blue-300 dark:border-blue-700 animate-pulse' : 'border-gray-100 dark:border-gray-700'
                   } overflow-hidden`}
                 >
                   <div className="p-6">

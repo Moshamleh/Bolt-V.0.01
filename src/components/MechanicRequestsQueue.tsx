@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Phone, Shield, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Mechanic, getPendingMechanicRequests, updateMechanicStatus } from '../lib/supabase';
 import useSWR from 'swr';
+import { subscribeToMechanicApplications } from '../lib/supabase_modules/adminRealtime';
 
 const MechanicRequestsQueue: React.FC = () => {
   const { data: mechanics, error, mutate } = useSWR<Mechanic[]>(
@@ -11,6 +12,25 @@ const MechanicRequestsQueue: React.FC = () => {
     getPendingMechanicRequests
   );
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [hasNewApplication, setHasNewApplication] = useState(false);
+
+  useEffect(() => {
+    // Subscribe to new mechanic applications
+    const unsubscribe = subscribeToMechanicApplications((newApplication) => {
+      setHasNewApplication(true);
+      // Refresh the data
+      mutate();
+      
+      // Reset the notification after 5 seconds
+      setTimeout(() => {
+        setHasNewApplication(false);
+      }, 5000);
+    });
+    
+    return () => {
+      unsubscribe();
+    };
+  }, [mutate]);
 
   const handleStatusUpdate = async (mechanicId: string, approve: boolean) => {
     setProcessingId(mechanicId);
@@ -77,7 +97,9 @@ const MechanicRequestsQueue: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-neutral-100 dark:bg-gray-800 rounded-lg shadow-sm border border-neutral-200 dark:border-gray-700 p-4"
+            className={`bg-neutral-100 dark:bg-gray-800 rounded-lg shadow-sm border ${
+              hasNewApplication ? 'border-blue-300 dark:border-blue-700 animate-pulse' : 'border-neutral-200 dark:border-gray-700'
+            } p-4`}
           >
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0">

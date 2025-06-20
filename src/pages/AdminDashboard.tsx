@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Users, ShieldCheck, AlertTriangle, Loader2, Wrench, Zap, Package, CheckCircle } from 'lucide-react';
@@ -8,11 +8,79 @@ import MechanicRequestsQueue from '../components/MechanicRequestsQueue';
 import useSWR from 'swr';
 import { getDashboardStats, getKycStatusCounts } from '../lib/supabase';
 import KycStatusPieChart from '../components/KycStatusPieChart';
+import { subscribeToDashboardStats, subscribeToKycRequests, subscribeToReportedParts, subscribeToMechanicApplications } from '../lib/supabase_modules/adminRealtime';
+import toast from 'react-hot-toast';
 
 const AdminDashboard: React.FC = () => {
   const { profile, isAdmin, isLoading: profileLoading } = useProfile();
-  const { data: stats, error: statsError, isLoading: statsLoading } = useSWR('dashboard-stats', getDashboardStats);
-  const { data: kycStats, error: kycStatsError, isLoading: kycStatsLoading } = useSWR('kyc-stats', getKycStatusCounts);
+  const { data: stats, error: statsError, isLoading: statsLoading, mutate: mutateStats } = useSWR('dashboard-stats', getDashboardStats);
+  const { data: kycStats, error: kycStatsError, isLoading: kycStatsLoading, mutate: mutateKycStats } = useSWR('kyc-stats', getKycStatusCounts);
+  
+  // State for real-time updates
+  const [realtimeStats, setRealtimeStats] = useState({
+    pendingKyc: 0,
+    pendingMechanics: 0,
+    reportedParts: 0
+  });
+  const [hasNewKyc, setHasNewKyc] = useState(false);
+  const [hasNewReport, setHasNewReport] = useState(false);
+  const [hasNewMechanic, setHasNewMechanic] = useState(false);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    
+    // Initialize real-time stats from fetched data
+    if (stats) {
+      setRealtimeStats({
+        pendingKyc: stats.pendingKyc,
+        pendingMechanics: stats.pendingMechanics,
+        reportedParts: stats.reportedParts
+      });
+    }
+    
+    // Subscribe to dashboard stats updates
+    const unsubscribeStats = subscribeToDashboardStats((table, count) => {
+      setRealtimeStats(prev => {
+        if (table === 'kyc_requests') {
+          return { ...prev, pendingKyc: count };
+        } else if (table === 'mechanics') {
+          return { ...prev, pendingMechanics: count };
+        } else if (table === 'reported_parts') {
+          return { ...prev, reportedParts: count };
+        }
+        return prev;
+      });
+    });
+    
+    // Subscribe to new KYC requests
+    const unsubscribeKyc = subscribeToKycRequests((newRequest) => {
+      setHasNewKyc(true);
+      toast.success('New KYC verification request received');
+      mutateKycStats();
+      mutateStats();
+    });
+    
+    // Subscribe to new reported parts
+    const unsubscribeReports = subscribeToReportedParts((newReport) => {
+      setHasNewReport(true);
+      toast.success('New part reported');
+      mutateStats();
+    });
+    
+    // Subscribe to new mechanic applications
+    const unsubscribeMechanics = subscribeToMechanicApplications((newApplication) => {
+      setHasNewMechanic(true);
+      toast.success('New mechanic application received');
+      mutateStats();
+    });
+    
+    return () => {
+      unsubscribeStats();
+      unsubscribeKyc();
+      unsubscribeReports();
+      unsubscribeMechanics();
+    };
+  }, [isAdmin, stats, mutateKycStats, mutateStats]);
 
   if (profileLoading) {
     return (
@@ -33,11 +101,12 @@ const AdminDashboard: React.FC = () => {
     icon: React.ReactNode;
     color: string;
     loading?: boolean;
-  }> = ({ title, description, count, icon, color, loading }) => (
+    hasNew?: boolean;
+  }> = ({ title, description, count, icon, color, loading, hasNew }) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6"
+      className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border ${hasNew ? 'border-blue-300 dark:border-blue-700 animate-pulse' : 'border-gray-100 dark:border-gray-700'} p-6`}
     >
       <div className="flex items-start justify-between">
         <div>
@@ -91,28 +160,31 @@ const AdminDashboard: React.FC = () => {
           <DashboardCard
             title="KYC Verification Queue"
             description="Pending verification requests"
-            count={stats?.pendingKyc || 0}
+            count={realtimeStats.pendingKyc}
             icon={<ShieldCheck className="h-6 w-6 text-green-600 dark:text-green-400" />}
             color="bg-green-100 dark:bg-green-900/50"
             loading={loading}
+            hasNew={hasNewKyc}
           />
 
           <DashboardCard
             title="Mechanic Requests"
             description="Pending mechanic applications"
-            count={stats?.pendingMechanics || 0}
+            count={realtimeStats.pendingMechanics}
             icon={<Wrench className="h-6 w-6 text-purple-600 dark:text-purple-400" />}
             color="bg-purple-100 dark:bg-purple-900/50"
             loading={loading}
+            hasNew={hasNewMechanic}
           />
 
           <DashboardCard
             title="Reported Listings"
             description="Listings flagged for review"
-            count={stats?.reportedParts || 0}
+            count={realtimeStats.reportedParts}
             icon={<AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />}
             color="bg-amber-100 dark:bg-amber-900/50"
             loading={loading}
+            hasNew={hasNewReport}
           />
         </div>
 
