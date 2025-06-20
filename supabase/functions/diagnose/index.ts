@@ -22,9 +22,9 @@ Deno.serve(async (req) => {
 
   try {
     // Parse request body
-    const { diagnosisId, prompt, vehicleContext } = await req.json();
+    const { diagnosisId, vehicleId, prompt } = await req.json();
 
-    if (!diagnosisId || !prompt) {
+    if (!diagnosisId || !prompt || !vehicleId) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { 
@@ -48,31 +48,88 @@ Deno.serve(async (req) => {
       apiKey: Deno.env.get('OPENAI_API_KEY'),
     });
 
+    // Fetch vehicle details
+    const { data: vehicleData, error: vehicleError } = await supabaseClient
+      .from('vehicles')
+      .select('*')
+      .eq('id', vehicleId)
+      .single();
+
+    if (vehicleError) {
+      console.error('Error fetching vehicle data:', vehicleError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch vehicle data' }),
+        { 
+          status: 500,
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
+    }
+
+    // Fetch recent chat history for this vehicle (last 5 interactions)
+    const { data: chatHistory, error: historyError } = await supabaseClient
+      .from('diagnoses')
+      .select('prompt, response, timestamp')
+      .eq('vehicle_id', vehicleId)
+      .neq('id', diagnosisId) // Exclude current diagnosis
+      .order('timestamp', { ascending: false })
+      .limit(5);
+
+    if (historyError) {
+      console.error('Error fetching chat history:', historyError);
+      // Continue without chat history if there's an error
+    }
+
     // Prepare vehicle context string
     let vehicleContextStr = '';
-    if (vehicleContext) {
-      if (vehicleContext.other_vehicle_description) {
-        vehicleContextStr = `Vehicle: ${vehicleContext.other_vehicle_description}`;
+    if (vehicleData) {
+      if (vehicleData.other_vehicle_description) {
+        vehicleContextStr = `Vehicle: ${vehicleData.other_vehicle_description}`;
       } else {
-        vehicleContextStr = `Vehicle: ${vehicleContext.year} ${vehicleContext.make} ${vehicleContext.model}${vehicleContext.trim ? ` ${vehicleContext.trim}` : ''}`;
+        vehicleContextStr = `Vehicle: ${vehicleData.year} ${vehicleData.make} ${vehicleData.model}${vehicleData.trim ? ` ${vehicleData.trim}` : ''}`;
       }
       
-      if (vehicleContext.vin) {
-        vehicleContextStr += `\nVIN: ${vehicleContext.vin}`;
+      if (vehicleData.vin) {
+        vehicleContextStr += `\nVIN: ${vehicleData.vin}`;
       }
       
-      if (vehicleContext.mileage) {
-        vehicleContextStr += `\nMileage: ${vehicleContext.mileage}`;
+      if (vehicleData.mileage) {
+        vehicleContextStr += `\nMileage: ${vehicleData.mileage}`;
       }
     }
+
+    // Prepare messages array for OpenAI
+    const messages = [
+      { role: 'system', content: MECHANIC_PROMPT }
+    ];
+
+    // Add chat history if available
+    if (chatHistory && chatHistory.length > 0) {
+      // Sort by timestamp ascending to maintain conversation flow
+      const sortedHistory = [...chatHistory].sort((a, b) => 
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+      
+      // Add each historical interaction as a user-assistant pair
+      sortedHistory.forEach(entry => {
+        messages.push({ role: 'user', content: entry.prompt });
+        messages.push({ role: 'assistant', content: entry.response });
+      });
+    }
+
+    // Add current prompt with vehicle context
+    messages.push({ 
+      role: 'user', 
+      content: `${vehicleContextStr ? vehicleContextStr + '\n\n' : ''}${prompt}` 
+    });
 
     // Call OpenAI API
     const chatCompletion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
-      messages: [
-        { role: 'system', content: MECHANIC_PROMPT }, // Add the mechanic prompt primer
-        { role: 'user', content: `${vehicleContextStr ? vehicleContextStr + '\n\n' : ''}${prompt}` }
-      ],
+      messages,
       temperature: 0.7,
     });
 
@@ -84,7 +141,8 @@ Deno.serve(async (req) => {
       .insert({
         diagnosis_id: diagnosisId,
         context_json: {
-          vehicle_context: vehicleContext,
+          vehicle_context: vehicleData,
+          chat_history: chatHistory || [],
           prompt,
           response: aiResponse
         }
