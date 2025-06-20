@@ -460,7 +460,7 @@ Try saying: "My car makes a weird clicking sound when I turn."`;
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-chat-gradient">
+    <div className="flex-1 flex flex-col bg-white dark:bg-gray-900">
       {showConfetti && <Confetti duration={3000} onComplete={() => setShowConfetti(false)} />}
       
       <div 
@@ -469,7 +469,7 @@ Try saying: "My car makes a weird clicking sound when I turn."`;
       >
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center">
-            <div className="max-w-md w-full rounded-xl bg-blue-50 dark:bg-blue-900/20 p-4 animate-chat-bubble-glow shadow-lg">
+            <div className="max-w-md w-full rounded-xl bg-blue-50 dark:bg-blue-900/20 p-4 animate-chat-bubble-glow shadow-sm">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-1">
                   <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
@@ -505,7 +505,7 @@ Try saying: "My car makes a weird clicking sound when I turn."`;
                         ? 'bg-blue-600 text-white rounded-br-none px-4 py-2'
                         : message.isError
                         ? 'bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-200 p-4'
-                        : 'bg-neutral-100 dark:bg-gray-700 text-neutral-800 dark:text-gray-200 rounded-bl-none p-4'
+                        : 'bg-neutral-100 dark:bg-gray-800 text-neutral-800 dark:text-gray-200 rounded-bl-none p-4 border border-neutral-200 dark:border-gray-700'
                     }`}
                   >
                     {message.isTypingIndicator ? (
@@ -569,13 +569,13 @@ Try saying: "My car makes a weird clicking sound when I turn."`;
                     >
                       <button
                         onClick={() => handleSubmit(undefined, "🧰 Can you walk me through steps to fix it?")}
-                        className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-sm hover:shadow-md"
+                        className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-sm"
                       >
                         🧰 Can you walk me through steps to fix it?
                       </button>
                       <button
                         onClick={() => handleSubmit(undefined, "🛒 What part do I need?")}
-                        className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-sm hover:shadow-md"
+                        className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-sm"
                       >
                         🛒 What part do I need?
                       </button>
@@ -600,7 +600,7 @@ Try saying: "My car makes a weird clicking sound when I turn."`;
               <button
                 key={index}
                 onClick={() => handleSuggestedPromptClick(prompt)}
-                className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-sm hover:shadow-md"
+                className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-sm"
               >
                 {prompt}
               </button>
@@ -611,7 +611,7 @@ Try saying: "My car makes a weird clicking sound when I turn."`;
 
       <form 
         onSubmit={handleSubmit} 
-        className="fixed bottom-[64px] left-0 right-0 bg-neutral-100 dark:bg-gray-800 border-t border-neutral-200 dark:border-gray-700 px-4 py-2 shadow-lg"
+        className="fixed bottom-[64px] left-0 right-0 bg-white dark:bg-gray-800 border-t border-neutral-200 dark:border-gray-700 px-4 py-2 shadow-md"
       >
         <div className="max-w-2xl mx-auto flex items-end gap-2">
           <TextareaAutosize
@@ -619,7 +619,7 @@ Try saying: "My car makes a weird clicking sound when I turn."`;
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Describe your car issue..."
-            className="flex-1 resize-none overflow-hidden min-h-[40px] max-h-[120px] rounded-lg border border-neutral-300 dark:border-gray-600 px-4 py-2 bg-neutral-100 dark:bg-gray-700 text-neutral-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 resize-none overflow-hidden min-h-[40px] max-h-[120px] rounded-lg border border-neutral-300 dark:border-gray-600 px-4 py-2 bg-white dark:bg-gray-700 text-neutral-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isSubmitting}
             minRows={1}
             maxRows={4}

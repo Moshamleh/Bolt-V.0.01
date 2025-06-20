@@ -84,7 +84,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
     return (
       <div className="animate-pulse space-y-4 p-4">
         {[1, 2, 3].map(i => (
-          <div key={i} className="bg-gray-200 dark:bg-gray-700 h-24 rounded-lg"></div>
+          <div key={i} className="bg-white dark:bg-gray-800 h-24 rounded-lg"></div>
         ))}
       </div>
     );
@@ -125,22 +125,22 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="border rounded-lg overflow-hidden bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+              className="border rounded-lg overflow-hidden bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm"
             >
               {/* Vehicle Header */}
               <div 
-                className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700"
+                className="p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700"
                 onClick={() => toggleVehicleExpanded(group.vehicle.id)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Car className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <Car className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     <h3 className="font-medium text-gray-900 dark:text-white">
                       {getVehicleDisplayName(group.vehicle)}
                     </h3>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">
                       {group.diagnoses.length} {group.diagnoses.length === 1 ? 'diagnosis' : 'diagnoses'}
                     </span>
                     {expandedVehicleId === group.vehicle.id ? (
@@ -163,31 +163,31 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
                   >
                     <div className="divide-y divide-gray-100 dark:divide-gray-700">
                       {group.diagnoses.map((diagnosis) => (
-                        <div key={diagnosis.id} className="p-4">
+                        <div key={diagnosis.id} className="p-3">
                           <div 
                             className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
                             onClick={() => toggleExpanded(diagnosis.id)}
                           >
-                            <div className="flex justify-between items-start mb-2">
+                            <div className="flex justify-between items-start mb-1">
                               <div className="font-medium text-gray-900 dark:text-white line-clamp-1">
                                 {diagnosis.prompt}
                               </div>
                               {diagnosis.resolved ? (
-                                <span className="flex items-center text-green-600 dark:text-green-400 text-sm">
-                                  <CheckCircle className="h-4 w-4 mr-1" />
-                                  ✅ Fixed
+                                <span className="flex items-center text-green-600 dark:text-green-400 text-xs">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Fixed
                                 </span>
                               ) : (
-                                <span className="flex items-center text-amber-600 dark:text-amber-400 text-sm">
-                                  <Clock className="h-4 w-4 mr-1" />
-                                  ⏳ Unresolved
+                                <span className="flex items-center text-amber-600 dark:text-amber-400 text-xs">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  Unresolved
                                 </span>
                               )}
                             </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                               {format(new Date(diagnosis.timestamp), 'MMM d, yyyy • h:mm a')}
                             </div>
-                            <div className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                            <div className="text-xs text-gray-600 dark:text-gray-300 line-clamp-1">
                               {diagnosis.response.substring(0, 100)}
                               {diagnosis.response.length > 100 ? '...' : ''}
                             </div>
@@ -202,16 +202,16 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
                                 transition={{ duration: 0.2 }}
                                 className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700"
                               >
-                                <div className="mb-4">
-                                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Issue:</h4>
-                                  <p className="text-gray-900 dark:text-white">{diagnosis.prompt}</p>
+                                <div className="mb-3">
+                                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Issue:</h4>
+                                  <p className="text-sm text-gray-900 dark:text-white">{diagnosis.prompt}</p>
                                 </div>
-                                <div className="mb-4">
-                                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Diagnosis:</h4>
-                                  <p className="text-gray-900 dark:text-white">{diagnosis.response}</p>
+                                <div className="mb-3">
+                                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Diagnosis:</h4>
+                                  <p className="text-sm text-gray-900 dark:text-white">{diagnosis.response}</p>
                                 </div>
                                 
-                                <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+                                <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
                                   <span className="text-xs text-gray-500 dark:text-gray-400">
                                     {new Date(diagnosis.timestamp).toLocaleString()}
                                   </span>
@@ -219,33 +219,33 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
                                     {onLoadDiagnosis && (
                                       <button
                                         onClick={() => onLoadDiagnosis(diagnosis)}
-                                        className="flex items-center gap-1 text-sm px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors"
+                                        className="flex items-center gap-1 text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors"
                                       >
-                                        <ArrowUpRight className="h-4 w-4" />
-                                        Continue Chat
+                                        <ArrowUpRight className="h-3 w-3" />
+                                        Continue
                                       </button>
                                     )}
                                     {diagnosis.resolved && onRecheckDiagnosis && (
                                       <button
                                         onClick={() => onRecheckDiagnosis(diagnosis.prompt)}
-                                        className="flex items-center gap-1 text-sm px-3 py-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-full hover:bg-amber-200 dark:hover:bg-amber-900 transition-colors"
+                                        className="flex items-center gap-1 text-xs px-2 py-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-full hover:bg-amber-200 dark:hover:bg-amber-900 transition-colors"
                                       >
-                                        <Repeat className="h-4 w-4" />
+                                        <Repeat className="h-3 w-3" />
                                         Recheck
                                       </button>
                                     )}
                                     <button
                                       onClick={() => handleResolvedToggle(diagnosis.id, diagnosis.resolved)}
                                       disabled={updatingId === diagnosis.id}
-                                      className={`text-sm px-3 py-1 rounded-full transition-colors ${
+                                      className={`text-xs px-2 py-1 rounded-full transition-colors ${
                                         diagnosis.resolved
                                           ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900'
                                           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                       } ${updatingId === diagnosis.id ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                       {updatingId === diagnosis.id ? (
-                                        <div className="flex items-center gap-2">
-                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        <div className="flex items-center gap-1">
+                                          <Loader2 className="h-3 w-3 animate-spin" />
                                           <span>Updating...</span>
                                         </div>
                                       ) : diagnosis.resolved ? (

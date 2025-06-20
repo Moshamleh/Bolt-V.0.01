@@ -68,9 +68,9 @@
   }
 }
 
-/* Chat background gradient */
+/* Chat background gradient - Simplified */
 .bg-chat-gradient {
-  @apply bg-gradient-to-b from-blue-50 to-neutral-100 dark:from-gray-800 dark:to-gray-900;
+  @apply bg-white dark:bg-gray-900;
   background-attachment: fixed;
 }
 
@@ -144,13 +144,13 @@
   animation: blink-wrench 2s ease-in-out infinite;
 }
 
-/* Chat bubble glow animation */
+/* Chat bubble glow animation - Reduced intensity */
 @keyframes chat-bubble-glow {
   0%, 100% {
-    box-shadow: 0 0 10px 0px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 0 5px 0px rgba(59, 130, 246, 0.2);
   }
   50% {
-    box-shadow: 0 0 20px 5px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 10px 2px rgba(59, 130, 246, 0.3);
   }
 }
 
@@ -215,7 +215,7 @@
   }
 
   .card {
-    @apply bg-neutral-100 dark:bg-gray-800 rounded-2xl shadow-sm border border-neutral-200 dark:border-gray-700 overflow-hidden;
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-neutral-200 dark:border-gray-700 overflow-hidden;
   }
 
   .card-header {
@@ -231,7 +231,7 @@
   }
 
   .input {
-    @apply w-full rounded-lg border border-neutral-300 dark:border-gray-600 px-4 py-2 bg-neutral-100 dark:bg-gray-700 text-neutral-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+    @apply w-full rounded-lg border border-neutral-300 dark:border-gray-600 px-4 py-2 bg-white dark:bg-gray-700 text-neutral-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
   }
 
   .btn {
