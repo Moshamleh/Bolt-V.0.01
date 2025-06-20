@@ -174,3 +174,34 @@ export function subscribeToSellerParts(
     supabase.removeChannel(channel);
   };
 }
+
+/**
+ * Subscribe to marketplace updates for browsing
+ * @param onPartChange Callback function when any part changes
+ * @returns Unsubscribe function
+ */
+export function subscribeToMarketplaceUpdates(
+  onPartChange: (part: Part, eventType: 'INSERT' | 'UPDATE' | 'DELETE') => void
+): () => void {
+  const channel = supabase
+    .channel('marketplace-updates')
+    .on(
+      'postgres_changes',
+      {
+        event: '*', // Listen for all events (INSERT, UPDATE, DELETE)
+        schema: 'public',
+        table: 'parts',
+      },
+      (payload) => {
+        onPartChange(
+          payload.new as Part, 
+          payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE'
+        );
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
