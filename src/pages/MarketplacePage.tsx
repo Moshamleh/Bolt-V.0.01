@@ -665,18 +665,6 @@ const MarketplacePage: React.FC = () => {
           </div>
         </div>
       </MobilePageMenu>
-
-      {/* Floating Action Button */}
-      <motion.button
-        initial={{ opacity: 0, scale: 0.8, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        onClick={handleSellPart}
-        className="md:hidden fixed bottom-6 right-6 flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300 z-50 animate-pulse-slow"
-        title="Got something to sell? Let the community know!"
-      >
-        <Plus className="h-5 w-5" />
-        <span className="font-medium">Post a Part</span>
-      </motion.button>
     </div>
   );
 };
