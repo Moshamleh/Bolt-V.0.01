@@ -164,37 +164,3 @@ export async function createCounterOffer(
 
   return data;
 }
-
-/**
- * Subscribe to offer updates
- */
-export function subscribeToOfferUpdates(
-  callback: (offer: Offer) => void
-): () => void {
-  const { data: { user } } = supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const channel = supabase
-    .channel('offers-channel')
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'offers',
-      filter: `sender_id=eq.${user.id}`,
-    }, (payload) => {
-      callback(payload.new as Offer);
-    })
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'offers',
-      filter: `receiver_id=eq.${user.id}`,
-    }, (payload) => {
-      callback(payload.new as Offer);
-    })
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}

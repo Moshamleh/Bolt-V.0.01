@@ -46,33 +46,98 @@ export async function getParts(filters: PartFilters = {}, page: number = 1, item
     .eq('sold', false)
     .eq('approved', true); // Only show approved parts
 
+  // Text search
   if (filters.search) {
     query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,part_number.ilike.%${filters.search}%,oem_number.ilike.%${filters.search}%`);
   }
+  
+  // Make filter - can be a single make or an array of makes
   if (filters.make) {
-    query = query.eq('make', filters.make);
+    if (Array.isArray(filters.make) && filters.make.length > 0) {
+      query = query.in('make', filters.make);
+    } else if (typeof filters.make === 'string') {
+      query = query.eq('make', filters.make);
+    }
   }
+  
+  // Model filter - can be a single model or an array of models
+  if (filters.model) {
+    if (Array.isArray(filters.model) && filters.model.length > 0) {
+      query = query.in('model', filters.model);
+    } else if (typeof filters.model === 'string') {
+      query = query.eq('model', filters.model);
+    }
+  }
+  
+  // Condition filter
   if (filters.condition) {
-    query = query.eq('condition', filters.condition);
+    if (Array.isArray(filters.condition) && filters.condition.length > 0) {
+      query = query.in('condition', filters.condition);
+    } else if (typeof filters.condition === 'string') {
+      query = query.eq('condition', filters.condition);
+    }
   }
+  
+  // Category filter
   if (filters.category) {
-    query = query.eq('category', filters.category);
+    if (Array.isArray(filters.category) && filters.category.length > 0) {
+      query = query.in('category', filters.category);
+    } else if (typeof filters.category === 'string') {
+      query = query.eq('category', filters.category);
+    }
   }
+  
+  // Part number filter
   if (filters.partNumber) {
     query = query.ilike('part_number', `%${filters.partNumber}%`);
   }
+  
+  // OEM number filter
   if (filters.oemNumber) {
     query = query.ilike('oem_number', `%${filters.oemNumber}%`);
   }
+  
+  // Price range filter
+  if (filters.minPrice !== undefined && filters.minPrice > 0) {
+    query = query.gte('price', filters.minPrice);
+  }
+  
+  if (filters.maxPrice !== undefined && filters.maxPrice > 0) {
+    query = query.lte('price', filters.maxPrice);
+  }
+  
+  // Year range filter
+  if (filters.minYear !== undefined && filters.minYear > 0) {
+    query = query.gte('year', filters.minYear);
+  }
+  
+  if (filters.maxYear !== undefined && filters.maxYear > 0) {
+    query = query.lte('year', filters.maxYear);
+  }
+  
+  // Approval status filter
   if (filters.approvalStatus === 'approved') {
     query = query.eq('approved', true);
   } else if (filters.approvalStatus === 'unapproved') {
     query = query.eq('approved', false);
   }
+  
+  // Boosted filter
+  if (filters.boostedOnly) {
+    query = query.eq('is_boosted', true);
+  }
 
-  query = query.order('is_boosted', { ascending: false }) // Boosted parts first
-               .order('created_at', { ascending: false })
-               .range(startIndex, endIndex);
+  // Sorting
+  if (filters.sortBy && filters.sortDirection) {
+    query = query.order(filters.sortBy, { ascending: filters.sortDirection === 'asc' });
+  } else {
+    // Default sorting: boosted parts first, then by created_at
+    query = query.order('is_boosted', { ascending: false })
+                 .order('created_at', { ascending: false });
+  }
+  
+  // Pagination
+  query = query.range(startIndex, endIndex);
 
   const { data, error, count } = await query;
 
@@ -444,4 +509,112 @@ export async function getOrCreatePartChat(partId: string, sellerId: string): Pro
 
   if (createError) throw createError;
   return newChat.id;
+}
+
+// Get all makes available in the database
+export async function getAvailableMakes(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('parts')
+    .select('make')
+    .eq('approved', true)
+    .eq('sold', false)
+    .not('make', 'is', null)
+    .order('make')
+    .distinct();
+
+  if (error) throw error;
+  return data.map(item => item.make).filter(Boolean);
+}
+
+// Get all models for a specific make
+export async function getModelsForMake(make: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('parts')
+    .select('model')
+    .eq('approved', true)
+    .eq('sold', false)
+    .eq('make', make)
+    .not('model', 'is', null)
+    .order('model')
+    .distinct();
+
+  if (error) throw error;
+  return data.map(item => item.model).filter(Boolean);
+}
+
+// Get all categories available in the database
+export async function getAvailableCategories(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('parts')
+    .select('category')
+    .eq('approved', true)
+    .eq('sold', false)
+    .not('category', 'is', null)
+    .order('category')
+    .distinct();
+
+  if (error) throw error;
+  return data.map(item => item.category).filter(Boolean);
+}
+
+// Get price range (min and max) for parts
+export async function getPartsPriceRange(): Promise<{ min: number; max: number }> {
+  const { data: minData, error: minError } = await supabase
+    .from('parts')
+    .select('price')
+    .eq('approved', true)
+    .eq('sold', false)
+    .order('price', { ascending: true })
+    .limit(1)
+    .single();
+
+  if (minError && minError.code !== 'PGRST116') throw minError;
+
+  const { data: maxData, error: maxError } = await supabase
+    .from('parts')
+    .select('price')
+    .eq('approved', true)
+    .eq('sold', false)
+    .order('price', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (maxError && maxError.code !== 'PGRST116') throw maxError;
+
+  return {
+    min: minData?.price || 0,
+    max: maxData?.price || 1000
+  };
+}
+
+// Get year range (min and max) for parts
+export async function getPartsYearRange(): Promise<{ min: number; max: number }> {
+  const { data: minData, error: minError } = await supabase
+    .from('parts')
+    .select('year')
+    .eq('approved', true)
+    .eq('sold', false)
+    .not('year', 'is', null)
+    .order('year', { ascending: true })
+    .limit(1)
+    .single();
+
+  if (minError && minError.code !== 'PGRST116') throw minError;
+
+  const { data: maxData, error: maxError } = await supabase
+    .from('parts')
+    .select('year')
+    .eq('approved', true)
+    .eq('sold', false)
+    .not('year', 'is', null)
+    .order('year', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (maxError && maxError.code !== 'PGRST116') throw maxError;
+
+  return {
+    min: minData?.year || 1990,
+    max: maxData?.year || new Date().getFullYear()
+  };
 }

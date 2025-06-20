@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Search, Filter, Plus, ChevronDown, ChevronUp, Loader2, Menu, X, ShoppingBag, MessageSquare, Settings, Heart, AlertCircle, Package, ChevronLeft, ChevronRight, Mailbox as Toolbox, Wrench, ListFilter, MapPin, Wine as Engine, Disc, CarFront, CheckCircle, Zap 
+  Search, Filter, Plus, ChevronDown, ChevronUp, Loader2, Menu, X, ShoppingBag, MessageSquare, Settings, Heart, AlertCircle, Package, ChevronLeft, ChevronRight, Mailbox as Toolbox, Wrench, ListFilter, MapPin, Wine as Engine, Disc, CarFront, CheckCircle, Zap, DollarSign, SlidersHorizontal, ArrowDownUp, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Part, getParts, getOrCreatePartChat, PaginatedResponse } from '../lib/supabase';
+import { Part, getParts, getOrCreatePartChat, PaginatedResponse, getAvailableMakes, getModelsForMake, getAvailableCategories, getPartsPriceRange, getPartsYearRange } from '../lib/supabase';
 import PartCard from '../components/PartCard';
 import MobilePageMenu from '../components/MobilePageMenu';
 import PartCardSkeleton from '../components/PartCardSkeleton';
+import MultiSelect from '../components/MultiSelect';
+import PriceRangeSlider from '../components/PriceRangeSlider';
+import YearRangeSlider from '../components/YearRangeSlider';
+import { debounce } from '../lib/utils';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -25,9 +29,23 @@ const MarketplacePage: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showTrustedSellersOnly, setShowTrustedSellersOnly] = useState(false);
   const [showBoostedOnly, setShowBoostedOnly] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [selectedMake, setSelectedMake] = useState<string>('');
-  const [selectedCondition, setSelectedCondition] = useState<string>('');
+  
+  // Advanced filtering state
+  const [selectedMakes, setSelectedMakes] = useState<string[]>([]);
+  const [selectedModels, setSelectedModels] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
+  const [yearRange, setYearRange] = useState<[number, number]>([1990, new Date().getFullYear()]);
+  const [sortBy, setSortBy] = useState<string>('created_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Available options for filters
+  const [availableMakes, setAvailableMakes] = useState<string[]>([]);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [priceRangeLimits, setPriceRangeLimits] = useState<{min: number, max: number}>({min: 0, max: 10000});
+  const [yearRangeLimits, setYearRangeLimits] = useState<{min: number, max: number}>({min: 1990, max: new Date().getFullYear()});
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -35,55 +53,99 @@ const MarketplacePage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [paginatedResponse, setPaginatedResponse] = useState<PaginatedResponse<Part> | null>(null);
 
+  // Load available filter options
   useEffect(() => {
-    const loadParts = async () => {
+    const loadFilterOptions = async () => {
       try {
-        setLoading(true);
+        const [makes, categories, priceRange, yearRange] = await Promise.all([
+          getAvailableMakes(),
+          getAvailableCategories(),
+          getPartsPriceRange(),
+          getPartsYearRange()
+        ]);
         
-        // Combine all filters
-        const filters = {
-          search: searchTerm || undefined,
-          partNumber: partNumber || undefined,
-          oemNumber: oemNumber || undefined,
-          isTrustedSeller: showTrustedSellersOnly || undefined,
-          category: selectedCategory || undefined,
-          make: selectedMake || undefined,
-          condition: selectedCondition || undefined
-        };
-        
-        const response = await getParts(filters, currentPage, ITEMS_PER_PAGE);
-        
-        // If showBoostedOnly is true, filter to only show boosted parts
-        let filteredData = response.data;
-        if (showBoostedOnly) {
-          filteredData = response.data.filter(part => part.is_boosted);
-        }
-        
-        setParts(filteredData);
-        setTotalItems(response.total);
-        setTotalPages(response.totalPages);
-        setPaginatedResponse(response);
+        setAvailableMakes(makes);
+        setAvailableCategories(categories);
+        setPriceRangeLimits(priceRange);
+        setPriceRange([priceRange.min, priceRange.max]);
+        setYearRangeLimits(yearRange);
+        setYearRange([yearRange.min, yearRange.max]);
       } catch (err) {
-        console.error('Failed to load parts:', err);
-        setError('Failed to load marketplace listings');
-      } finally {
-        setLoading(false);
+        console.error('Failed to load filter options:', err);
       }
     };
+    
+    loadFilterOptions();
+  }, []);
 
-    const debounceTimeout = setTimeout(loadParts, 300);
-    return () => clearTimeout(debounceTimeout);
-  }, [
-    searchTerm, 
-    partNumber,
-    oemNumber,
-    currentPage,
-    showTrustedSellersOnly,
-    showBoostedOnly,
-    selectedCategory,
-    selectedMake,
-    selectedCondition
-  ]);
+  // Load models when make changes
+  useEffect(() => {
+    const loadModels = async () => {
+      if (selectedMakes.length === 1) {
+        try {
+          const models = await getModelsForMake(selectedMakes[0]);
+          setAvailableModels(models);
+        } catch (err) {
+          console.error('Failed to load models:', err);
+        }
+      } else {
+        setAvailableModels([]);
+        setSelectedModels([]);
+      }
+    };
+    
+    loadModels();
+  }, [selectedMakes]);
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce(() => {
+      setCurrentPage(1);
+      loadParts();
+    }, 500),
+    [searchTerm, partNumber, oemNumber, showTrustedSellersOnly, showBoostedOnly, selectedMakes, selectedModels, selectedCategories, selectedConditions, priceRange, yearRange, sortBy, sortDirection]
+  );
+
+  useEffect(() => {
+    debouncedSearch();
+  }, [searchTerm, partNumber, oemNumber, showTrustedSellersOnly, showBoostedOnly, selectedMakes, selectedModels, selectedCategories, selectedConditions, priceRange, yearRange, sortBy, sortDirection, currentPage, debouncedSearch]);
+
+  const loadParts = async () => {
+    try {
+      setLoading(true);
+      
+      // Combine all filters
+      const filters = {
+        search: searchTerm || undefined,
+        partNumber: partNumber || undefined,
+        oemNumber: oemNumber || undefined,
+        isTrustedSeller: showTrustedSellersOnly || undefined,
+        boostedOnly: showBoostedOnly || undefined,
+        make: selectedMakes.length > 0 ? selectedMakes : undefined,
+        model: selectedModels.length > 0 ? selectedModels : undefined,
+        category: selectedCategories.length > 0 ? selectedCategories : undefined,
+        condition: selectedConditions.length > 0 ? selectedConditions : undefined,
+        minPrice: priceRange[0] > priceRangeLimits.min ? priceRange[0] : undefined,
+        maxPrice: priceRange[1] < priceRangeLimits.max ? priceRange[1] : undefined,
+        minYear: yearRange[0] > yearRangeLimits.min ? yearRange[0] : undefined,
+        maxYear: yearRange[1] < yearRangeLimits.max ? yearRange[1] : undefined,
+        sortBy: sortBy || undefined,
+        sortDirection: sortDirection || undefined
+      };
+      
+      const response = await getParts(filters, currentPage, ITEMS_PER_PAGE);
+      
+      setParts(response.data);
+      setTotalItems(response.total);
+      setTotalPages(response.totalPages);
+      setPaginatedResponse(response);
+    } catch (err) {
+      console.error('Failed to load parts:', err);
+      setError('Failed to load marketplace listings');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSellPart = () => {
     navigate('/sell-part');
@@ -118,9 +180,14 @@ const MarketplacePage: React.FC = () => {
     setOemNumber('');
     setShowTrustedSellersOnly(false);
     setShowBoostedOnly(false);
-    setSelectedCategory('');
-    setSelectedMake('');
-    setSelectedCondition('');
+    setSelectedMakes([]);
+    setSelectedModels([]);
+    setSelectedCategories([]);
+    setSelectedConditions([]);
+    setPriceRange([priceRangeLimits.min, priceRangeLimits.max]);
+    setYearRange([yearRangeLimits.min, yearRangeLimits.max]);
+    setSortBy('created_at');
+    setSortDirection('desc');
     setCurrentPage(1);
     setIsMobileMenuOpen(false);
   };
@@ -136,8 +203,23 @@ const MarketplacePage: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleSortChange = (field: string) => {
+    if (sortBy === field) {
+      // Toggle direction if same field
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new field and default to descending
+      setSortBy(field);
+      setSortDirection('desc');
+    }
+  };
+
   const EmptyState = () => {
-    const hasFilters = searchTerm || partNumber || oemNumber || showTrustedSellersOnly || showBoostedOnly || selectedCategory || selectedMake || selectedCondition;
+    const hasFilters = searchTerm || partNumber || oemNumber || showTrustedSellersOnly || showBoostedOnly || 
+                      selectedMakes.length > 0 || selectedModels.length > 0 || selectedCategories.length > 0 || 
+                      selectedConditions.length > 0 || 
+                      priceRange[0] > priceRangeLimits.min || priceRange[1] < priceRangeLimits.max ||
+                      yearRange[0] > yearRangeLimits.min || yearRange[1] < yearRangeLimits.max;
     
     return (
       <motion.div
@@ -257,6 +339,52 @@ const MarketplacePage: React.FC = () => {
     );
   };
 
+  const SortingOptions = () => (
+    <div className="flex flex-wrap gap-2 mb-4">
+      <button
+        onClick={() => handleSortChange('created_at')}
+        className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium ${
+          sortBy === 'created_at'
+            ? 'bg-blue-600 text-white'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        }`}
+      >
+        Date
+        {sortBy === 'created_at' && (
+          sortDirection === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />
+        )}
+      </button>
+      
+      <button
+        onClick={() => handleSortChange('price')}
+        className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium ${
+          sortBy === 'price'
+            ? 'bg-blue-600 text-white'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        }`}
+      >
+        Price
+        {sortBy === 'price' && (
+          sortDirection === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />
+        )}
+      </button>
+      
+      <button
+        onClick={() => handleSortChange('year')}
+        className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium ${
+          sortBy === 'year'
+            ? 'bg-blue-600 text-white'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        }`}
+      >
+        Year
+        {sortBy === 'year' && (
+          sortDirection === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />
+        )}
+      </button>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
@@ -297,7 +425,7 @@ const MarketplacePage: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
@@ -321,7 +449,11 @@ const MarketplacePage: React.FC = () => {
                 </button>
               </div>
 
-              {(showFilters || searchTerm || partNumber || oemNumber || showTrustedSellersOnly || showBoostedOnly || selectedCategory || selectedMake || selectedCondition) && (
+              {(showFilters || searchTerm || partNumber || oemNumber || showTrustedSellersOnly || showBoostedOnly || 
+                selectedMakes.length > 0 || selectedModels.length > 0 || selectedCategories.length > 0 || 
+                selectedConditions.length > 0 || 
+                priceRange[0] > priceRangeLimits.min || priceRange[1] < priceRangeLimits.max ||
+                yearRange[0] > yearRangeLimits.min || yearRange[1] < yearRangeLimits.max) && (
                 <button
                   onClick={handleClearFilters}
                   className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
@@ -330,6 +462,9 @@ const MarketplacePage: React.FC = () => {
                 </button>
               )}
             </div>
+
+            {/* Sorting Options */}
+            <SortingOptions />
 
             <AnimatePresence>
               {showFilters && (
@@ -341,73 +476,67 @@ const MarketplacePage: React.FC = () => {
                   className="overflow-hidden"
                 >
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                    {/* Category Filter */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Category
-                      </label>
-                      <select
-                        value={selectedCategory}
-                        onChange={(e) => {
-                          setSelectedCategory(e.target.value);
-                          setCurrentPage(1);
-                        }}
-                        className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="">All Categories</option>
-                        <option value="engine">Engine Parts</option>
-                        <option value="brakes">Brakes</option>
-                        <option value="suspension">Suspension</option>
-                        <option value="transmission">Transmission</option>
-                        <option value="electrical">Electrical</option>
-                        <option value="interior">Interior</option>
-                        <option value="exterior">Exterior</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                    
-                    {/* Make Filter */}
+                    {/* Make Filter - Multi-select */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Make
                       </label>
-                      <select
-                        value={selectedMake}
-                        onChange={(e) => {
-                          setSelectedMake(e.target.value);
-                          setCurrentPage(1);
-                        }}
-                        className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="">All Makes</option>
-                        <option value="Toyota">Toyota</option>
-                        <option value="Honda">Honda</option>
-                        <option value="Ford">Ford</option>
-                        <option value="BMW">BMW</option>
-                        <option value="Mercedes-Benz">Mercedes-Benz</option>
-                        <option value="Audi">Audi</option>
-                        <option value="Chevrolet">Chevrolet</option>
-                      </select>
+                      <MultiSelect
+                        options={availableMakes.map(make => ({ value: make, label: make }))}
+                        selectedValues={selectedMakes}
+                        onChange={setSelectedMakes}
+                        placeholder="Select makes"
+                      />
                     </div>
                     
-                    {/* Condition Filter */}
+                    {/* Model Filter - Multi-select (only enabled if one make is selected) */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Model
+                      </label>
+                      <MultiSelect
+                        options={availableModels.map(model => ({ value: model, label: model }))}
+                        selectedValues={selectedModels}
+                        onChange={setSelectedModels}
+                        placeholder="Select models"
+                        disabled={selectedMakes.length !== 1}
+                        className={selectedMakes.length !== 1 ? "opacity-50 cursor-not-allowed" : ""}
+                      />
+                      {selectedMakes.length !== 1 && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Select exactly one make to filter by model
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Category Filter - Multi-select */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Category
+                      </label>
+                      <MultiSelect
+                        options={availableCategories.map(category => ({ value: category, label: category }))}
+                        selectedValues={selectedCategories}
+                        onChange={setSelectedCategories}
+                        placeholder="Select categories"
+                      />
+                    </div>
+                    
+                    {/* Condition Filter - Multi-select */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Condition
                       </label>
-                      <select
-                        value={selectedCondition}
-                        onChange={(e) => {
-                          setSelectedCondition(e.target.value);
-                          setCurrentPage(1);
-                        }}
-                        className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="">All Conditions</option>
-                        <option value="new">New</option>
-                        <option value="used">Used</option>
-                        <option value="refurbished">Refurbished</option>
-                      </select>
+                      <MultiSelect
+                        options={[
+                          { value: 'new', label: 'New' },
+                          { value: 'used', label: 'Used' },
+                          { value: 'refurbished', label: 'Refurbished' }
+                        ]}
+                        selectedValues={selectedConditions}
+                        onChange={setSelectedConditions}
+                        placeholder="Select conditions"
+                      />
                     </div>
                     
                     {/* Part Number Search */}
@@ -444,8 +573,35 @@ const MarketplacePage: React.FC = () => {
                       />
                     </div>
                     
+                    {/* Price Range Slider */}
+                    <div className="md:col-span-3">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Price Range
+                      </label>
+                      <PriceRangeSlider
+                        min={priceRangeLimits.min}
+                        max={priceRangeLimits.max}
+                        value={priceRange}
+                        onChange={setPriceRange}
+                        step={10}
+                      />
+                    </div>
+                    
+                    {/* Year Range Slider */}
+                    <div className="md:col-span-3">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Year Range
+                      </label>
+                      <YearRangeSlider
+                        min={yearRangeLimits.min}
+                        max={yearRangeLimits.max}
+                        value={yearRange}
+                        onChange={setYearRange}
+                      />
+                    </div>
+                    
                     {/* Filter Toggles */}
-                    <div className="space-y-3">
+                    <div className="md:col-span-3 space-y-3">
                       {/* Trusted Sellers Toggle */}
                       <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div className="flex items-center gap-2">
@@ -556,67 +712,95 @@ const MarketplacePage: React.FC = () => {
             <h3 className="font-medium text-gray-900 dark:text-white">Filters</h3>
             
             <div className="space-y-3">
-              {/* Category Filter */}
-              <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Category</label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => {
-                    setSelectedCategory(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">All Categories</option>
-                  <option value="engine">Engine Parts</option>
-                  <option value="brakes">Brakes</option>
-                  <option value="suspension">Suspension</option>
-                  <option value="transmission">Transmission</option>
-                  <option value="electrical">Electrical</option>
-                  <option value="interior">Interior</option>
-                  <option value="exterior">Exterior</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              
               {/* Make Filter */}
               <div>
                 <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Make</label>
-                <select
-                  value={selectedMake}
-                  onChange={(e) => {
-                    setSelectedMake(e.target.value);
+                <MultiSelect
+                  options={availableMakes.map(make => ({ value: make, label: make }))}
+                  selectedValues={selectedMakes}
+                  onChange={(values) => {
+                    setSelectedMakes(values);
                     setCurrentPage(1);
                   }}
-                  className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">All Makes</option>
-                  <option value="Toyota">Toyota</option>
-                  <option value="Honda">Honda</option>
-                  <option value="Ford">Ford</option>
-                  <option value="BMW">BMW</option>
-                  <option value="Mercedes-Benz">Mercedes-Benz</option>
-                  <option value="Audi">Audi</option>
-                  <option value="Chevrolet">Chevrolet</option>
-                </select>
+                  placeholder="Select makes"
+                />
+              </div>
+              
+              {/* Model Filter */}
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Model</label>
+                <MultiSelect
+                  options={availableModels.map(model => ({ value: model, label: model }))}
+                  selectedValues={selectedModels}
+                  onChange={(values) => {
+                    setSelectedModels(values);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Select models"
+                  disabled={selectedMakes.length !== 1}
+                  className={selectedMakes.length !== 1 ? "opacity-50 cursor-not-allowed" : ""}
+                />
+              </div>
+              
+              {/* Category Filter */}
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Category</label>
+                <MultiSelect
+                  options={availableCategories.map(category => ({ value: category, label: category }))}
+                  selectedValues={selectedCategories}
+                  onChange={(values) => {
+                    setSelectedCategories(values);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Select categories"
+                />
               </div>
               
               {/* Condition Filter */}
               <div>
                 <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Condition</label>
-                <select
-                  value={selectedCondition}
-                  onChange={(e) => {
-                    setSelectedCondition(e.target.value);
+                <MultiSelect
+                  options={[
+                    { value: 'new', label: 'New' },
+                    { value: 'used', label: 'Used' },
+                    { value: 'refurbished', label: 'Refurbished' }
+                  ]}
+                  selectedValues={selectedConditions}
+                  onChange={(values) => {
+                    setSelectedConditions(values);
                     setCurrentPage(1);
                   }}
-                  className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">All Conditions</option>
-                  <option value="new">New</option>
-                  <option value="used">Used</option>
-                  <option value="refurbished">Refurbished</option>
-                </select>
+                  placeholder="Select conditions"
+                />
+              </div>
+              
+              {/* Price Range */}
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Price Range</label>
+                <PriceRangeSlider
+                  min={priceRangeLimits.min}
+                  max={priceRangeLimits.max}
+                  value={priceRange}
+                  onChange={(values) => {
+                    setPriceRange(values);
+                    setCurrentPage(1);
+                  }}
+                  step={10}
+                />
+              </div>
+              
+              {/* Year Range */}
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Year Range</label>
+                <YearRangeSlider
+                  min={yearRangeLimits.min}
+                  max={yearRangeLimits.max}
+                  value={yearRange}
+                  onChange={(values) => {
+                    setYearRange(values);
+                    setCurrentPage(1);
+                  }}
+                />
               </div>
               
               {/* Trusted Sellers Toggle for Mobile */}
@@ -653,33 +837,38 @@ const MarketplacePage: React.FC = () => {
                 </label>
               </div>
               
-              {/* Part Number Search */}
+              {/* Sorting Options */}
               <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Part Number</label>
-                <input
-                  type="text"
-                  placeholder="Search by part number"
-                  value={partNumber}
-                  onChange={(e) => {
-                    setPartNumber(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">OEM Number</label>
-                <input
-                  type="text"
-                  placeholder="Search by OEM number"
-                  value={oemNumber}
-                  onChange={(e) => {
-                    setOemNumber(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Sort By</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handleSortChange('created_at')}
+                    className={`flex items-center justify-center gap-1 px-3 py-2 rounded-lg ${
+                      sortBy === 'created_at'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    Date
+                    {sortBy === 'created_at' && (
+                      sortDirection === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={() => handleSortChange('price')}
+                    className={`flex items-center justify-center gap-1 px-3 py-2 rounded-lg ${
+                      sortBy === 'price'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    Price
+                    {sortBy === 'price' && (
+                      sortDirection === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />
+                    )}
+                  </button>
+                </div>
               </div>
               
               <button

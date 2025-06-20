@@ -184,13 +184,21 @@ export interface PaginatedResponse<T> {
 
 export interface PartFilters {
   search?: string;
-  make?: string;
-  condition?: string;
-  category?: string;
+  make?: string | string[];
+  model?: string | string[];
+  condition?: string | string[];
+  category?: string | string[];
   partNumber?: string;
   oemNumber?: string;
   approvalStatus?: 'approved' | 'unapproved';
   isTrustedSeller?: boolean;
+  boostedOnly?: boolean;
+  minPrice?: number;
+  maxPrice?: number;
+  minYear?: number;
+  maxYear?: number;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
 }
 
 export interface ReportedPart {
