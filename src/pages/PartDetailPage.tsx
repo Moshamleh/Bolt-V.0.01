@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Car, MapPin, Tag, MessageSquare, Loader2, 
   Heart, Share2, AlertCircle, ChevronLeft, ChevronRight,
-  User, FileText, Flag, CheckCircle, Zap
+  User, FileText, Flag, CheckCircle, Zap, DollarSign
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
@@ -12,6 +12,8 @@ import { Part, getPartById, getOrCreatePartChat, isPartSaved, savePart, unsavePa
 import ReportPartModal from '../components/ReportPartModal';
 import BoostListingModal from '../components/BoostListingModal';
 import BlurImage from '../components/BlurImage';
+import OfferModal from '../components/OfferModal';
+import OffersList from '../components/OffersList';
 import { extractErrorMessage } from '../lib/errorHandling';
 
 const PartDetailPage: React.FC = () => {
@@ -26,6 +28,7 @@ const PartDetailPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isBoostModalOpen, setIsBoostModalOpen] = useState(false);
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [isCurrentUserSeller, setIsCurrentUserSeller] = useState(false);
 
   useEffect(() => {
@@ -115,6 +118,10 @@ const PartDetailPage: React.FC = () => {
 
   const handleBoostListing = () => {
     setIsBoostModalOpen(true);
+  };
+
+  const handleMakeOffer = () => {
+    setIsOfferModalOpen(true);
   };
 
   const handleBoostComplete = () => {
@@ -388,20 +395,29 @@ const PartDetailPage: React.FC = () => {
 
               <div className="flex gap-3">
                 {!isCurrentUserSeller && (
-                  <button
-                    onClick={handleMessageSeller}
-                    disabled={isMessagingLoading}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {isMessagingLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <>
-                        <MessageSquare className="h-5 w-5" />
-                        Message Seller
-                      </>
-                    )}
-                  </button>
+                  <>
+                    <button
+                      onClick={handleMakeOffer}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+                    >
+                      <DollarSign className="h-5 w-5" />
+                      Make Offer
+                    </button>
+                    <button
+                      onClick={handleMessageSeller}
+                      disabled={isMessagingLoading}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isMessagingLoading ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <>
+                          <MessageSquare className="h-5 w-5" />
+                          Message
+                        </>
+                      )}
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={handleSaveToggle}
@@ -461,6 +477,29 @@ const PartDetailPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Offers Section */}
+            {!isCurrentUserSeller && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Make an Offer
+                  </h2>
+                  <button
+                    onClick={handleMakeOffer}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm font-medium hover:bg-green-200 dark:hover:bg-green-800/50 transition-colors"
+                  >
+                    <DollarSign className="h-4 w-4" />
+                    New Offer
+                  </button>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Interested in this part but want to negotiate the price? Make an offer to the seller.
+                </p>
+                
+                {id && <OffersList partId={id} />}
+              </div>
+            )}
+
             {/* Description */}
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -508,6 +547,19 @@ const PartDetailPage: React.FC = () => {
         partId={part.id}
         partTitle={part.title}
         onBoostComplete={handleBoostComplete}
+      />
+
+      {/* Offer Modal */}
+      <OfferModal
+        isOpen={isOfferModalOpen}
+        onClose={() => setIsOfferModalOpen(false)}
+        partId={part.id}
+        receiverId={part.seller_id}
+        partTitle={part.title}
+        partPrice={part.price}
+        onSuccess={() => {
+          toast.success('Offer sent successfully!');
+        }}
       />
     </div>
   );

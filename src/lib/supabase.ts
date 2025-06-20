@@ -334,6 +334,19 @@ export interface UserChallenge {
   challenge?: Challenge; // Optional: for joining with challenge details
 }
 
+export interface Offer {
+  id: string;
+  part_id: string;
+  sender_id: string;
+  receiver_id: string;
+  amount: number;
+  status: 'pending' | 'accepted' | 'rejected' | 'countered' | 'withdrawn';
+  message?: string;
+  created_at: string;
+  updated_at: string;
+  parent_offer_id?: string;
+}
+
 // Re-export all functions from modularized files
 export * from './supabase_modules/auth';
 export * from './supabase_modules/profile';
@@ -349,3 +362,5 @@ export * from './supabase_modules/mechanics';
 export * from './supabase_modules/clubs';
 export * from './supabase_modules/reviews';
 export * from './supabase_modules/utils'; // For dashboard stats, etc.
+export * from './supabase_modules/challenges';
+export * from './supabase_modules/offers';

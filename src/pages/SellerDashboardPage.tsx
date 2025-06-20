@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Package, MessageSquare, DollarSign, Plus, 
-  User, Lightbulb, TrendingUp, Star, ShoppingBag, Loader2 
+  User, Lightbulb, TrendingUp, Star, ShoppingBag, Loader2, 
+  BarChart2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Part, getMyParts, getMyPartChats } from '../lib/supabase';
+import { Part, getMyParts, getMyPartChats, getReceivedOffers } from '../lib/supabase';
 
 interface Stats {
   activeListings: number;
@@ -13,6 +14,7 @@ interface Stats {
   soldItems: number;
   totalViews: number;
   averageRating: number;
+  pendingOffers: number;
 }
 
 const SellerDashboardPage: React.FC = () => {
@@ -25,14 +27,18 @@ const SellerDashboardPage: React.FC = () => {
     soldItems: 0,
     totalViews: 0,
     averageRating: 0,
+    pendingOffers: 0
   });
 
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const [parts, chats] = await Promise.all([
+        setLoading(true);
+        
+        const [parts, chats, offers] = await Promise.all([
           getMyParts(),
-          getMyPartChats()
+          getMyPartChats(),
+          getReceivedOffers()
         ]);
 
         setStats({
@@ -41,6 +47,7 @@ const SellerDashboardPage: React.FC = () => {
           soldItems: parts.filter(p => p.sold).length,
           totalViews: Math.floor(Math.random() * 1000), // Mock data
           averageRating: 4.8, // Mock data
+          pendingOffers: offers.filter(o => o.status === 'pending').length
         });
       } catch (err) {
         console.error('Failed to load seller stats:', err);
@@ -143,6 +150,13 @@ const SellerDashboardPage: React.FC = () => {
                 <User className="h-5 w-5" />
                 Edit Profile
               </button>
+              <button
+                onClick={() => navigate('/marketplace/messages')}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                <MessageSquare className="h-5 w-5" />
+                View Messages
+              </button>
             </div>
 
             {/* Stats Grid */}
@@ -151,6 +165,11 @@ const SellerDashboardPage: React.FC = () => {
                 title="Active Listings"
                 value={stats.activeListings}
                 icon={<Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />}
+              />
+              <StatCard
+                title="Pending Offers"
+                value={stats.pendingOffers}
+                icon={<DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />}
               />
               <StatCard
                 title="Messages"
@@ -174,6 +193,28 @@ const SellerDashboardPage: React.FC = () => {
               />
             </div>
 
+            {/* Offers Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <BarChart2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  Offer Activity
+                </h2>
+                <button
+                  onClick={() => navigate('/marketplace/offers')}
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                >
+                  View All
+                </button>
+              </div>
+              
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <p className="text-blue-800 dark:text-blue-200">
+                  You have <span className="font-bold">{stats.pendingOffers}</span> pending offers that need your attention.
+                </p>
+              </div>
+            </div>
+
             {/* Selling Tips */}
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-100 dark:border-gray-700">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
@@ -193,6 +234,11 @@ const SellerDashboardPage: React.FC = () => {
                 <SellingTip
                   title="Competitive Pricing"
                   description="Research similar listings to price your parts competitively. Consider offering bundle deals."
+                  icon={<Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
+                />
+                <SellingTip
+                  title="Respond to Offers Quickly"
+                  description="Buyers appreciate fast responses. Try to respond to offers within 24 hours to increase your chances of making a sale."
                   icon={<Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
                 />
               </div>
