@@ -312,7 +312,7 @@ const ClubListPage: React.FC = () => {
             {error}
           </div>
         ) : filteredClubs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[calc(100vh-144px)] md:min-h-[calc(100vh-80px)]">
+          <div className="flex flex-col items-center justify-center">
             <EmptyState />
           </div>
         ) : (

@@ -98,7 +98,7 @@ const Layout: React.FC = () => {
   const isAccountPage = location.pathname === '/account';
 
   return (
-    <div className="min-h-screen bg-neutral-100 dark:bg-gray-900">
+    <div className="min-h-screen bg-neutral-100 dark:bg-gray-900 flex flex-col">
       {/* Add the InitialSetupRedirect component to handle redirects */}
       <InitialSetupRedirect />
       
@@ -222,7 +222,7 @@ const Layout: React.FC = () => {
         </div>
       </header>
       
-      <main className="pb-20 md:pb-8 pt-4 px-4 md:px-6 lg:px-8">
+      <main className="pb-20 md:pb-8 pt-4 px-4 md:px-6 lg:px-8 flex-1">
         <div className={isAccountPage ? "w-full space-y-6" : "max-w-7xl mx-auto space-y-6"}>
           <Outlet />
         </div>

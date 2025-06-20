@@ -8,7 +8,7 @@ const ClubLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="flex">
+    <div className="flex flex-1">
       <AnimatePresence>
         <ClubSidebar 
           isOpen={isSidebarOpen} 
