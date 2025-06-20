@@ -11,15 +11,6 @@ import PartCardSkeleton from '../components/PartCardSkeleton';
 
 const ITEMS_PER_PAGE = 12;
 
-// Define filter chips
-const filterChips = [
-  { id: 'all', label: 'All', icon: <ListFilter className="h-4 w-4" />, filters: {} },
-  { id: 'nearby', label: 'Nearby', icon: <MapPin className="h-4 w-4" />, filters: {} },
-  { id: 'engine', label: 'Engine', icon: <Engine className="h-4 w-4" />, filters: { category: 'engine' } },
-  { id: 'interior', label: 'Interior', icon: <CarFront className="h-4 w-4" />, filters: { category: 'interior' } },
-  { id: 'tires', label: 'Tires', icon: <Disc className="h-4 w-4" />, filters: { search: 'tire' } }
-];
-
 const MarketplacePage: React.FC = () => {
   const navigate = useNavigate();
   const [parts, setParts] = useState<Part[]>([]);
@@ -31,11 +22,12 @@ const MarketplacePage: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isMessagingLoading, setIsMessagingLoading] = useState<Record<string, boolean>>({});
   const [showFilters, setShowFilters] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeFilterChipId, setActiveFilterChipId] = useState('all');
   const [showTrustedSellersOnly, setShowTrustedSellersOnly] = useState(false);
   const [showBoostedOnly, setShowBoostedOnly] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedMake, setSelectedMake] = useState<string>('');
+  const [selectedCondition, setSelectedCondition] = useState<string>('');
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -48,16 +40,15 @@ const MarketplacePage: React.FC = () => {
       try {
         setLoading(true);
         
-        // Get the active filter chip
-        const activeChip = filterChips.find(chip => chip.id === activeFilterChipId) || filterChips[0];
-        
-        // Combine the chip filters with other filters
+        // Combine all filters
         const filters = {
-          ...activeChip.filters,
           search: searchTerm || undefined,
           partNumber: partNumber || undefined,
           oemNumber: oemNumber || undefined,
-          isTrustedSeller: showTrustedSellersOnly || undefined
+          isTrustedSeller: showTrustedSellersOnly || undefined,
+          category: selectedCategory || undefined,
+          make: selectedMake || undefined,
+          condition: selectedCondition || undefined
         };
         
         const response = await getParts(filters, currentPage, ITEMS_PER_PAGE);
@@ -87,9 +78,11 @@ const MarketplacePage: React.FC = () => {
     partNumber,
     oemNumber,
     currentPage,
-    activeFilterChipId,
     showTrustedSellersOnly,
-    showBoostedOnly
+    showBoostedOnly,
+    selectedCategory,
+    selectedMake,
+    selectedCondition
   ]);
 
   const handleSellPart = () => {
@@ -120,12 +113,14 @@ const MarketplacePage: React.FC = () => {
   };
 
   const handleClearFilters = () => {
-    setActiveFilterChipId('all');
     setSearchTerm('');
     setPartNumber('');
     setOemNumber('');
     setShowTrustedSellersOnly(false);
     setShowBoostedOnly(false);
+    setSelectedCategory('');
+    setSelectedMake('');
+    setSelectedCondition('');
     setCurrentPage(1);
     setIsMobileMenuOpen(false);
   };
@@ -141,13 +136,8 @@ const MarketplacePage: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleFilterChipClick = (chipId: string) => {
-    setActiveFilterChipId(chipId);
-    setCurrentPage(1); // Reset to first page when changing filters
-  };
-
   const EmptyState = () => {
-    const hasFilters = searchTerm || partNumber || oemNumber || activeFilterChipId !== 'all' || showTrustedSellersOnly || showBoostedOnly;
+    const hasFilters = searchTerm || partNumber || oemNumber || showTrustedSellersOnly || showBoostedOnly || selectedCategory || selectedMake || selectedCondition;
     
     return (
       <motion.div
@@ -284,8 +274,7 @@ const MarketplacePage: React.FC = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             onClick={handleSellPart}
-            className="hidden md:flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors animate-pulse-slow"
-            title="Got something to sell? Let the community know!"
+            className="hidden md:flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
           >
             <Plus className="h-5 w-5 mr-2" />
             List a Part
@@ -308,64 +297,14 @@ const MarketplacePage: React.FC = () => {
               />
             </div>
 
-            {/* Filter Chips */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              {filterChips.map((chip) => (
-                <button
-                  key={chip.id}
-                  onClick={() => handleFilterChipClick(chip.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                    activeFilterChipId === chip.id
-                      ? 'bg-blue-600 text-white shadow-glow'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {chip.icon}
-                  {chip.label}
-                </button>
-              ))}
-              
-              {/* Trusted Sellers Filter */}
-              <button
-                onClick={() => {
-                  setShowTrustedSellersOnly(!showTrustedSellersOnly);
-                  setCurrentPage(1); // Reset to first page when changing filters
-                }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                  showTrustedSellersOnly
-                    ? 'bg-green-600 text-white shadow-glow'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                <CheckCircle className="h-4 w-4" />
-                Verified Sellers
-              </button>
-              
-              {/* Boosted Filter */}
-              <button
-                onClick={() => {
-                  setShowBoostedOnly(!showBoostedOnly);
-                  setCurrentPage(1); // Reset to first page when changing filters
-                }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                  showBoostedOnly
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-glow'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                <Zap className="h-4 w-4" />
-                Boosted Only
-              </button>
-            </div>
-
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="hidden md:flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 >
                   <Filter className="h-5 w-5" />
-                  <span>Advanced Filters</span>
+                  <span>Filters</span>
                   {showFilters ? (
                     <ChevronUp className="h-4 w-4" />
                   ) : (
@@ -375,14 +314,14 @@ const MarketplacePage: React.FC = () => {
 
                 <button
                   onClick={() => setIsMobileMenuOpen(true)}
-                  className="md:hidden flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  className="md:hidden flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white ml-4"
                 >
                   <Menu className="h-5 w-5" />
                   <span>Menu</span>
                 </button>
               </div>
 
-              {(showFilters || searchTerm || partNumber || oemNumber || activeFilterChipId !== 'all' || showTrustedSellersOnly || showBoostedOnly) && (
+              {(showFilters || searchTerm || partNumber || oemNumber || showTrustedSellersOnly || showBoostedOnly || selectedCategory || selectedMake || selectedCondition) && (
                 <button
                   onClick={handleClearFilters}
                   className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
@@ -399,34 +338,153 @@ const MarketplacePage: React.FC = () => {
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="overflow-hidden md:block hidden"
+                  className="overflow-hidden"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                    {/* Category Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Category
+                      </label>
+                      <select
+                        value={selectedCategory}
+                        onChange={(e) => {
+                          setSelectedCategory(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">All Categories</option>
+                        <option value="engine">Engine Parts</option>
+                        <option value="brakes">Brakes</option>
+                        <option value="suspension">Suspension</option>
+                        <option value="transmission">Transmission</option>
+                        <option value="electrical">Electrical</option>
+                        <option value="interior">Interior</option>
+                        <option value="exterior">Exterior</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    
+                    {/* Make Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Make
+                      </label>
+                      <select
+                        value={selectedMake}
+                        onChange={(e) => {
+                          setSelectedMake(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">All Makes</option>
+                        <option value="Toyota">Toyota</option>
+                        <option value="Honda">Honda</option>
+                        <option value="Ford">Ford</option>
+                        <option value="BMW">BMW</option>
+                        <option value="Mercedes-Benz">Mercedes-Benz</option>
+                        <option value="Audi">Audi</option>
+                        <option value="Chevrolet">Chevrolet</option>
+                      </select>
+                    </div>
+                    
+                    {/* Condition Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Condition
+                      </label>
+                      <select
+                        value={selectedCondition}
+                        onChange={(e) => {
+                          setSelectedCondition(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">All Conditions</option>
+                        <option value="new">New</option>
+                        <option value="used">Used</option>
+                        <option value="refurbished">Refurbished</option>
+                      </select>
+                    </div>
+                    
                     {/* Part Number Search */}
-                    <div className="relative">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Part Number
+                      </label>
                       <input
                         type="text"
-                        placeholder="Search by Part Number"
+                        placeholder="Search by part number"
                         value={partNumber}
                         onChange={(e) => {
                           setPartNumber(e.target.value);
                           setCurrentPage(1);
                         }}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     
-                    <div className="relative">
+                    {/* OEM Number Search */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        OEM Number
+                      </label>
                       <input
                         type="text"
-                        placeholder="Search by OEM Number"
+                        placeholder="Search by OEM number"
                         value={oemNumber}
                         onChange={(e) => {
                           setOemNumber(e.target.value);
                           setCurrentPage(1);
                         }}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
+                    </div>
+                    
+                    {/* Filter Toggles */}
+                    <div className="space-y-3">
+                      {/* Trusted Sellers Toggle */}
+                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                          <span className="text-gray-700 dark:text-gray-300">Verified Sellers Only</span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={showTrustedSellersOnly}
+                            onChange={() => {
+                              setShowTrustedSellersOnly(!showTrustedSellersOnly);
+                              setCurrentPage(1);
+                            }}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                        </label>
+                      </div>
+                      
+                      {/* Boosted Only Toggle */}
+                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                          <span className="text-gray-700 dark:text-gray-300">Boosted Listings Only</span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={showBoostedOnly}
+                            onChange={() => {
+                              setShowBoostedOnly(!showBoostedOnly);
+                              setCurrentPage(1);
+                            }}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r from-amber-500 to-orange-500"></div>
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -498,25 +556,67 @@ const MarketplacePage: React.FC = () => {
             <h3 className="font-medium text-gray-900 dark:text-white">Filters</h3>
             
             <div className="space-y-3">
-              {/* Filter Chips for Mobile */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                {filterChips.map((chip) => (
-                  <button
-                    key={chip.id}
-                    onClick={() => {
-                      handleFilterChipClick(chip.id);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                      activeFilterChipId === chip.id
-                        ? 'bg-blue-600 text-white shadow-glow'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    {chip.icon}
-                    {chip.label}
-                  </button>
-                ))}
+              {/* Category Filter */}
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Category</label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Categories</option>
+                  <option value="engine">Engine Parts</option>
+                  <option value="brakes">Brakes</option>
+                  <option value="suspension">Suspension</option>
+                  <option value="transmission">Transmission</option>
+                  <option value="electrical">Electrical</option>
+                  <option value="interior">Interior</option>
+                  <option value="exterior">Exterior</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              
+              {/* Make Filter */}
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Make</label>
+                <select
+                  value={selectedMake}
+                  onChange={(e) => {
+                    setSelectedMake(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Makes</option>
+                  <option value="Toyota">Toyota</option>
+                  <option value="Honda">Honda</option>
+                  <option value="Ford">Ford</option>
+                  <option value="BMW">BMW</option>
+                  <option value="Mercedes-Benz">Mercedes-Benz</option>
+                  <option value="Audi">Audi</option>
+                  <option value="Chevrolet">Chevrolet</option>
+                </select>
+              </div>
+              
+              {/* Condition Filter */}
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Condition</label>
+                <select
+                  value={selectedCondition}
+                  onChange={(e) => {
+                    setSelectedCondition(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Conditions</option>
+                  <option value="new">New</option>
+                  <option value="used">Used</option>
+                  <option value="refurbished">Refurbished</option>
+                </select>
               </div>
               
               {/* Trusted Sellers Toggle for Mobile */}
@@ -600,8 +700,7 @@ const MarketplacePage: React.FC = () => {
                   navigate('/sell-part');
                   setIsMobileMenuOpen(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors animate-pulse-slow"
-                title="Got something to sell? Let the community know!"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
               >
                 <Plus className="h-5 w-5" />
                 <span>List a Part</span>
