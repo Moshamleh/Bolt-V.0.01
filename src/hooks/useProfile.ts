@@ -13,7 +13,7 @@ export interface Profile {
   is_admin: boolean;
 }
 
-const fetchProfile = async (userId: string): Promise<Profile | null> {
+const fetchProfile = async (userId: string): Promise<Profile | null> => {
   try {
     const { data, error } = await supabase
       .from('profiles')
