@@ -42,10 +42,7 @@ export async function getParts(filters: PartFilters = {}, page: number = 1, item
 
   let query = supabase
     .from('parts')
-    .select(`
-      *,
-      seller:users!parts_seller_id_fkey(profiles(is_trusted))
-    `, { count: 'exact' })
+    .select('*', { count: 'exact' })
     .eq('sold', false)
     .eq('approved', true); // Only show approved parts
 
@@ -72,27 +69,80 @@ export async function getParts(filters: PartFilters = {}, page: number = 1, item
   } else if (filters.approvalStatus === 'unapproved') {
     query = query.eq('approved', false);
   }
-  if (filters.isTrustedSeller) {
-    query = query.eq('seller.profiles.is_trusted', true);
-  }
 
   query = query.order('is_boosted', { ascending: false }) // Boosted parts first
-                 .order('created_at', { ascending: false })
-                 .range(startIndex, endIndex);
+               .order('created_at', { ascending: false })
+               .range(startIndex, endIndex);
 
   const { data, error, count } = await query;
 
   if (error) throw error;
 
+  // If isTrustedSeller filter is applied, we need to fetch the seller profiles
+  // and filter the parts based on the seller's trusted status
+  let filteredData = data || [];
+  
+  if (filters.isTrustedSeller && filteredData.length > 0) {
+    // Get all unique seller IDs
+    const sellerIds = [...new Set(filteredData.map(part => part.seller_id))];
+    
+    // Fetch profiles for these sellers
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, is_trusted')
+      .in('id', sellerIds);
+    
+    // Create a map of seller ID to trusted status
+    const trustedSellers = new Map();
+    profiles?.forEach(profile => {
+      trustedSellers.set(profile.id, profile.is_trusted);
+    });
+    
+    // Filter parts by trusted sellers
+    filteredData = filteredData.filter(part => trustedSellers.get(part.seller_id));
+  }
+  
+  // Fetch seller emails for all parts
+  if (filteredData.length > 0) {
+    const sellerIds = [...new Set(filteredData.map(part => part.seller_id))];
+    
+    // Fetch user emails
+    const { data: users } = await supabase
+      .from('users')
+      .select('id, email')
+      .in('id', sellerIds);
+    
+    // Create a map of seller ID to email
+    const sellerEmails = new Map();
+    users?.forEach(user => {
+      sellerEmails.set(user.id, user.email);
+    });
+    
+    // Fetch profiles for trusted status
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, is_trusted')
+      .in('id', sellerIds);
+    
+    // Create a map of seller ID to trusted status
+    const trustedSellers = new Map();
+    profiles?.forEach(profile => {
+      trustedSellers.set(profile.id, profile.is_trusted);
+    });
+    
+    // Add seller_email and seller_is_trusted to each part
+    filteredData = filteredData.map(part => ({
+      ...part,
+      seller_email: sellerEmails.get(part.seller_id) || '',
+      seller_is_trusted: trustedSellers.get(part.seller_id) || false
+    }));
+  }
+
   const total = count || 0;
   const totalPages = Math.ceil(total / itemsPerPage);
 
   return {
-    data: (data || []).map(part => ({
-      ...part,
-      seller_is_trusted: part.seller?.profiles?.is_trusted || false, // Flatten seller_is_trusted
-      seller_email: part.seller?.email || '' // Flatten seller_email
-    })),
+    data: filteredData,
     total,
     page,
     totalPages,
@@ -131,18 +181,43 @@ export async function deletePart(partId: string): Promise<void> {
 export async function getPartById(partId: string): Promise<Part> {
   const { data, error } = await supabase
     .from('parts')
-    .select(`
-      *,
-      seller:users!parts_seller_id_fkey(id, email, profiles(is_trusted))
-    `)
+    .select('*')
     .eq('id', partId)
     .single();
 
   if (error) throw error;
+  
+  // Fetch seller information separately
+  if (data.seller_id) {
+    // Get seller email from auth.users
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('email')
+      .eq('id', data.seller_id)
+      .single();
+    
+    if (userError) console.error('Error fetching seller email:', userError);
+    
+    // Get seller trusted status from profiles
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_trusted')
+      .eq('id', data.seller_id)
+      .single();
+    
+    if (profileError) console.error('Error fetching seller profile:', profileError);
+    
+    return {
+      ...data,
+      seller_email: userData?.email || '',
+      seller_is_trusted: profileData?.is_trusted || false
+    };
+  }
+  
   return {
     ...data,
-    seller_email: data.seller?.email || '', // Flatten seller_email
-    seller_is_trusted: data.seller?.profiles?.is_trusted || false // Flatten seller_is_trusted
+    seller_email: '',
+    seller_is_trusted: false
   };
 }
 
