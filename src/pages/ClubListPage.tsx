@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, Plus, Heart, Loader2, MapPin, Tag, Menu, ChevronDown, ChevronUp, Search, Filter,
@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Club, getClubs, getUserClubMemberships, joinClub, leaveClub, supabase } from '../lib/supabase';
+import { Club, getUserClubMemberships, getClubs, joinClub, leaveClub, supabase } from '../lib/supabase';
 import BlurImage from '../components/BlurImage';
 import { extractErrorMessage } from '../lib/errorHandling';
 
@@ -127,25 +127,6 @@ const ClubListPage: React.FC = () => {
     setSearchTerm('');
   };
 
-  const LoadingSkeleton = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div key={i} className="animate-pulse bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <div className="aspect-video bg-gray-200 dark:bg-gray-700"></div>
-          <div className="p-4">
-            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-            </div>
-            <div className="mt-4 h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
   const EmptyState = () => {
     const hasFilters = searchTerm || selectedRegion || selectedTopic || activeTab !== 'all';
     
@@ -194,20 +175,10 @@ const ClubListPage: React.FC = () => {
     );
   };
 
-  if (error) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
-        <div className="max-w-7xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            {error}
-          </h2>
-          <button
-            onClick={() => window.location.reload()}
-            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
-          >
-            Try Again
-          </button>
-        </div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin" />
       </div>
     );
   }
@@ -215,14 +186,15 @@ const ClubListPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex justify-between items-center mb-8"
+        >
+          <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Clubs</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">Join communities of car enthusiasts</p>
-          </motion.div>
+          </div>
 
           <motion.button
             initial={{ opacity: 0, scale: 0.95 }}
@@ -233,7 +205,7 @@ const ClubListPage: React.FC = () => {
             <Plus className="h-5 w-5 mr-2" />
             Create Club
           </motion.button>
-        </div>
+        </motion.div>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-6">
           <div className="p-4">
@@ -335,10 +307,14 @@ const ClubListPage: React.FC = () => {
           </div>
         </div>
 
-        {loading ? (
-          <LoadingSkeleton />
+        {error ? (
+          <div className="bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-200 p-4 rounded-lg">
+            {error}
+          </div>
         ) : filteredClubs.length === 0 ? (
-          <EmptyState />
+          <div className="flex flex-col items-center justify-center min-h-[calc(100vh-144px)] md:min-h-[calc(100vh-80px)]">
+            <EmptyState />
+          </div>
         ) : (
           <AnimatePresence>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
