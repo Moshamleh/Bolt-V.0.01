@@ -44,7 +44,7 @@ export async function getParts(filters: PartFilters = {}, page: number = 1, item
     .from('parts')
     .select(`
       *,
-      profiles!parts_seller_id_fkey(is_trusted)
+      seller:users!parts_seller_id_fkey(profiles(is_trusted))
     `, { count: 'exact' })
     .eq('sold', false)
     .eq('approved', true); // Only show approved parts
@@ -73,7 +73,7 @@ export async function getParts(filters: PartFilters = {}, page: number = 1, item
     query = query.eq('approved', false);
   }
   if (filters.isTrustedSeller) {
-    query = query.eq('profiles.is_trusted', true);
+    query = query.eq('seller.profiles.is_trusted', true);
   }
 
   query = query.order('is_boosted', { ascending: false }) // Boosted parts first
@@ -90,7 +90,8 @@ export async function getParts(filters: PartFilters = {}, page: number = 1, item
   return {
     data: (data || []).map(part => ({
       ...part,
-      seller_is_trusted: part.profiles?.is_trusted || false // Flatten seller_is_trusted
+      seller_is_trusted: part.seller?.profiles?.is_trusted || false, // Flatten seller_is_trusted
+      seller_email: part.seller?.email || '' // Flatten seller_email
     })),
     total,
     page,
@@ -132,7 +133,7 @@ export async function getPartById(partId: string): Promise<Part> {
     .from('parts')
     .select(`
       *,
-      profiles!parts_seller_id_fkey(id, full_name, username, avatar_url, is_trusted, email)
+      seller:users!parts_seller_id_fkey(id, email, profiles(is_trusted))
     `)
     .eq('id', partId)
     .single();
@@ -140,8 +141,8 @@ export async function getPartById(partId: string): Promise<Part> {
   if (error) throw error;
   return {
     ...data,
-    seller_email: data.profiles?.email || '', // Add seller_email for consistency
-    seller_is_trusted: data.profiles?.is_trusted || false
+    seller_email: data.seller?.email || '', // Flatten seller_email
+    seller_is_trusted: data.seller?.profiles?.is_trusted || false // Flatten seller_is_trusted
   };
 }
 
