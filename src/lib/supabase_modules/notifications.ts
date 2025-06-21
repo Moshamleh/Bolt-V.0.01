@@ -1,8 +1,18 @@
 import { supabase } from '../supabase';
-import { Notification } from '../supabase'; // Import Notification type from main supabase.ts
+import { Notification, PaginatedResponse } from '../supabase'; // Import Notification type from main supabase.ts
 import { User } from '@supabase/supabase-js';
 
-export async function getUserNotifications(limit: number = 10, unreadOnly: boolean = false, user?: User): Promise<Notification[]> {
+export async function getUserNotifications(
+  limit: number = 10, 
+  unreadOnly: boolean = false, 
+  user?: User,
+  page: number = 1
+): Promise<PaginatedResponse<Notification>> {
+  // Calculate pagination indices
+  const itemsPerPage = limit;
+  const startIndex = (page - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage - 1;
+  
   // Use provided user or get from session
   const userId = user?.id;
   
@@ -12,36 +22,58 @@ export async function getUserNotifications(limit: number = 10, unreadOnly: boole
     
     let query = supabase
       .from('notifications')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('user_id', sessionUser.id);
 
     if (unreadOnly) {
       query = query.eq('read', false);
     }
 
-    const { data, error } = await query
+    const { data, error, count } = await query
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .range(startIndex, endIndex);
 
     if (error) throw error;
-    return data || [];
+    
+    const total = count || 0;
+    const totalPages = Math.ceil(total / itemsPerPage);
+    
+    return {
+      data: data || [],
+      total,
+      page,
+      totalPages,
+      hasPreviousPage: page > 1,
+      hasNextPage: page < totalPages
+    };
   }
   
   let query = supabase
     .from('notifications')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('user_id', userId);
 
   if (unreadOnly) {
     query = query.eq('read', false);
   }
 
-  const { data, error } = await query
+  const { data, error, count } = await query
     .order('created_at', { ascending: false })
-    .limit(limit);
+    .range(startIndex, endIndex);
 
   if (error) throw error;
-  return data || [];
+  
+  const total = count || 0;
+  const totalPages = Math.ceil(total / itemsPerPage);
+  
+  return {
+    data: data || [],
+    total,
+    page,
+    totalPages,
+    hasPreviousPage: page > 1,
+    hasNextPage: page < totalPages
+  };
 }
 
 export async function getUnreadNotificationCount(user?: User): Promise<number> {

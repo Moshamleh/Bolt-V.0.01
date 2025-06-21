@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, X, Check, Loader2, ExternalLink } from 'lucide-react';
+import { Bell, X, Check, Loader2, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -11,9 +11,12 @@ import {
   markAllNotificationsAsRead,
   getUnreadNotificationCount,
   deleteNotification,
-  supabase
+  supabase,
+  PaginatedResponse
 } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+
+const ITEMS_PER_PAGE = 5;
 
 const NotificationDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,6 +24,11 @@ const NotificationDropdown: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [hasPreviousPage, setHasPreviousPage] = useState(false);
+  const [totalNotifications, setTotalNotifications] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const navigate = useNavigate();
@@ -40,12 +48,17 @@ const NotificationDropdown: React.FC = () => {
           return;
         }
 
-        const [notificationsData, count] = await Promise.all([
-          getUserNotifications(10, true, user),
+        const [paginatedNotifications, count] = await Promise.all([
+          getUserNotifications(ITEMS_PER_PAGE, false, user, currentPage),
           getUnreadNotificationCount(user)
         ]);
-        setNotifications(notificationsData);
+        
+        setNotifications(paginatedNotifications.data);
         setUnreadCount(count);
+        setTotalPages(paginatedNotifications.totalPages);
+        setHasNextPage(paginatedNotifications.hasNextPage);
+        setHasPreviousPage(paginatedNotifications.hasPreviousPage);
+        setTotalNotifications(paginatedNotifications.total);
       } catch (err) {
         console.error('Failed to load notifications:', err);
         
@@ -95,6 +108,7 @@ const NotificationDropdown: React.FC = () => {
           if (user && notification.user_id === user.id) {
             setNotifications(prev => [notification, ...prev]);
             setUnreadCount(prev => prev + 1);
+            setTotalNotifications(prev => prev + 1);
             
             // Play notification sound
             const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
@@ -132,7 +146,7 @@ const NotificationDropdown: React.FC = () => {
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, [navigate, user]);
+  }, [navigate, user, currentPage]);
 
   const handleToggleDropdown = () => {
     setIsOpen(!isOpen);
@@ -187,8 +201,26 @@ const NotificationDropdown: React.FC = () => {
       if (wasUnread) {
         setUnreadCount(prev => Math.max(0, prev - 1));
       }
+      
+      // Update total count
+      setTotalNotifications(prev => Math.max(0, prev - 1));
+      
+      // Recalculate total pages
+      const newTotalPages = Math.ceil((totalNotifications - 1) / ITEMS_PER_PAGE);
+      setTotalPages(newTotalPages);
+      
+      // Adjust current page if needed
+      if (currentPage > newTotalPages && newTotalPages > 0) {
+        setCurrentPage(newTotalPages);
+      }
     } catch (err) {
       console.error('Failed to delete notification:', err);
+    }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
     }
   };
 
@@ -338,6 +370,54 @@ const NotificationDropdown: React.FC = () => {
                 </ul>
               )}
             </div>
+            
+            {/* Pagination Controls */}
+            {!loading && notifications.length > 0 && totalPages > 1 && (
+              <div className="p-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={!hasPreviousPage}
+                  className={`p-1 rounded-full ${
+                    hasPreviousPage 
+                      ? 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700' 
+                      : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                  }`}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  Page {currentPage} of {totalPages}
+                </span>
+                
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={!hasNextPage}
+                  className={`p-1 rounded-full ${
+                    hasNextPage 
+                      ? 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700' 
+                      : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                  }`}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </div>
+            )}
+            
+            {/* View All Link */}
+            {totalNotifications > 0 && (
+              <div className="p-3 border-t border-gray-100 dark:border-gray-700 text-center">
+                <button
+                  onClick={() => {
+                    navigate('/notifications');
+                    setIsOpen(false);
+                  }}
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                >
+                  View All Notifications
+                </button>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

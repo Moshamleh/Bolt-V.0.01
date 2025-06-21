@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, ArrowLeft, Loader2, Check, Trash2, X } from 'lucide-react';
+import { Bell, ArrowLeft, Loader2, Check, Trash2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -9,8 +9,11 @@ import {
   getUserNotifications, 
   markNotificationAsRead, 
   markAllNotificationsAsRead,
-  deleteNotification 
+  deleteNotification,
+  PaginatedResponse
 } from '../lib/supabase';
+
+const ITEMS_PER_PAGE = 20;
 
 const NotificationsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -18,13 +21,20 @@ const NotificationsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalNotifications, setTotalNotifications] = useState(0);
+  const [paginatedResponse, setPaginatedResponse] = useState<PaginatedResponse<Notification> | null>(null);
 
   useEffect(() => {
     const loadNotifications = async () => {
       try {
         setLoading(true);
-        const data = await getUserNotifications(50, true);
-        setNotifications(data);
+        const response = await getUserNotifications(ITEMS_PER_PAGE, false, undefined, currentPage);
+        setNotifications(response.data);
+        setTotalPages(response.totalPages);
+        setTotalNotifications(response.total);
+        setPaginatedResponse(response);
       } catch (err) {
         console.error('Failed to load notifications:', err);
         setError('Failed to load notifications');
@@ -34,7 +44,7 @@ const NotificationsPage: React.FC = () => {
     };
 
     loadNotifications();
-  }, []);
+  }, [currentPage]);
 
   const handleMarkAsRead = async (notificationId: string) => {
     setProcessingId(notificationId);
@@ -56,6 +66,13 @@ const NotificationsPage: React.FC = () => {
     try {
       await deleteNotification(notificationId);
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      setTotalNotifications(prev => prev - 1);
+      
+      // If we deleted the last notification on this page and there are more pages, go to previous page
+      if (notifications.length === 1 && currentPage > 1) {
+        setCurrentPage(prev => prev - 1);
+      }
+      
       toast.success('Notification deleted');
     } catch (err) {
       console.error('Failed to delete notification:', err);
@@ -83,6 +100,13 @@ const NotificationsPage: React.FC = () => {
     
     if (notification.link) {
       navigate(notification.link);
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo(0, 0);
     }
   };
 
@@ -134,6 +158,83 @@ const NotificationsPage: React.FC = () => {
           <Bell className="h-5 w-5 text-gray-600 dark:text-gray-400" />
         </div>;
     }
+  };
+
+  const PaginationControls = () => {
+    if (!paginatedResponse || totalPages <= 1) return null;
+
+    // Generate page numbers to show
+    const getPageNumbers = () => {
+      const delta = 2; // Number of pages to show on each side of current page
+      const range = [];
+      const rangeWithDots = [];
+
+      for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+        range.push(i);
+      }
+
+      if (currentPage - delta > 2) {
+        rangeWithDots.push(1, '...');
+      } else {
+        rangeWithDots.push(1);
+      }
+
+      rangeWithDots.push(...range);
+
+      if (currentPage + delta < totalPages - 1) {
+        rangeWithDots.push('...', totalPages);
+      } else if (totalPages > 1) {
+        rangeWithDots.push(totalPages);
+      }
+
+      return rangeWithDots;
+    };
+
+    return (
+      <div className="flex justify-center mt-8">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={!paginatedResponse.hasPreviousPage || loading}
+            className="flex items-center gap-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </button>
+
+          <div className="flex items-center gap-1">
+            {getPageNumbers().map((pageNum, index) => (
+              <React.Fragment key={index}>
+                {pageNum === '...' ? (
+                  <span className="px-3 py-2 text-gray-500 dark:text-gray-400">...</span>
+                ) : (
+                  <button
+                    onClick={() => handlePageChange(pageNum as number)}
+                    disabled={loading}
+                    className={`px-3 py-2 rounded-lg transition-colors ${
+                      pageNum === currentPage
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {pageNum}
+                  </button>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={!paginatedResponse.hasNextPage || loading}
+            className="flex items-center gap-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -273,6 +374,16 @@ const NotificationsPage: React.FC = () => {
             </ul>
           )}
         </div>
+        
+        {/* Pagination Controls */}
+        <PaginationControls />
+        
+        {/* Results Summary */}
+        {paginatedResponse && paginatedResponse.total > 0 && (
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
+            Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, totalNotifications)} of {totalNotifications} notifications
+          </div>
+        )}
       </div>
     </div>
   );
