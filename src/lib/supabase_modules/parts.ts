@@ -519,8 +519,8 @@ export async function getAvailableMakes(): Promise<string[]> {
     .eq('approved', true)
     .eq('sold', false)
     .not('make', 'is', null)
-    .order('make')
-    .distinct();
+    .distinct()
+    .order('make');
 
   if (error) throw error;
   return data.map(item => item.make).filter(Boolean);
@@ -535,8 +535,8 @@ export async function getModelsForMake(make: string): Promise<string[]> {
     .eq('sold', false)
     .eq('make', make)
     .not('model', 'is', null)
-    .order('model')
-    .distinct();
+    .distinct()
+    .order('model');
 
   if (error) throw error;
   return data.map(item => item.model).filter(Boolean);
@@ -550,8 +550,8 @@ export async function getAvailableCategories(): Promise<string[]> {
     .eq('approved', true)
     .eq('sold', false)
     .not('category', 'is', null)
-    .order('category')
-    .distinct();
+    .distinct()
+    .order('category');
 
   if (error) throw error;
   return data.map(item => item.category).filter(Boolean);
@@ -566,7 +566,7 @@ export async function getPartsPriceRange(): Promise<{ min: number; max: number }
     .eq('sold', false)
     .order('price', { ascending: true })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (minError && minError.code !== 'PGRST116') throw minError;
 
@@ -577,7 +577,7 @@ export async function getPartsPriceRange(): Promise<{ min: number; max: number }
     .eq('sold', false)
     .order('price', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (maxError && maxError.code !== 'PGRST116') throw maxError;
 
@@ -597,7 +597,7 @@ export async function getPartsYearRange(): Promise<{ min: number; max: number }>
     .not('year', 'is', null)
     .order('year', { ascending: true })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (minError && minError.code !== 'PGRST116') throw minError;
 
@@ -609,7 +609,7 @@ export async function getPartsYearRange(): Promise<{ min: number; max: number }>
     .not('year', 'is', null)
     .order('year', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (maxError && maxError.code !== 'PGRST116') throw maxError;
 
