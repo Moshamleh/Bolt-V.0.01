@@ -1,6 +1,7 @@
 import React from 'react';
 import { cn } from '../lib/utils';
 import Skeleton from './Skeleton';
+import PartCardSkeleton from './PartCardSkeleton';
 
 interface LoadingSkeletonProps {
   type: 'card' | 'list' | 'table' | 'form' | 'profile';
@@ -16,16 +17,7 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
   containerClassName = ''
 }) => {
   const renderCardSkeleton = () => (
-    <div className={cn("bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6", className)}>
-      <div className="flex items-start gap-4">
-        <Skeleton className="w-12 h-12 rounded-full" />
-        <div className="flex-1 space-y-2">
-          <Skeleton className="h-5 w-2/3" />
-          <Skeleton className="h-4 w-1/2" />
-          <Skeleton className="h-4 w-3/4" />
-        </div>
-      </div>
-    </div>
+    <PartCardSkeleton className={className} />
   );
 
   const renderListSkeleton = () => (
