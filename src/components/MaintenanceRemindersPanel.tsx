@@ -22,13 +22,9 @@ const MaintenanceRemindersPanel: React.FC<MaintenanceRemindersPanelProps> = ({
       try {
         setLoading(true);
         
-        // Get service reminder notifications
-        const notifications = await getUserNotifications(50, false);
-        const serviceReminders = notifications.filter(
-          notification => notification.type === 'service_reminder' && !notification.read
-        );
-        
-        setReminders(serviceReminders);
+        // Get service reminder notifications directly filtered by type
+        const response = await getUserNotifications(50, false, undefined, 1, 'service_reminder');
+        setReminders(response.data);
       } catch (err) {
         console.error('Failed to load maintenance reminders:', err);
         setError('Failed to load maintenance reminders');

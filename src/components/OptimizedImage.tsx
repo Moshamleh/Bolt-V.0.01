@@ -61,8 +61,35 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
       return undefined;
     }
     
-    // For Supabase Storage URLs, we could implement transformations here
-    // This is a placeholder for future implementation
+    // For Supabase Storage URLs, implement transformations
+    if (src.includes('supabase.co/storage/v1/object/public')) {
+      try {
+        // Parse the URL to extract the base and path
+        const url = new URL(src);
+        const basePath = url.origin + url.pathname;
+        const searchParams = url.searchParams;
+        
+        // Create srcSet with different widths
+        const widths = [320, 640, 960, 1280, 1920];
+        return widths
+          .map(w => {
+            // Clone the search params
+            const params = new URLSearchParams(searchParams);
+            // Add or update width parameter
+            params.set('width', w.toString());
+            // Add quality parameter for optimization
+            params.set('quality', w >= 960 ? '80' : '70');
+            
+            return `${basePath}?${params.toString()} ${w}w`;
+          })
+          .join(', ');
+      } catch (e) {
+        console.error('Error generating srcSet:', e);
+        return undefined;
+      }
+    }
+    
+    // For other sources, return undefined
     return undefined;
   };
 

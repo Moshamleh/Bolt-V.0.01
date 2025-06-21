@@ -12,6 +12,9 @@ import MultiSelect from '../components/MultiSelect';
 import PriceRangeSlider from '../components/PriceRangeSlider';
 import YearRangeSlider from '../components/YearRangeSlider';
 import { debounce } from '../lib/utils';
+import EmptyState from '../components/EmptyState';
+import LoadingSkeleton from '../components/LoadingSkeleton';
+import ActiveFilterTags from '../components/ActiveFilterTags';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -214,129 +217,60 @@ const MarketplacePage: React.FC = () => {
     }
   };
 
-  const EmptyState = () => {
-    const hasFilters = searchTerm || partNumber || oemNumber || showTrustedSellersOnly || showBoostedOnly || 
-                      selectedMakes.length > 0 || selectedModels.length > 0 || selectedCategories.length > 0 || 
-                      selectedConditions.length > 0 || 
-                      priceRange[0] > priceRangeLimits.min || priceRange[1] < priceRangeLimits.max ||
-                      yearRange[0] > yearRangeLimits.min || yearRange[1] < yearRangeLimits.max;
-    
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 text-center"
-      >
-        <div className="flex justify-center mb-6">
-          <div className="relative">
-            <Toolbox className="h-20 w-20 text-blue-500 dark:text-blue-400" />
-            <Wrench className="h-10 w-10 text-amber-500 dark:text-amber-400 absolute -bottom-2 -right-2 transform rotate-45" />
-          </div>
-        </div>
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-          It's quiet in here… Time to spark some life! 🧰
-        </h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          {hasFilters 
-            ? 'Try adjusting your filters or search terms'
-            : 'Be the first to list a part in the marketplace'}
-        </p>
-        {hasFilters ? (
-          <button
-            onClick={handleClearFilters}
-            className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-          >
-            Clear Filters
-          </button>
-        ) : (
-          <button
-            onClick={handleSellPart}
-            className="inline-flex items-center px-6 py-3 bg-glowing-gradient text-white rounded-lg font-medium hover:shadow-glow transition-all duration-300 animate-pulse-slow"
-            title="Got something to sell? Let the community know!"
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            ⚡ List Your First Part
-          </button>
-        )}
-      </motion.div>
-    );
-  };
-
-  const PaginationControls = () => {
-    if (!paginatedResponse || totalPages <= 1) return null;
-
-    // Generate page numbers to show
-    const getPageNumbers = () => {
-      const delta = 1; // Number of pages to show on each side of current page
-      const range = [];
-      const rangeWithDots = [];
-
-      for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
-        range.push(i);
-      }
-
-      if (currentPage - delta > 2) {
-        rangeWithDots.push(1, '...');
-      } else {
-        rangeWithDots.push(1);
-      }
-
-      rangeWithDots.push(...range);
-
-      if (currentPage + delta < totalPages - 1) {
-        rangeWithDots.push('...', totalPages);
-      } else if (totalPages > 1) {
-        rangeWithDots.push(totalPages);
-      }
-
-      return rangeWithDots;
-    };
-
-    return (
-      <div className="flex justify-center mt-8">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={!paginatedResponse.hasPreviousPage || loading}
-            className="flex items-center gap-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
-          </button>
-
-          <div className="flex items-center gap-1">
-            {getPageNumbers().map((pageNum, index) => (
-              <React.Fragment key={index}>
-                {pageNum === '...' ? (
-                  <span className="px-3 py-2 text-gray-500 dark:text-gray-400">...</span>
-                ) : (
-                  <button
-                    onClick={() => handlePageChange(pageNum as number)}
-                    disabled={loading}
-                    className={`px-3 py-2 rounded-lg transition-colors ${
-                      pageNum === currentPage
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    {pageNum}
-                  </button>
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={!paginatedResponse.hasNextPage || loading}
-            className="flex items-center gap-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    );
+  const handleRemoveFilter = (filterType: string, value?: string) => {
+    switch (filterType) {
+      case 'searchTerm':
+        setSearchTerm('');
+        break;
+      case 'partNumber':
+        setPartNumber('');
+        break;
+      case 'oemNumber':
+        setOemNumber('');
+        break;
+      case 'selectedMakes':
+        if (value) {
+          setSelectedMakes(prev => prev.filter(make => make !== value));
+        } else {
+          setSelectedMakes([]);
+        }
+        break;
+      case 'selectedModels':
+        if (value) {
+          setSelectedModels(prev => prev.filter(model => model !== value));
+        } else {
+          setSelectedModels([]);
+        }
+        break;
+      case 'selectedCategories':
+        if (value) {
+          setSelectedCategories(prev => prev.filter(category => category !== value));
+        } else {
+          setSelectedCategories([]);
+        }
+        break;
+      case 'selectedConditions':
+        if (value) {
+          setSelectedConditions(prev => prev.filter(condition => condition !== value));
+        } else {
+          setSelectedConditions([]);
+        }
+        break;
+      case 'priceRange':
+        setPriceRange([priceRangeLimits.min, priceRangeLimits.max]);
+        break;
+      case 'yearRange':
+        setYearRange([yearRangeLimits.min, yearRangeLimits.max]);
+        break;
+      case 'showTrustedSellersOnly':
+        setShowTrustedSellersOnly(false);
+        break;
+      case 'showBoostedOnly':
+        setShowBoostedOnly(false);
+        break;
+      default:
+        break;
+    }
   };
 
   const SortingOptions = () => (
@@ -425,6 +359,29 @@ const MarketplacePage: React.FC = () => {
               />
             </div>
 
+            {/* Active Filter Tags */}
+            <ActiveFilterTags 
+              filters={{
+                searchTerm,
+                partNumber,
+                oemNumber,
+                selectedMakes,
+                selectedModels,
+                selectedCategories,
+                selectedConditions,
+                priceRange,
+                priceRangeLimits,
+                yearRange,
+                yearRangeLimits,
+                showTrustedSellersOnly,
+                showBoostedOnly,
+                sortBy,
+                sortDirection
+              }}
+              onRemoveFilter={handleRemoveFilter}
+              onClearAll={handleClearFilters}
+            />
+
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <button
@@ -448,19 +405,6 @@ const MarketplacePage: React.FC = () => {
                   <span>Menu</span>
                 </button>
               </div>
-
-              {(showFilters || searchTerm || partNumber || oemNumber || showTrustedSellersOnly || showBoostedOnly || 
-                selectedMakes.length > 0 || selectedModels.length > 0 || selectedCategories.length > 0 || 
-                selectedConditions.length > 0 || 
-                priceRange[0] > priceRangeLimits.min || priceRange[1] < priceRangeLimits.max ||
-                yearRange[0] > yearRangeLimits.min || yearRange[1] < yearRangeLimits.max) && (
-                <button
-                  onClick={handleClearFilters}
-                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                >
-                  Clear Filters
-                </button>
-              )}
             </div>
 
             {/* Sorting Options */}
@@ -650,13 +594,47 @@ const MarketplacePage: React.FC = () => {
         </div>
 
         {loading && parts.length === 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {Array.from({ length: 8 }).map((_, index) => (
-              <PartCardSkeleton key={index} />
-            ))}
-          </div>
+          <LoadingSkeleton type="card" count={8} containerClassName="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" />
         ) : parts.length === 0 ? (
-          <EmptyState />
+          <EmptyState 
+            icon={<div className="relative">
+              <Toolbox className="h-20 w-20 text-blue-500 dark:text-blue-400" />
+              <Wrench className="h-10 w-10 text-amber-500 dark:text-amber-400 absolute -bottom-2 -right-2 transform rotate-45" />
+            </div>}
+            title="It's quiet in here… Time to spark some life! 🧰"
+            description={
+              searchTerm || partNumber || oemNumber || showTrustedSellersOnly || showBoostedOnly || 
+              selectedMakes.length > 0 || selectedModels.length > 0 || selectedCategories.length > 0 || 
+              selectedConditions.length > 0 || 
+              priceRange[0] > priceRangeLimits.min || priceRange[1] < priceRangeLimits.max ||
+              yearRange[0] > yearRangeLimits.min || yearRange[1] < yearRangeLimits.max
+                ? 'Try adjusting your filters or search terms'
+                : 'Be the first to list a part in the marketplace'
+            }
+            actionButton={
+              searchTerm || partNumber || oemNumber || showTrustedSellersOnly || showBoostedOnly || 
+              selectedMakes.length > 0 || selectedModels.length > 0 || selectedCategories.length > 0 || 
+              selectedConditions.length > 0 || 
+              priceRange[0] > priceRangeLimits.min || priceRange[1] < priceRangeLimits.max ||
+              yearRange[0] > yearRangeLimits.min || yearRange[1] < yearRangeLimits.max ? (
+                <button
+                  onClick={handleClearFilters}
+                  className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Clear Filters
+                </button>
+              ) : (
+                <button
+                  onClick={handleSellPart}
+                  className="inline-flex items-center px-6 py-3 bg-glowing-gradient text-white rounded-lg font-medium hover:shadow-glow transition-all duration-300 animate-pulse-slow"
+                  title="Got something to sell? Let the community know!"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  ⚡ List Your First Part
+                </button>
+              )
+            }
+          />
         ) : (
           <>
             <AnimatePresence>
@@ -689,7 +667,79 @@ const MarketplacePage: React.FC = () => {
             </AnimatePresence>
 
             {/* Pagination Controls */}
-            <PaginationControls />
+            {paginatedResponse && totalPages > 1 && (
+              <div className="flex justify-center mt-8">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={!paginatedResponse.hasPreviousPage || loading}
+                    className="flex items-center gap-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </button>
+
+                  <div className="hidden sm:flex items-center gap-1">
+                    {(() => {
+                      const delta = 2; // Number of pages to show on each side of current page
+                      const range = [];
+                      const rangeWithDots = [];
+
+                      for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+                        range.push(i);
+                      }
+
+                      if (currentPage - delta > 2) {
+                        rangeWithDots.push(1, '...');
+                      } else {
+                        rangeWithDots.push(1);
+                      }
+
+                      rangeWithDots.push(...range);
+
+                      if (currentPage + delta < totalPages - 1) {
+                        rangeWithDots.push('...', totalPages);
+                      } else if (totalPages > 1) {
+                        rangeWithDots.push(totalPages);
+                      }
+
+                      return rangeWithDots.map((pageNum, index) => (
+                        <React.Fragment key={index}>
+                          {pageNum === '...' ? (
+                            <span className="px-3 py-2 text-gray-500 dark:text-gray-400">...</span>
+                          ) : (
+                            <button
+                              onClick={() => handlePageChange(pageNum as number)}
+                              disabled={loading}
+                              className={`px-3 py-2 rounded-lg transition-colors ${
+                                pageNum === currentPage
+                                  ? 'bg-blue-600 text-white'
+                                  : 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                              } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                              {pageNum}
+                            </button>
+                          )}
+                        </React.Fragment>
+                      ));
+                    })()}
+                  </div>
+                  
+                  <span className="sm:hidden text-sm text-gray-600 dark:text-gray-400">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={!paginatedResponse.hasNextPage || loading}
+                    className="flex items-center gap-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Results Summary */}
             {paginatedResponse && (

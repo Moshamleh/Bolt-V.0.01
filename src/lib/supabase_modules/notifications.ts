@@ -6,7 +6,8 @@ export async function getUserNotifications(
   limit: number = 10, 
   unreadOnly: boolean = false, 
   user?: User,
-  page: number = 1
+  page: number = 1,
+  notificationType?: string
 ): Promise<PaginatedResponse<Notification>> {
   // Calculate pagination indices
   const itemsPerPage = limit;
@@ -27,6 +28,11 @@ export async function getUserNotifications(
 
     if (unreadOnly) {
       query = query.eq('read', false);
+    }
+    
+    // Filter by notification type if provided
+    if (notificationType) {
+      query = query.eq('type', notificationType);
     }
 
     const { data, error, count } = await query
@@ -55,6 +61,11 @@ export async function getUserNotifications(
 
   if (unreadOnly) {
     query = query.eq('read', false);
+  }
+  
+  // Filter by notification type if provided
+  if (notificationType) {
+    query = query.eq('type', notificationType);
   }
 
   const { data, error, count } = await query
