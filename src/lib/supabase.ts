@@ -356,6 +356,21 @@ export interface Offer {
   parent_offer_id?: string;
 }
 
+// New interface for repair knowledge
+export interface RepairKnowledge {
+  id: string;
+  component: string;
+  make: string;
+  model: string;
+  year: number;
+  trim?: string;
+  steps: any; // JSON type
+  safety_notes?: string;
+  source_url?: string;
+  created_at?: string;
+  user_id?: string;
+}
+
 // Re-export all functions from modularized files
 export * from './supabase_modules/auth';
 export * from './supabase_modules/profile';
