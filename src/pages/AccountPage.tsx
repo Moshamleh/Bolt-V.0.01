@@ -1,17 +1,17 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Settings, User, Moon, Shield, HelpCircle, Loader2, Award, Bell, Share2, CheckCircle, Zap } from 'lucide-react';
-import { Profile, getProfile, getUserBadges, getAllBadges, UserEarnedBadge, Badge, supabase, updateProfile } from '../lib/supabase';
-import LazyErrorBoundary from '../components/LazyErrorBoundary';
-import { getUserXp, getLevelName } from '../lib/xpSystem';
-import XpProgressBar from '../components/XpProgressBar';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Users, Plus, Heart, Loader2, MapPin, Tag, Menu, ChevronDown, ChevronUp, Search, Filter, Globe, CheckCircle, Car } from 'lucide-react';
 import toast from 'react-hot-toast';
-import ProfileSkeleton from '../components/ProfileSkeleton';
-import ChallengeProgress from '../components/ChallengeProgress';
+import { updateProfile } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
+import { useProfile } from '../hooks/useProfile';
+import { useXp } from '../hooks/useXp';
+import { getUserBadges, getAllBadges, UserEarnedBadge, Badge } from '../lib/supabase';
 
 // Lazy load components
 const ProfileSection = lazy(() => import('../components/ProfileSection'));
+const ProfileOverview = lazy(() => import('../components/ProfileOverview'));
 const PreferencesSection = lazy(() => import('../components/PreferencesSection'));
 const SecurityLoginSection = lazy(() => import('../components/SecurityLoginSection'));
 const SupportFeedbackSection = lazy(() => import('../components/SupportFeedbackSection'));
@@ -21,6 +21,7 @@ const NotificationPreferencesSection = lazy(() => import('../components/Notifica
 const ReferralSection = lazy(() => import('../components/ReferralSection'));
 const AchievementTracker = lazy(() => import('../components/AchievementTracker'));
 const ChallengesList = lazy(() => import('../components/ChallengesList'));
+const XpHistoryPanel = lazy(() => import('../components/XpHistoryPanel'));
 
 // Loading fallback component
 const ComponentLoader = () => (
@@ -29,56 +30,32 @@ const ComponentLoader = () => (
   </div>
 );
 
-const AccountPage = () => {
+const AccountPage: React.FC = () => {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { profile, isAdmin, isLoading: profileLoading, mutate: mutateProfile } = useProfile();
+  const { user, loading: authLoading } = useAuth();
+  const { xp, level } = useXp();
   const [userEmail, setUserEmail] = useState('');
   const [badges, setBadges] = useState<UserEarnedBadge[]>([]);
   const [allBadges, setAllBadges] = useState<Badge[]>([]);
   const [displayBadges, setDisplayBadges] = useState<UserEarnedBadge[]>([]);
-  const [loading, setLoading] = useState(true);
   const [badgesLoading, setBadgesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('profile');
-  const [xp, setXp] = useState(0);
-  const [level, setLevel] = useState(1);
   const [isUpgrading, setIsUpgrading] = useState(false);
 
   useEffect(() => {
-    const loadProfile = async () => {
+    const loadUserData = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        if (authLoading || !user) return;
         
-        if (!session) {
-          navigate('/login');
-          return;
-        }
-
-        setUserEmail(session.user.email || '');
-        const profileData = await getProfile();
-        setProfile(profileData);
-
-        // Load user XP and level
-        try {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('xp, level')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (userData) {
-            setXp(userData.xp || 0);
-            setLevel(userData.level || 1);
-          }
-        } catch (xpError) {
-          console.error('Failed to load XP data:', xpError);
-        }
-
+        setUserEmail(user.email || '');
+        
         // Load user badges and all available badges
         try {
           setBadgesLoading(true);
           const [userBadges, availableBadges] = await Promise.all([
-            getUserBadges(session.user.id),
+            getUserBadges(user.id),
             getAllBadges()
           ]);
           
@@ -94,7 +71,7 @@ const AccountPage = () => {
               // Create a locked badge entry
               return {
                 id: `locked-${badge.id}`,
-                user_id: session.user.id,
+                user_id: user.id,
                 badge_id: badge.id,
                 name: badge.name,
                 description: badge.description,
@@ -114,15 +91,13 @@ const AccountPage = () => {
           setBadgesLoading(false);
         }
       } catch (err) {
-        console.error('Failed to load profile:', err);
-        setError('Failed to load profile');
-      } finally {
-        setLoading(false);
+        console.error('Failed to load user data:', err);
+        setError('Failed to load user data');
       }
     };
 
-    loadProfile();
-  }, [navigate]);
+    loadUserData();
+  }, [user, authLoading]);
 
   const handleUpgradeToProClick = async () => {
     if (!profile) return;
@@ -133,7 +108,7 @@ const AccountPage = () => {
       await updateProfile({ wants_pro: true });
       
       // Update local state
-      setProfile({
+      mutateProfile({
         ...profile,
         wants_pro: true
       });
@@ -162,219 +137,232 @@ const AccountPage = () => {
     switch (activeTab) {
       case 'profile':
         return (
-          <LazyErrorBoundary componentName="Profile Section">
-            <Suspense fallback={<ProfileSkeleton />}>
-              <div className="space-y-6">
-                <ProfileCompletionIndicator profile={profile} />
-                
-                {/* Pro Seller CTA */}
-                {profile && !profile.wants_pro && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl shadow-lg p-6 text-white"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                        <CheckCircle className="h-8 w-8" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold mb-2">
-                          Upgrade to Verified Seller Pro ✅
-                        </h3>
-                        <p className="text-white/80 mb-4">
-                          Get Boost Credits + Priority Listings + Trust Badge for just $5/month
-                        </p>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                          <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Zap className="h-4 w-4 text-yellow-300" />
-                              <span className="font-semibold">Boost Credits</span>
-                            </div>
-                            <p className="text-sm text-white/80">
-                              3 free boosts per month ($9 value)
-                            </p>
-                          </div>
-                          <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Award className="h-4 w-4 text-yellow-300" />
-                              <span className="font-semibold">Trust Badge</span>
-                            </div>
-                            <p className="text-sm text-white/80">
-                              Stand out with a Pro Seller badge
-                            </p>
-                          </div>
-                          <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                            <div className="flex items-center gap-2 mb-1">
-                              <CheckCircle className="h-4 w-4 text-yellow-300" />
-                              <span className="font-semibold">Priority Support</span>
-                            </div>
-                            <p className="text-sm text-white/80">
-                              Get faster responses to your questions
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={handleUpgradeToProClick}
-                          disabled={isUpgrading}
-                          className="px-6 py-2 bg-white text-purple-700 rounded-lg font-medium hover:bg-gray-100 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                        >
-                          {isUpgrading ? (
-                            <div className="flex items-center gap-2">
-                              <Loader2 className="h-5 w-5 animate-spin" />
-                              <span>Processing...</span>
-                            </div>
-                          ) : (
-                            'Upgrade for $5/month'
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-                
-                {/* Pro Seller Confirmation */}
-                {profile && profile.wants_pro && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-gradient-to-r from-green-600 to-teal-600 rounded-xl shadow-lg p-6 text-white"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                        <CheckCircle className="h-8 w-8" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold mb-2">
-                          Pro Features Coming Soon!
-                        </h3>
-                        <p className="text-white/80">
-                          Thanks for your interest in Verified Seller Pro! We're working on implementing these features and will notify you as soon as they're available.
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-                
-                <ProfileSection
-                  profile={profile}
-                  email={userEmail}
-                  onProfileUpdate={setProfile}
-                />
-              </div>
+          <div className="space-y-6">
+            <Suspense fallback={<ComponentLoader />}>
+              <ProfileOverview 
+                profile={profile} 
+                email={userEmail}
+                xp={xp}
+                level={level}
+                badges={badges}
+              />
             </Suspense>
-          </LazyErrorBoundary>
+            
+            <Suspense fallback={<ComponentLoader />}>
+              <ProfileCompletionIndicator profile={profile} />
+            </Suspense>
+            
+            {/* Pro Seller CTA */}
+            {profile && !profile.wants_pro && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl shadow-lg p-6 text-white"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <CheckCircle className="h-8 w-8" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold mb-2">
+                      Upgrade to Verified Seller Pro ✅
+                    </h3>
+                    <p className="text-white/80 mb-4">
+                      Get Boost Credits + Priority Listings + Trust Badge for just $5/month
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Zap className="h-4 w-4 text-yellow-300" />
+                          <span className="font-semibold">Boost Credits</span>
+                        </div>
+                        <p className="text-sm text-white/80">
+                          3 free boosts per month ($9 value)
+                        </p>
+                      </div>
+                      <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Award className="h-4 w-4 text-yellow-300" />
+                          <span className="font-semibold">Trust Badge</span>
+                        </div>
+                        <p className="text-sm text-white/80">
+                          Stand out with a Pro Seller badge
+                        </p>
+                      </div>
+                      <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <CheckCircle className="h-4 w-4 text-yellow-300" />
+                          <span className="font-semibold">Priority Support</span>
+                        </div>
+                        <p className="text-sm text-white/80">
+                          Get faster responses to your questions
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleUpgradeToProClick}
+                      disabled={isUpgrading}
+                      className="px-6 py-2 bg-white text-purple-700 rounded-lg font-medium hover:bg-gray-100 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {isUpgrading ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          <span>Processing...</span>
+                        </div>
+                      ) : (
+                        'Upgrade for $5/month'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+            
+            {/* Pro Seller Confirmation */}
+            {profile && profile.wants_pro && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-r from-green-600 to-teal-600 rounded-xl shadow-lg p-6 text-white"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <CheckCircle className="h-8 w-8" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold mb-2">
+                      Pro Features Coming Soon!
+                    </h3>
+                    <p className="text-white/80">
+                      Thanks for your interest in Verified Seller Pro! We're working on implementing these features and will notify you as soon as they're available.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+            
+            <Suspense fallback={<ComponentLoader />}>
+              <ProfileSection
+                profile={profile}
+                onProfileUpdate={mutateProfile}
+              />
+            </Suspense>
+          </div>
         );
       case 'achievements':
         return (
-          <LazyErrorBoundary componentName="Achievements Section">
-            <Suspense fallback={<ComponentLoader />}>
-              <div className="space-y-6">
-                <AchievementTracker profile={profile} className="mb-8" />
-                
-                <div className="mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    Your Badges
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    Badges you've earned by using Bolt Auto and participating in the community
-                  </p>
-                </div>
-                <BadgesPanel badges={displayBadges} loading={badgesLoading} />
+          <Suspense fallback={<ComponentLoader />}>
+            <div className="space-y-6">
+              <AchievementTracker profile={profile} className="mb-8" />
+              
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Your Badges
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Badges you've earned by using Bolt Auto and participating in the community
+                </p>
               </div>
-            </Suspense>
-          </LazyErrorBoundary>
+              <BadgesPanel badges={displayBadges} loading={badgesLoading} />
+              
+              <div className="mt-8">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  XP History
+                </h2>
+                <XpHistoryPanel />
+              </div>
+            </div>
+          </Suspense>
         );
       case 'challenges':
         return (
-          <LazyErrorBoundary componentName="Challenges Section">
-            <Suspense fallback={<ComponentLoader />}>
-              <div className="space-y-6">
-                <ChallengeProgress className="mb-6" />
-                
-                <div className="mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    Available Challenges
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    Complete these challenges to earn XP and badges
-                  </p>
-                </div>
-                
-                <ChallengesList limit={5} />
-                
-                <div className="flex justify-center mt-4">
-                  <button
-                    onClick={() => navigate('/challenges')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                  >
-                    View All Challenges
-                  </button>
-                </div>
+          <Suspense fallback={<ComponentLoader />}>
+            <div className="space-y-6">
+              <ChallengeProgress className="mb-6" />
+              
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Available Challenges
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Complete these challenges to earn XP and badges
+                </p>
               </div>
-            </Suspense>
-          </LazyErrorBoundary>
+              
+              <ChallengesList limit={5} />
+              
+              <div className="flex justify-center mt-4">
+                <button
+                  onClick={() => navigate('/challenges')}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                >
+                  View All Challenges
+                </button>
+              </div>
+            </div>
+          </Suspense>
         );
       case 'referrals':
         return (
-          <LazyErrorBoundary componentName="Referrals Section">
-            <Suspense fallback={<ComponentLoader />}>
-              <ReferralSection />
-            </Suspense>
-          </LazyErrorBoundary>
+          <Suspense fallback={<ComponentLoader />}>
+            <ReferralSection />
+          </Suspense>
         );
       case 'notifications':
         return (
-          <LazyErrorBoundary componentName="Notifications Section">
-            <Suspense fallback={<ComponentLoader />}>
-              <NotificationPreferencesSection />
-            </Suspense>
-          </LazyErrorBoundary>
+          <Suspense fallback={<ComponentLoader />}>
+            <NotificationPreferencesSection />
+          </Suspense>
         );
       case 'preferences':
         return (
-          <LazyErrorBoundary componentName="Preferences Section">
-            <Suspense fallback={<ComponentLoader />}>
-              <PreferencesSection />
-            </Suspense>
-          </LazyErrorBoundary>
+          <Suspense fallback={<ComponentLoader />}>
+            <PreferencesSection />
+          </Suspense>
         );
       case 'security':
         return (
-          <LazyErrorBoundary componentName="Security Section">
-            <Suspense fallback={<ComponentLoader />}>
-              <SecurityLoginSection />
-            </Suspense>
-          </LazyErrorBoundary>
+          <Suspense fallback={<ComponentLoader />}>
+            <SecurityLoginSection />
+          </Suspense>
         );
       case 'support':
         return (
-          <LazyErrorBoundary componentName="Support Section">
-            <Suspense fallback={<ComponentLoader />}>
-              <SupportFeedbackSection />
-            </Suspense>
-          </LazyErrorBoundary>
+          <Suspense fallback={<ComponentLoader />}>
+            <SupportFeedbackSection />
+          </Suspense>
         );
       default:
         return null;
     }
   };
 
-  if (loading) {
+  if (profileLoading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin" />
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
       </div>
     );
   }
 
+  // Don't render anything if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
+
+  // Check if we're on the account page to determine if we should use full width
+  const isAccountPage = true;
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
-      <div className="w-full">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className={isAccountPage ? "w-full space-y-6" : "max-w-7xl mx-auto space-y-6"}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 pt-8 border-t border-gray-200 dark:border-gray-700"
+          className="pt-8 border-t border-gray-200 dark:border-gray-700"
         >
           <div className="flex items-center gap-3">
             <Settings className="h-8 w-8 text-blue-600 dark:text-blue-400" />
@@ -384,9 +372,6 @@ const AccountPage = () => {
             </div>
           </div>
         </motion.div>
-
-        {/* XP Progress Bar */}
-        <XpProgressBar xp={xp} level={level} className="mb-6" />
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
           {/* Scrollable Tab Navigation */}

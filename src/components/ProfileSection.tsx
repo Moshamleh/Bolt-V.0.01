@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Loader2, Mail, User } from 'lucide-react';
+import { Camera, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Profile, updateProfile, uploadAvatar } from '../lib/supabase';
@@ -90,51 +90,46 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ profile, onProfileUpdat
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-6">
-        <div className="relative">
-          <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700">
-            {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
-                <User className="h-12 w-12" />
-              </div>
-            )}
-          </div>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={saving}
-            className="absolute bottom-0 right-0 p-1.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50"
-            title="Upload avatar"
-          >
-            <Camera className="h-4 w-4" />
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleAvatarChange}
-            className="hidden"
-          />
-        </div>
-
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            {profile?.full_name || 'Add your name'}
-          </h2>
-          <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mt-1">
-            <Mail className="h-4 w-4" />
-            <span>{user?.email}</span>
-          </div>
-        </div>
-      </div>
-
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+        Edit Profile
+      </h2>
+      
       <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex justify-center mb-6">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700">
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
+                  <User className="h-12 w-12" />
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={saving}
+              className="absolute bottom-0 right-0 p-1.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50"
+              title="Upload avatar"
+            >
+              <Camera className="h-4 w-4" />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+          </div>
+        </div>
+
         <div>
           <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Full Name
