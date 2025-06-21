@@ -179,7 +179,7 @@ const Layout: React.FC = () => {
               </NavLink>
 
               <NavLink
-                to="/clubs"
+                to="/communities"
                 className={({ isActive }) => `
                   flex items-center gap-2 px-4 py-2 rounded-lg transition-colors
                   ${isActive ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-neutral-600 dark:text-gray-300 hover:bg-neutral-100 dark:hover:bg-gray-700/50'}
@@ -187,7 +187,7 @@ const Layout: React.FC = () => {
                 data-tour="clubs"
               >
                 <UsersRound className="h-5 w-5" />
-                <span>Clubs</span>
+                <span>Communities</span>
               </NavLink>
 
               <NavLink
@@ -269,14 +269,14 @@ const Layout: React.FC = () => {
           </NavLink>
 
           <NavLink
-            to="/clubs"
+            to="/communities"
             className={({ isActive }) => `
               flex flex-col items-center gap-1 min-w-[64px]
               ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-600 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white'}
             `}
           >
             <UsersRound className="h-6 w-6" />
-            <span className="text-[10px]">Clubs</span>
+            <span className="text-[10px]">Communities</span>
           </NavLink>
 
           <NavLink

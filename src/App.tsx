@@ -5,7 +5,7 @@ import { supabase } from './lib/supabase';
 import Layout from './components/Layout';
 import AuthLayout from './components/AuthLayout';
 import MarketplaceLayout from './components/MarketplaceLayout';
-import ClubLayout from './components/ClubLayout';
+import CommunityLayout from './components/CommunityLayout';
 import ErrorBoundary from './components/ErrorBoundary';
 import XpGainToast from './components/XpGainToast';
 
@@ -118,12 +118,12 @@ function App() {
             <Route path="/mechanic/settings" element={<MechanicSettingsPage />} />
             <Route path="/mechanic/:id" element={<MechanicProfilePage />} />
             
-            {/* Club Routes with ClubLayout */}
-            <Route path="/clubs" element={<ClubLayout />}>
+            {/* Community Routes with CommunityLayout */}
+            <Route path="/communities" element={<CommunityLayout />}>
               <Route index element={<ClubListPage />} />
               <Route path="create" element={<CreateClubPage />} />
               <Route path=":id" element={<ClubDetailPage />} />
-              <Route path="my-clubs" element={<MyClubsPage />} />
+              <Route path="my-communities" element={<MyClubsPage />} />
               <Route path="messages" element={<ClubMessagesPage />} />
               <Route path="members" element={<ClubMembersPage />} />
               <Route path="settings" element={<ClubSettingsPage />} />
