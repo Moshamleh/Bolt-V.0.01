@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SendHorizonal, ThumbsUp, ThumbsDown, Loader2, Link as LinkIcon, Repeat } from 'lucide-react';
+import { SendHorizonal, ThumbsUp, ThumbsDown, Loader2, Link as LinkIcon, Repeat, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TextareaAutosize from 'react-textarea-autosize';
 import toast from 'react-hot-toast';
@@ -48,6 +48,9 @@ const AI_FLAIRS = [
   "Sounds like a plan? 🧰"
 ];
 
+// Maximum number of AI responses allowed in a single session
+const MAX_AI_RESPONSES = 5;
+
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   selectedVehicleId,
   onDiagnosisAdded,
@@ -70,6 +73,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
+  
+  // Count AI responses in the current session
+  const aiResponseCount = messages.filter(msg => !msg.isUser && !msg.isError && !msg.isTypingIndicator).length;
+  const isAtResponseLimit = aiResponseCount >= MAX_AI_RESPONSES;
 
   // Default prompt chips
   const defaultPromptChips = [
@@ -298,6 +305,19 @@ Try saying: "My car makes a weird clicking sound when I turn."`;
     const textToSubmit = promptText || input.trim();
     if (!textToSubmit || isSubmitting || !selectedVehicleId) return;
 
+    // Check if we've reached the maximum number of AI responses
+    if (isAtResponseLimit) {
+      setMessages(prev => [...prev, {
+        id: `error-${Date.now()}`,
+        text: "You've reached the maximum number of AI responses in this session. Please click 'Start New Session' to continue with a fresh conversation.",
+        isUser: false,
+        isError: true,
+        timestamp: new Date()
+      }]);
+      setMessageVersion(prev => prev + 1);
+      return;
+    }
+
     await provideFeedback();
     setIsSubmitting(true);
 
@@ -467,6 +487,13 @@ Try saying: "My car makes a weird clicking sound when I turn."`;
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto p-4 space-y-4"
       >
+        {/* Message Limit Indicator */}
+        <div className="text-center mb-4">
+          <span className="inline-block px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full">
+            {aiResponseCount}/{MAX_AI_RESPONSES} AI responses used in this session
+          </span>
+        </div>
+
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center">
             <div className="max-w-md w-full rounded-xl bg-blue-50 dark:bg-blue-900/20 p-4 animate-chat-bubble-glow shadow-sm">
@@ -518,6 +545,18 @@ Try saying: "My car makes a weird clicking sound when I turn."`;
                       </div>
                     ) : message.isUser ? (
                       message.text
+                    ) : message.isError ? (
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium">{message.text}</p>
+                          {isAtResponseLimit && (
+                            <p className="mt-2 text-sm">
+                              This limit helps keep conversations focused and efficient. Click the "Start New Session" button above to continue with a fresh conversation.
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     ) : (
                       formatAiResponse(message.text)
                     )}
@@ -620,15 +659,15 @@ Try saying: "My car makes a weird clicking sound when I turn."`;
             onKeyDown={handleKeyDown}
             placeholder="Describe your car issue..."
             className="flex-1 resize-none overflow-hidden min-h-[40px] max-h-[120px] rounded-lg border border-neutral-300 dark:border-gray-600 px-4 py-2 bg-white dark:bg-gray-700 text-neutral-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isAtResponseLimit}
             minRows={1}
             maxRows={4}
           />
           <button
             type="submit"
-            disabled={isSubmitting || !input.trim()}
+            disabled={isSubmitting || !input.trim() || isAtResponseLimit}
             className={`rounded-lg bg-blue-600 p-2 text-white transition-colors ${
-              isSubmitting || !input.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+              isSubmitting || !input.trim() || isAtResponseLimit ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
             }`}
             aria-label="Send message"
           >
