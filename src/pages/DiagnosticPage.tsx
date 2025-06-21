@@ -1,6 +1,6 @@
 import React, { useEffect, useState, lazy, Suspense, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, Plus, Settings, Wrench, Loader2, FileText, Calendar, Lightbulb, Menu, Zap, PenTool as Tool, Sparkles, History } from 'lucide-react';
+import { Car, Plus, Settings, Wrench, Loader2, FileText, Calendar, Lightbulb, Menu, Zap, PenTool as Tool, Sparkles, History, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, getUserVehicles, getAllUserDiagnosesWithVehicles, Diagnosis, updateProfile, awardBadge, sendDiagnosticPrompt, subscribeToDiagnosisUpdates } from '../lib/supabase';
 import { useOnboarding } from '../hooks/useOnboarding';
@@ -428,6 +428,13 @@ const DiagnosticPage: React.FC = () => {
     return profile.username || '';
   };
 
+  // Function to start a new diagnostic session
+  const handleStartNewSession = () => {
+    setActiveChatMessages([]);
+    setActiveDiagnosisId(null);
+    setRecheckPrompt(null);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900 p-4">
@@ -504,6 +511,15 @@ const DiagnosticPage: React.FC = () => {
                 <History className="h-5 w-5 text-neutral-500 dark:text-gray-400" />
                 <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">History</h2>
               </div>
+              
+              {/* Start New Session Button */}
+              <button
+                onClick={handleStartNewSession}
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+              >
+                <RefreshCw className="h-3 w-3" />
+                New Session
+              </button>
             </div>
             
             <div className="flex gap-2">
@@ -569,6 +585,14 @@ const DiagnosticPage: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                {/* Start New Session Button */}
+                <button
+                  onClick={handleStartNewSession}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Start New Session
+                </button>
                 <button
                   onClick={handleUrgentTipRequest}
                   disabled={urgentTipLoading}
@@ -713,6 +737,17 @@ const DiagnosticPage: React.FC = () => {
           <Suspense fallback={<div className="h-8"></div>}>
             <ChallengeProgress limit={1} />
           </Suspense>
+        </div>
+
+        {/* Start New Session Button (Mobile) */}
+        <div className="px-3 mb-3">
+          <button
+            onClick={handleStartNewSession}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Start New Session
+          </button>
         </div>
 
         <Suspense fallback={<ComponentLoader />}>
