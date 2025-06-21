@@ -20,7 +20,7 @@ export async function getAllUserDiagnosesWithVehicles(): Promise<Diagnosis[]> {
   return data || [];
 }
 
-export async function sendDiagnosticPrompt(vehicleId: string, prompt: string): Promise<Diagnosis> {
+export async function sendDiagnosticPrompt(vehicleId: string, prompt: string, imageUrl?: string): Promise<Diagnosis> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -32,7 +32,8 @@ export async function sendDiagnosticPrompt(vehicleId: string, prompt: string): P
       vehicle_id: vehicleId,
       prompt,
       response: '',
-      resolved: false
+      resolved: false,
+      image_url: imageUrl || null
     })
     .select()
     .single();
@@ -44,7 +45,8 @@ export async function sendDiagnosticPrompt(vehicleId: string, prompt: string): P
     body: {
       diagnosisId: diagnosis.id,
       vehicleId,
-      prompt
+      prompt,
+      imageUrl
     }
   });
 

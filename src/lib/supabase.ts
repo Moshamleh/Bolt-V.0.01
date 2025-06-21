@@ -74,6 +74,7 @@ export interface Diagnosis {
   timestamp: string;
   resolved?: boolean;
   vehicle?: Vehicle;
+  image_url?: string;
 }
 
 export interface Part {
@@ -372,3 +373,4 @@ export * from './supabase_modules/reviews';
 export * from './supabase_modules/utils'; // For dashboard stats, etc.
 export * from './supabase_modules/challenges';
 export * from './supabase_modules/offers';
+export * from './supabase_modules/storage'; // New storage module
