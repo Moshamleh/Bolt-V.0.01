@@ -21,7 +21,7 @@ const RepairTipsPanel: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [vehiclesData, recordsData, notificationsData] = await Promise.all([
+        const [vehiclesData, recordsData, notificationsResponse] = await Promise.all([
           getUserVehicles(user),
           getAllServiceRecords(),
           getUserNotifications(50, false, user)
@@ -31,7 +31,7 @@ const RepairTipsPanel: React.FC = () => {
         setServiceRecords(recordsData);
         
         // Filter notifications to only include service reminders
-        const serviceReminders = notificationsData.filter(
+        const serviceReminders = notificationsResponse.data.filter(
           notification => notification.type === 'service_reminder' && !notification.read
         );
         setMaintenanceReminders(serviceReminders);
