@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Lightbulb, Loader2, ThumbsUp, ThumbsDown, ChevronRight, AlertCircle, Battery, Droplet } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Lightbulb, Loader2, ThumbsUp, ThumbsDown, ChevronRight, AlertCircle, Battery, Droplet } from 'lucide-react';
 import { Vehicle, ServiceRecord, getUserVehicles, getAllServiceRecords, Notification, getUserNotifications, markNotificationAsRead } from '../lib/supabase';
 import MaintenanceReminder from './MaintenanceReminder';
 import MaintenanceRemindersPanel from './MaintenanceRemindersPanel';
@@ -8,7 +8,7 @@ import { generatePersonalizedTips } from '../lib/maintenanceUtils';
 import { useAuth } from '../context/AuthContext';
 
 const RepairTipsPanel: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [serviceRecords, setServiceRecords] = useState<ServiceRecord[]>([]);
   const [repairTips, setRepairTips] = useState<ReturnType<typeof generatePersonalizedTips>>([]);
@@ -20,6 +20,9 @@ const RepairTipsPanel: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
+      // Only proceed if authentication is complete and user is logged in
+      if (authLoading || !user) return;
+      
       try {
         const [vehiclesData, recordsData, notificationsResponse] = await Promise.all([
           getUserVehicles(user),
@@ -48,7 +51,7 @@ const RepairTipsPanel: React.FC = () => {
     };
 
     loadData();
-  }, [user]);
+  }, [user, authLoading]);
 
   const handleFeedback = (tipId: string, helpful: boolean) => {
     setFeedbackSubmitting(tipId);
@@ -89,6 +92,26 @@ const RepairTipsPanel: React.FC = () => {
         return 'bg-gray-400 dark:bg-gray-500';
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="p-6 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-amber-700 dark:text-amber-300">
+        <div className="flex items-center gap-2 mb-2">
+          <AlertCircle className="h-5 w-5" />
+          <h3 className="font-medium">Authentication Required</h3>
+        </div>
+        <p>Please sign in to view your repair tips and maintenance reminders.</p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -138,7 +161,7 @@ const RepairTipsPanel: React.FC = () => {
           </div>
           
           <div className="space-y-4">
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence initial={false}>
               {repairTips.map((tip) => (
                 <motion.div
                   key={tip.id}
