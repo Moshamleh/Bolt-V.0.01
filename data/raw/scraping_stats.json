@@ -1,0 +1,20 @@
+{
+  "duration_seconds": 4226.378095,
+  "brands_processed": 10,
+  "total_manuals": 52196,
+  "failed_requests": 27,
+  "retries_used": 2,
+  "avg_manuals_per_brand": 5219.6,
+  "brand_breakdown": {
+    "lamborghini": 1000,
+    "land-rover": 8000,
+    "kia": 9684,
+    "lexus": 15,
+    "mercedes-benz": 70,
+    "mazda": 12476,
+    "mitsubishi": 0,
+    "nissan": 6,
+    "lincoln": 14940,
+    "mini": 6005
+  }
+}

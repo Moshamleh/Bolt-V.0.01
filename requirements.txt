@@ -1,0 +1,421 @@
+# Bolt Auto Backend Dependencies
+
+# Core dependencies
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Database
+supabase>=2.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+
+# AI/ML
+openai>=1.0.0
+transformers>=4.30.0
+torch>=2.0.0
+
+# Web scraping
+selenium>=4.15.0
+playwright>=1.40.0
+scrapy>=2.11.0
+
+# Data processing
+python-dotenv>=1.0.0
+pillow>=10.0.0
+pymupdf>=1.23.0  # for PDF processing
+
+# Utilities
+tqdm>=4.65.0
+colorama>=0.4.6
+python-dateutil>=2.8.2
+
+# Development
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Optional: FastAPI for REST API
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.4.0# Bolt Auto Backend Dependencies
+
+# Core dependencies
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Database
+supabase>=2.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+
+# AI/ML
+openai>=1.0.0
+transformers>=4.30.0
+torch>=2.0.0
+
+# Web scraping
+selenium>=4.15.0
+playwright>=1.40.0
+scrapy>=2.11.0
+
+# Data processing
+python-dotenv>=1.0.0
+pillow>=10.0.0
+pymupdf>=1.23.0  # for PDF processing
+
+# Utilities
+tqdm>=4.65.0
+colorama>=0.4.6
+python-dateutil>=2.8.2
+
+# Development
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Optional: FastAPI for REST API
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.4.0# Bolt Auto Backend Dependencies
+
+# Core dependencies
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Database
+supabase>=2.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+
+# AI/ML
+openai>=1.0.0
+transformers>=4.30.0
+torch>=2.0.0
+
+# Web scraping
+selenium>=4.15.0
+playwright>=1.40.0
+scrapy>=2.11.0
+
+# Data processing
+python-dotenv>=1.0.0
+pillow>=10.0.0
+pymupdf>=1.23.0  # for PDF processing
+
+# Utilities
+tqdm>=4.65.0
+colorama>=0.4.6
+python-dateutil>=2.8.2
+
+# Development
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Optional: FastAPI for REST API
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.4.0# Bolt Auto Backend Dependencies
+
+# Core dependencies
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Database
+supabase>=2.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+
+# AI/ML
+openai>=1.0.0
+transformers>=4.30.0
+torch>=2.0.0
+
+# Web scraping
+selenium>=4.15.0
+playwright>=1.40.0
+scrapy>=2.11.0
+
+# Data processing
+python-dotenv>=1.0.0
+pillow>=10.0.0
+pymupdf>=1.23.0  # for PDF processing
+
+# Utilities
+tqdm>=4.65.0
+colorama>=0.4.6
+python-dateutil>=2.8.2
+
+# Development
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Optional: FastAPI for REST API
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.4.0# Bolt Auto Backend Dependencies
+
+# Core dependencies
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Database
+supabase>=2.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+
+# AI/ML
+openai>=1.0.0
+transformers>=4.30.0
+torch>=2.0.0
+
+# Web scraping
+selenium>=4.15.0
+playwright>=1.40.0
+scrapy>=2.11.0
+
+# Data processing
+python-dotenv>=1.0.0
+pillow>=10.0.0
+pymupdf>=1.23.0  # for PDF processing
+
+# Utilities
+tqdm>=4.65.0
+colorama>=0.4.6
+python-dateutil>=2.8.2
+
+# Development
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Optional: FastAPI for REST API
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.4.0# Bolt Auto Backend Dependencies
+
+# Core dependencies
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Database
+supabase>=2.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+
+# AI/ML
+openai>=1.0.0
+transformers>=4.30.0
+torch>=2.0.0
+
+# Web scraping
+selenium>=4.15.0
+playwright>=1.40.0
+scrapy>=2.11.0
+
+# Data processing
+python-dotenv>=1.0.0
+pillow>=10.0.0
+pymupdf>=1.23.0  # for PDF processing
+
+# Utilities
+tqdm>=4.65.0
+colorama>=0.4.6
+python-dateutil>=2.8.2
+
+# Development
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Optional: FastAPI for REST API
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.4.0# Bolt Auto Backend Dependencies
+
+# Core dependencies
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Database
+supabase>=2.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+
+# AI/ML
+openai>=1.0.0
+transformers>=4.30.0
+torch>=2.0.0
+
+# Web scraping
+selenium>=4.15.0
+playwright>=1.40.0
+scrapy>=2.11.0
+
+# Data processing
+python-dotenv>=1.0.0
+pillow>=10.0.0
+pymupdf>=1.23.0  # for PDF processing
+
+# Utilities
+tqdm>=4.65.0
+colorama>=0.4.6
+python-dateutil>=2.8.2
+
+# Development
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Optional: FastAPI for REST API
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.4.0# Bolt Auto Backend Dependencies
+
+# Core dependencies
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Database
+supabase>=2.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+
+# AI/ML
+openai>=1.0.0
+transformers>=4.30.0
+torch>=2.0.0
+
+# Web scraping
+selenium>=4.15.0
+playwright>=1.40.0
+scrapy>=2.11.0
+
+# Data processing
+python-dotenv>=1.0.0
+pillow>=10.0.0
+pymupdf>=1.23.0  # for PDF processing
+
+# Utilities
+tqdm>=4.65.0
+colorama>=0.4.6
+python-dateutil>=2.8.2
+
+# Development
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Optional: FastAPI for REST API
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.4.0# Bolt Auto Backend Dependencies
+
+# Core dependencies
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Database
+supabase>=2.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+
+# AI/ML
+openai>=1.0.0
+transformers>=4.30.0
+torch>=2.0.0
+
+# Web scraping
+selenium>=4.15.0
+playwright>=1.40.0
+scrapy>=2.11.0
+
+# Data processing
+python-dotenv>=1.0.0
+pillow>=10.0.0
+pymupdf>=1.23.0  # for PDF processing
+
+# Utilities
+tqdm>=4.65.0
+colorama>=0.4.6
+python-dateutil>=2.8.2
+
+# Development
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Optional: FastAPI for REST API
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.4.0# Bolt Auto Backend Dependencies
+
+# Core dependencies
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Database
+supabase>=2.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+
+# AI/ML
+openai>=1.0.0
+transformers>=4.30.0
+torch>=2.0.0
+
+# Web scraping
+selenium>=4.15.0
+playwright>=1.40.0
+scrapy>=2.11.0
+
+# Data processing
+python-dotenv>=1.0.0
+pillow>=10.0.0
+pymupdf>=1.23.0  # for PDF processing
+
+# Utilities
+tqdm>=4.65.0
+colorama>=0.4.6
+python-dateutil>=2.8.2
+
+# Development
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Optional: FastAPI for REST API
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.4.0
