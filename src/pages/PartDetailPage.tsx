@@ -1,26 +1,55 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, Car, MapPin, Tag, MessageSquare, Loader2, 
-  Heart, Share2, AlertCircle, ChevronLeft, ChevronRight,
-  User, FileText, Flag, CheckCircle, Zap, DollarSign
-} from 'lucide-react';
-import { motion } from 'framer-motion';
-import { formatDistanceToNow } from 'date-fns';
-import toast from 'react-hot-toast';
-import { Part, getPartById, getOrCreatePartChat, isPartSaved, savePart, unsavePart, boostPart, supabase } from '../lib/supabase';
-import ReportPartModal from '../components/ReportPartModal';
-import BoostListingModal from '../components/BoostListingModal';
-import BlurImage from '../components/BlurImage';
-import OfferModal from '../components/OfferModal';
-import OffersList from '../components/OffersList';
-import { extractErrorMessage } from '../lib/errorHandling';
-import { subscribeToPartUpdates, subscribeToPartOffers } from '../lib/supabase_modules/marketplaceRealtime';
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  Car,
+  MapPin,
+  Tag,
+  MessageSquare,
+  Loader2,
+  Heart,
+  Share2,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  User,
+  FileText,
+  Flag,
+  CheckCircle,
+  Zap,
+  DollarSign,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { formatDistanceToNow } from "date-fns";
+import toast from "react-hot-toast";
+import {
+  Part,
+  getPartById,
+  getOrCreatePartChat,
+  isPartSaved,
+  savePart,
+  unsavePart,
+  boostPart,
+  supabase,
+} from "../lib/supabase";
+import ReportPartModal from "../components/ReportPartModal";
+import BoostListingModal from "../components/BoostListingModal";
+import CheckoutModal from "../components/payments/CheckoutModal";
+import BlurImage from "../components/BlurImage";
+import OfferModal from "../components/OfferModal";
+import OffersList from "../components/OffersList";
+import { extractErrorMessage } from "../lib/errorHandling";
+import {
+  subscribeToPartUpdates,
+  subscribeToPartOffers,
+} from "../lib/supabase_modules/marketplaceRealtime";
 
 const PartDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [part, setPart] = useState<Part & { seller_email: string } | null>(null);
+  const [part, setPart] = useState<(Part & { seller_email: string }) | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isMessagingLoading, setIsMessagingLoading] = useState(false);
@@ -30,6 +59,7 @@ const PartDetailPage: React.FC = () => {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isBoostModalOpen, setIsBoostModalOpen] = useState(false);
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [isCurrentUserSeller, setIsCurrentUserSeller] = useState(false);
   const [hasNewOffer, setHasNewOffer] = useState(false);
 
@@ -40,18 +70,20 @@ const PartDetailPage: React.FC = () => {
       try {
         const [partData, savedStatus] = await Promise.all([
           getPartById(id),
-          isPartSaved(id)
+          isPartSaved(id),
         ]);
         setPart(partData);
         setIsSaved(savedStatus);
-        
+
         // Check if current user is the seller
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (user && partData.seller_id === user.id) {
           setIsCurrentUserSeller(true);
         }
       } catch (err) {
-        console.error('Failed to load part:', err);
+        console.error("Failed to load part:", err);
         const errorMessage = extractErrorMessage(err);
         setError(`Failed to load part details: ${errorMessage}`);
       } finally {
@@ -65,24 +97,24 @@ const PartDetailPage: React.FC = () => {
   // Subscribe to real-time updates for this part
   useEffect(() => {
     if (!id) return;
-    
+
     // Subscribe to part updates
     const unsubscribePart = subscribeToPartUpdates(id, (updatedPart) => {
-      setPart(prev => {
+      setPart((prev) => {
         if (!prev) return null;
         return { ...prev, ...updatedPart };
       });
     });
-    
+
     // Subscribe to new offers for this part
     const unsubscribeOffers = subscribeToPartOffers(id, (newOffer) => {
       // Show notification for new offer
       if (isCurrentUserSeller) {
         setHasNewOffer(true);
-        toast.success('You received a new offer!');
+        toast.success("You received a new offer!");
       }
     });
-    
+
     return () => {
       unsubscribePart();
       unsubscribeOffers();
@@ -95,20 +127,20 @@ const PartDetailPage: React.FC = () => {
       const timer = setTimeout(() => {
         setHasNewOffer(false);
       }, 5000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [hasNewOffer]);
 
   const handleMessageSeller = async () => {
     if (!part) return;
-    
+
     setIsMessagingLoading(true);
     try {
       const chatId = await getOrCreatePartChat(part.id, part.seller_id);
       navigate(`/marketplace/messages/${chatId}`);
     } catch (err) {
-      console.error('Failed to create chat:', err);
+      console.error("Failed to create chat:", err);
       const errorMessage = extractErrorMessage(err);
       toast.error(`Failed to start chat: ${errorMessage}`);
     } finally {
@@ -121,12 +153,12 @@ const PartDetailPage: React.FC = () => {
       await navigator.share({
         title: part?.title,
         text: `Check out this ${part?.title} on Bolt Auto`,
-        url: window.location.href
+        url: window.location.href,
       });
     } catch (err) {
       // Fallback to copying link
       navigator.clipboard.writeText(window.location.href);
-      toast.success('Link copied to clipboard');
+      toast.success("Link copied to clipboard");
     }
   };
 
@@ -137,16 +169,20 @@ const PartDetailPage: React.FC = () => {
     try {
       if (isSaved) {
         await unsavePart(part.id);
-        toast.success('Part removed from saved items');
+        toast.success("Part removed from saved items");
       } else {
         await savePart(part.id);
-        toast.success('Part saved successfully');
+        toast.success("Part saved successfully");
       }
       setIsSaved(!isSaved);
     } catch (err) {
-      console.error('Failed to save/unsave part:', err);
+      console.error("Failed to save/unsave part:", err);
       const errorMessage = extractErrorMessage(err);
-      toast.error(isSaved ? `Failed to remove from saved items: ${errorMessage}` : `Failed to save part: ${errorMessage}`);
+      toast.error(
+        isSaved
+          ? `Failed to remove from saved items: ${errorMessage}`
+          : `Failed to save part: ${errorMessage}`
+      );
     } finally {
       setIsSaving(false);
     }
@@ -169,15 +205,15 @@ const PartDetailPage: React.FC = () => {
     if (part) {
       setPart({
         ...part,
-        is_boosted: true
+        is_boosted: true,
       });
     }
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(price);
   };
 
@@ -245,10 +281,10 @@ const PartDetailPage: React.FC = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            {error || 'Part not found'}
+            {error || "Part not found"}
           </h2>
           <button
-            onClick={() => navigate('/marketplace')}
+            onClick={() => navigate("/marketplace")}
             className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
           >
             Back to Marketplace
@@ -261,8 +297,8 @@ const PartDetailPage: React.FC = () => {
   // Mock multiple images for demonstration
   const images = [
     part.image_url,
-    'https://images.pexels.com/photos/2244746/pexels-photo-2244746.jpeg',
-    'https://images.pexels.com/photos/3806249/pexels-photo-3806249.jpeg'
+    "https://images.pexels.com/photos/2244746/pexels-photo-2244746.jpeg",
+    "https://images.pexels.com/photos/3806249/pexels-photo-3806249.jpeg",
   ];
 
   return (
@@ -271,7 +307,7 @@ const PartDetailPage: React.FC = () => {
         <motion.button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          onClick={() => navigate('/marketplace')}
+          onClick={() => navigate("/marketplace")}
           className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6"
         >
           <ArrowLeft className="h-5 w-5 mr-2" />
@@ -292,7 +328,7 @@ const PartDetailPage: React.FC = () => {
               objectFit="cover"
               priority={true}
             />
-            
+
             {/* Boosted Badge */}
             {part.is_boosted && (
               <div className="absolute top-4 left-4 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full text-sm font-medium shadow-lg flex items-center gap-1.5">
@@ -300,22 +336,30 @@ const PartDetailPage: React.FC = () => {
                 <span>Boosted</span>
               </div>
             )}
-            
+
             {images.length > 1 && (
               <>
                 <button
-                  onClick={() => setCurrentImageIndex(i => (i > 0 ? i - 1 : images.length - 1))}
+                  onClick={() =>
+                    setCurrentImageIndex((i) =>
+                      i > 0 ? i - 1 : images.length - 1
+                    )
+                  }
                   className="absolute left-4 top-1/2 transform -translate-y-1/2 p-2 bg-white/80 dark:bg-gray-800/80 rounded-full text-gray-900 dark:text-white hover:bg-white dark:hover:bg-gray-800 transition-colors"
                 >
                   <ChevronLeft className="h-6 w-6" />
                 </button>
                 <button
-                  onClick={() => setCurrentImageIndex(i => (i < images.length - 1 ? i + 1 : 0))}
+                  onClick={() =>
+                    setCurrentImageIndex((i) =>
+                      i < images.length - 1 ? i + 1 : 0
+                    )
+                  }
                   className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 bg-white/80 dark:bg-gray-800/80 rounded-full text-gray-900 dark:text-white hover:bg-white dark:hover:bg-gray-800 transition-colors"
                 >
                   <ChevronRight className="h-6 w-6" />
                 </button>
-                
+
                 <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
                   {images.map((_, index) => (
                     <button
@@ -323,8 +367,8 @@ const PartDetailPage: React.FC = () => {
                       onClick={() => setCurrentImageIndex(index)}
                       className={`w-2 h-2 rounded-full transition-colors ${
                         index === currentImageIndex
-                          ? 'bg-white'
-                          : 'bg-white/50 hover:bg-white/75'
+                          ? "bg-white"
+                          : "bg-white/50 hover:bg-white/75"
                       }`}
                       aria-label={`View image ${index + 1}`}
                     />
@@ -349,7 +393,7 @@ const PartDetailPage: React.FC = () => {
                       {part.title}
                     </h1>
                     {part.seller_is_trusted && (
-                      <div 
+                      <div
                         className="group flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium group-hover:shadow-glow group-hover:scale-105 transition-all duration-300"
                         title="Verified seller – 3+ approved listings + KYC passed"
                       >
@@ -359,19 +403,26 @@ const PartDetailPage: React.FC = () => {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`
+                    <span
+                      className={`
                       px-2 py-1 rounded-full text-sm font-medium
-                      ${part.condition === 'new' 
-                        ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300'
-                        : part.condition === 'used'
-                        ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300'
-                        : 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
+                      ${
+                        part.condition === "new"
+                          ? "bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300"
+                          : part.condition === "used"
+                          ? "bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300"
+                          : "bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300"
                       }
-                    `}>
-                      {part.condition.charAt(0).toUpperCase() + part.condition.slice(1)}
+                    `}
+                    >
+                      {part.condition.charAt(0).toUpperCase() +
+                        part.condition.slice(1)}
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      Listed {formatDistanceToNow(new Date(part.created_at), { addSuffix: true })}
+                      Listed{" "}
+                      {formatDistanceToNow(new Date(part.created_at), {
+                        addSuffix: true,
+                      })}
                     </span>
                   </div>
                 </div>
@@ -437,6 +488,13 @@ const PartDetailPage: React.FC = () => {
                 {!isCurrentUserSeller && (
                   <>
                     <button
+                      onClick={() => setIsCheckoutModalOpen(true)}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                    >
+                      <DollarSign className="h-5 w-5" />
+                      Buy Now - ${part.price}
+                    </button>
+                    <button
                       onClick={handleMakeOffer}
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
                     >
@@ -464,12 +522,14 @@ const PartDetailPage: React.FC = () => {
                   disabled={isSaving}
                   className={`p-2 rounded-lg transition-colors ${
                     isSaved
-                      ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700'
+                      ? "bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700"
                   }`}
                   aria-label={isSaved ? "Remove from saved" : "Save part"}
                 >
-                  <Heart className={`h-5 w-5 ${isSaved ? 'fill-current' : ''}`} />
+                  <Heart
+                    className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`}
+                  />
                 </button>
                 <button
                   onClick={handleShare}
@@ -498,10 +558,10 @@ const PartDetailPage: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium text-gray-900 dark:text-white">
-                      {part.seller_email.split('@')[0]}
+                      {part.seller_email.split("@")[0]}
                     </h3>
                     {part.seller_is_trusted && (
-                      <div 
+                      <div
                         className="group flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium group-hover:shadow-glow group-hover:scale-105 transition-all duration-300"
                         title="Verified seller – 3+ approved listings + KYC passed"
                       >
@@ -511,7 +571,10 @@ const PartDetailPage: React.FC = () => {
                     )}
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Member since {formatDistanceToNow(new Date(2023, 0, 1), { addSuffix: true })}
+                    Member since{" "}
+                    {formatDistanceToNow(new Date(2023, 0, 1), {
+                      addSuffix: true,
+                    })}
                   </p>
                 </div>
               </div>
@@ -533,9 +596,10 @@ const PartDetailPage: React.FC = () => {
                   </button>
                 </div>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Interested in this part but want to negotiate the price? Make an offer to the seller.
+                  Interested in this part but want to negotiate the price? Make
+                  an offer to the seller.
                 </p>
-                
+
                 {id && <OffersList partId={id} />}
               </div>
             )}
@@ -574,7 +638,7 @@ const PartDetailPage: React.FC = () => {
       </div>
 
       {/* Report Modal */}
-      <ReportPartModal 
+      <ReportPartModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
         partId={part.id}
@@ -586,7 +650,30 @@ const PartDetailPage: React.FC = () => {
         onClose={() => setIsBoostModalOpen(false)}
         partId={part.id}
         partTitle={part.title}
+        partPrice={part.price}
         onBoostComplete={handleBoostComplete}
+      />
+
+      {/* Checkout Modal */}
+      <CheckoutModal
+        isOpen={isCheckoutModalOpen}
+        onClose={() => setIsCheckoutModalOpen(false)}
+        type="part"
+        data={{
+          part_id: part.id,
+          seller_id: part.seller_id,
+          amount: part.price * 100, // Convert to cents
+          title: part.title,
+          image_url: part.images?.[0],
+          shipping_address: null, // Will be collected in checkout
+        }}
+        onSuccess={(result) => {
+          console.log("Purchase successful:", result);
+          toast.success(
+            "Purchase completed! You will receive shipping details soon."
+          );
+          setIsCheckoutModalOpen(false);
+        }}
       />
 
       {/* Offer Modal */}
@@ -598,7 +685,7 @@ const PartDetailPage: React.FC = () => {
         partTitle={part.title}
         partPrice={part.price}
         onSuccess={() => {
-          toast.success('Offer sent successfully!');
+          toast.success("Offer sent successfully!");
         }}
       />
 
@@ -610,8 +697,12 @@ const PartDetailPage: React.FC = () => {
               <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <h3 className="font-medium text-gray-900 dark:text-white">New Offer Received!</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Someone made an offer on your part.</p>
+              <h3 className="font-medium text-gray-900 dark:text-white">
+                New Offer Received!
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Someone made an offer on your part.
+              </p>
             </div>
           </div>
         </div>

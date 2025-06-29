@@ -1,27 +1,69 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Plus, Heart, Loader2, MapPin, Tag, Menu, ChevronDown, ChevronUp, Search, Filter, Globe, CheckCircle, Car } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { updateProfile } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
-import { useProfile } from '../hooks/useProfile';
-import { useXp } from '../hooks/useXp';
-import { getUserBadges, getAllBadges, UserEarnedBadge, Badge } from '../lib/supabase';
+import React, { useState, useEffect, lazy, Suspense } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Users,
+  Plus,
+  Heart,
+  Loader2,
+  MapPin,
+  Tag,
+  Menu,
+  ChevronDown,
+  ChevronUp,
+  Search,
+  Filter,
+  Globe,
+  CheckCircle,
+  Car,
+  User,
+  Award,
+  Zap,
+  Share2,
+  Bell,
+  Moon,
+  Shield,
+  HelpCircle,
+  Settings,
+} from "lucide-react";
+import toast from "react-hot-toast";
+import { updateProfile } from "../lib/supabase";
+import { useAuth } from "../context/AuthContext";
+import { useProfile } from "../hooks/useProfile";
+import { useXp } from "../hooks/useXp";
+import {
+  getUserBadges,
+  getAllBadges,
+  UserEarnedBadge,
+  Badge,
+} from "../lib/supabase";
 
 // Lazy load components
-const ProfileSection = lazy(() => import('../components/ProfileSection'));
-const ProfileOverview = lazy(() => import('../components/ProfileOverview'));
-const PreferencesSection = lazy(() => import('../components/PreferencesSection'));
-const SecurityLoginSection = lazy(() => import('../components/SecurityLoginSection'));
-const SupportFeedbackSection = lazy(() => import('../components/SupportFeedbackSection'));
-const BadgesPanel = lazy(() => import('../components/BadgesPanel'));
-const ProfileCompletionIndicator = lazy(() => import('../components/ProfileCompletionIndicator'));
-const NotificationPreferencesSection = lazy(() => import('../components/NotificationPreferencesSection'));
-const ReferralSection = lazy(() => import('../components/ReferralSection'));
-const AchievementTracker = lazy(() => import('../components/AchievementTracker'));
-const ChallengesList = lazy(() => import('../components/ChallengesList'));
-const XpHistoryPanel = lazy(() => import('../components/XpHistoryPanel'));
+const ProfileSection = lazy(() => import("../components/ProfileSection"));
+const ProfileOverview = lazy(() => import("../components/ProfileOverview"));
+const PreferencesSection = lazy(
+  () => import("../components/PreferencesSection")
+);
+const SecurityLoginSection = lazy(
+  () => import("../components/SecurityLoginSection")
+);
+const SupportFeedbackSection = lazy(
+  () => import("../components/SupportFeedbackSection")
+);
+const BadgesPanel = lazy(() => import("../components/BadgesPanel"));
+const ProfileCompletionIndicator = lazy(
+  () => import("../components/ProfileCompletionIndicator")
+);
+const NotificationPreferencesSection = lazy(
+  () => import("../components/NotificationPreferencesSection")
+);
+const ReferralSection = lazy(() => import("../components/ReferralSection"));
+const AchievementTracker = lazy(
+  () => import("../components/AchievementTracker")
+);
+const ChallengesList = lazy(() => import("../components/ChallengesList"));
+const XpHistoryPanel = lazy(() => import("../components/XpHistoryPanel"));
+const ChallengeProgress = lazy(() => import("../components/ChallengeProgress"));
 
 // Loading fallback component
 const ComponentLoader = () => (
@@ -32,67 +74,76 @@ const ComponentLoader = () => (
 
 const AccountPage: React.FC = () => {
   const navigate = useNavigate();
-  const { profile, isAdmin, isLoading: profileLoading, mutate: mutateProfile } = useProfile();
+  const {
+    profile,
+    isAdmin,
+    isLoading: profileLoading,
+    mutate: mutateProfile,
+  } = useProfile();
   const { user, loading: authLoading } = useAuth();
   const { xp, level } = useXp();
-  const [userEmail, setUserEmail] = useState('');
+  const [userEmail, setUserEmail] = useState("");
   const [badges, setBadges] = useState<UserEarnedBadge[]>([]);
   const [allBadges, setAllBadges] = useState<Badge[]>([]);
   const [displayBadges, setDisplayBadges] = useState<UserEarnedBadge[]>([]);
   const [badgesLoading, setBadgesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState("profile");
   const [isUpgrading, setIsUpgrading] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
       try {
         if (authLoading || !user) return;
-        
-        setUserEmail(user.email || '');
-        
+
+        setUserEmail(user.email || "");
+
         // Load user badges and all available badges
         try {
           setBadgesLoading(true);
           const [userBadges, availableBadges] = await Promise.all([
             getUserBadges(user.id),
-            getAllBadges()
+            getAllBadges(),
           ]);
-          
+
           setBadges(userBadges);
           setAllBadges(availableBadges);
-          
+
           // Create a combined list of all badges, marking which ones are earned
-          const combinedBadges: UserEarnedBadge[] = availableBadges.map(badge => {
-            const earnedBadge = userBadges.find(ub => ub.badge_id === badge.id);
-            if (earnedBadge) {
-              return earnedBadge; // User has earned this badge
-            } else {
-              // Create a locked badge entry
-              return {
-                id: `locked-${badge.id}`,
-                user_id: user.id,
-                badge_id: badge.id,
-                name: badge.name,
-                description: badge.description,
-                icon_url: badge.icon_url,
-                rarity: badge.rarity,
-                awarded_at: '', // Empty string indicates it's not earned yet
-                note: ''
-              };
+          const combinedBadges: UserEarnedBadge[] = availableBadges.map(
+            (badge) => {
+              const earnedBadge = userBadges.find(
+                (ub) => ub.badge_id === badge.id
+              );
+              if (earnedBadge) {
+                return earnedBadge; // User has earned this badge
+              } else {
+                // Create a locked badge entry
+                return {
+                  id: `locked-${badge.id}`,
+                  user_id: user.id,
+                  badge_id: badge.id,
+                  name: badge.name,
+                  description: badge.description,
+                  icon_url: badge.icon_url,
+                  rarity: badge.rarity,
+                  awarded_at: "", // Empty string indicates it's not earned yet
+                  note: "",
+                };
+              }
             }
-          });
-          
+          );
+
           setDisplayBadges(combinedBadges);
         } catch (badgeError) {
-          console.error('Failed to load badges:', badgeError);
+          console.error("Failed to load badges:", badgeError);
           // Don't set error state for badges, just log it
         } finally {
           setBadgesLoading(false);
         }
       } catch (err) {
-        console.error('Failed to load user data:', err);
-        setError('Failed to load user data');
+        console.error("Failed to load user data:", err);
+        setError("Failed to load user data");
       }
     };
 
@@ -101,57 +152,81 @@ const AccountPage: React.FC = () => {
 
   const handleUpgradeToProClick = async () => {
     if (!profile) return;
-    
+
     setIsUpgrading(true);
     try {
       // Update the profile to indicate interest in Pro
       await updateProfile({ wants_pro: true });
-      
+
       // Update local state
       mutateProfile({
         ...profile,
-        wants_pro: true
+        wants_pro: true,
       });
-      
-      toast.success('Thanks for your interest! Pro features coming soon.');
+
+      toast.success("Thanks for your interest! Pro features coming soon.");
     } catch (err) {
-      console.error('Failed to update pro status:', err);
-      toast.error('Failed to register your interest. Please try again.');
+      console.error("Failed to update pro status:", err);
+      toast.error("Failed to register your interest. Please try again.");
     } finally {
       setIsUpgrading(false);
     }
   };
 
   const tabs = [
-    { id: 'profile', label: 'Profile', icon: <User className="h-5 w-5" /> },
-    { id: 'achievements', label: 'Achievements', icon: <Award className="h-5 w-5" /> },
-    { id: 'challenges', label: 'Challenges', icon: <Zap className="h-5 w-5" /> },
-    { id: 'referrals', label: 'Referrals', icon: <Share2 className="h-5 w-5" /> },
-    { id: 'notifications', label: 'Notifications', icon: <Bell className="h-5 w-5" /> },
-    { id: 'preferences', label: 'Preferences', icon: <Moon className="h-5 w-5" /> },
-    { id: 'security', label: 'Security', icon: <Shield className="h-5 w-5" /> },
-    { id: 'support', label: 'Support', icon: <HelpCircle className="h-5 w-5" /> }
+    { id: "profile", label: "Profile", icon: <User className="h-5 w-5" /> },
+    {
+      id: "achievements",
+      label: "Achievements",
+      icon: <Award className="h-5 w-5" />,
+    },
+    {
+      id: "challenges",
+      label: "Challenges",
+      icon: <Zap className="h-5 w-5" />,
+    },
+    {
+      id: "referrals",
+      label: "Referrals",
+      icon: <Share2 className="h-5 w-5" />,
+    },
+    {
+      id: "notifications",
+      label: "Notifications",
+      icon: <Bell className="h-5 w-5" />,
+    },
+    {
+      id: "preferences",
+      label: "Preferences",
+      icon: <Moon className="h-5 w-5" />,
+    },
+    { id: "security", label: "Security", icon: <Shield className="h-5 w-5" /> },
+    {
+      id: "support",
+      label: "Support",
+      icon: <HelpCircle className="h-5 w-5" />,
+    },
   ];
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'profile':
+      case "profile":
         return (
           <div className="space-y-6">
             <Suspense fallback={<ComponentLoader />}>
-              <ProfileOverview 
-                profile={profile} 
+              <ProfileOverview
+                profile={profile}
                 email={userEmail}
                 xp={xp}
                 level={level}
                 badges={badges}
               />
             </Suspense>
-            
+
             <Suspense fallback={<ComponentLoader />}>
               <ProfileCompletionIndicator profile={profile} />
             </Suspense>
-            
+
             {/* Pro Seller CTA */}
             {profile && !profile.wants_pro && (
               <motion.div
@@ -168,7 +243,8 @@ const AccountPage: React.FC = () => {
                       Upgrade to Verified Seller Pro ✅
                     </h3>
                     <p className="text-white/80 mb-4">
-                      Get Boost Credits + Priority Listings + Trust Badge for just $5/month
+                      Get Boost Credits + Priority Listings + Trust Badge for
+                      just $5/month
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                       <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
@@ -192,7 +268,9 @@ const AccountPage: React.FC = () => {
                       <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
                         <div className="flex items-center gap-2 mb-1">
                           <CheckCircle className="h-4 w-4 text-yellow-300" />
-                          <span className="font-semibold">Priority Support</span>
+                          <span className="font-semibold">
+                            Priority Support
+                          </span>
                         </div>
                         <p className="text-sm text-white/80">
                           Get faster responses to your questions
@@ -210,14 +288,14 @@ const AccountPage: React.FC = () => {
                           <span>Processing...</span>
                         </div>
                       ) : (
-                        'Upgrade for $5/month'
+                        "Upgrade for $5/month"
                       )}
                     </button>
                   </div>
                 </div>
               </motion.div>
             )}
-            
+
             {/* Pro Seller Confirmation */}
             {profile && profile.wants_pro && (
               <motion.div
@@ -234,13 +312,15 @@ const AccountPage: React.FC = () => {
                       Pro Features Coming Soon!
                     </h3>
                     <p className="text-white/80">
-                      Thanks for your interest in Verified Seller Pro! We're working on implementing these features and will notify you as soon as they're available.
+                      Thanks for your interest in Verified Seller Pro! We're
+                      working on implementing these features and will notify you
+                      as soon as they're available.
                     </p>
                   </div>
                 </div>
               </motion.div>
             )}
-            
+
             <Suspense fallback={<ComponentLoader />}>
               <ProfileSection
                 profile={profile}
@@ -249,22 +329,23 @@ const AccountPage: React.FC = () => {
             </Suspense>
           </div>
         );
-      case 'achievements':
+      case "achievements":
         return (
           <Suspense fallback={<ComponentLoader />}>
             <div className="space-y-6">
               <AchievementTracker profile={profile} className="mb-8" />
-              
+
               <div className="mb-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                   Your Badges
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Badges you've earned by using Bolt Auto and participating in the community
+                  Badges you've earned by using Bolt Auto and participating in
+                  the community
                 </p>
               </div>
               <BadgesPanel badges={displayBadges} loading={badgesLoading} />
-              
+
               <div className="mt-8">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                   XP History
@@ -274,12 +355,12 @@ const AccountPage: React.FC = () => {
             </div>
           </Suspense>
         );
-      case 'challenges':
+      case "challenges":
         return (
           <Suspense fallback={<ComponentLoader />}>
             <div className="space-y-6">
               <ChallengeProgress className="mb-6" />
-              
+
               <div className="mb-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                   Available Challenges
@@ -288,12 +369,12 @@ const AccountPage: React.FC = () => {
                   Complete these challenges to earn XP and badges
                 </p>
               </div>
-              
+
               <ChallengesList limit={5} />
-              
+
               <div className="flex justify-center mt-4">
                 <button
-                  onClick={() => navigate('/challenges')}
+                  onClick={() => navigate("/challenges")}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
                 >
                   View All Challenges
@@ -302,31 +383,31 @@ const AccountPage: React.FC = () => {
             </div>
           </Suspense>
         );
-      case 'referrals':
+      case "referrals":
         return (
           <Suspense fallback={<ComponentLoader />}>
             <ReferralSection />
           </Suspense>
         );
-      case 'notifications':
+      case "notifications":
         return (
           <Suspense fallback={<ComponentLoader />}>
             <NotificationPreferencesSection />
           </Suspense>
         );
-      case 'preferences':
+      case "preferences":
         return (
           <Suspense fallback={<ComponentLoader />}>
             <PreferencesSection />
           </Suspense>
         );
-      case 'security':
+      case "security":
         return (
           <Suspense fallback={<ComponentLoader />}>
             <SecurityLoginSection />
           </Suspense>
         );
-      case 'support':
+      case "support":
         return (
           <Suspense fallback={<ComponentLoader />}>
             <SupportFeedbackSection />
@@ -358,7 +439,11 @@ const AccountPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className={isAccountPage ? "w-full space-y-6" : "max-w-7xl mx-auto space-y-6"}>
+      <div
+        className={
+          isAccountPage ? "w-full space-y-6" : "max-w-7xl mx-auto space-y-6"
+        }
+      >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -367,8 +452,12 @@ const AccountPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <Settings className="h-8 w-8 text-blue-600 dark:text-blue-400" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your account and preferences</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Settings
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Manage your account and preferences
+              </p>
             </div>
           </div>
         </motion.div>
@@ -384,13 +473,13 @@ const AccountPage: React.FC = () => {
                   className={`
                     flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors ${
                       activeTab === tab.id
-                        ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                        ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     }`}
                 >
                   {tab.icon}
                   {tab.label}
-                  {tab.id === 'achievements' && badges.length > 0 && (
+                  {tab.id === "achievements" && badges.length > 0 && (
                     <span className="ml-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-xs rounded-full">
                       {badges.length}
                     </span>

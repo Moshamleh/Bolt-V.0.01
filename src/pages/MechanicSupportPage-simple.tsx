@@ -25,7 +25,7 @@ import {
   getOrCreateMechanicChat,
   type Mechanic,
 } from "../lib/supabase_modules/mechanics";
-import { awardXp, XP_VALUES } from "../lib/xpSystem";
+import { awardXp, XP_VALUES } from "../lib/supabase_modules/gamification";
 
 export default function MechanicSupportPage() {
   const [mechanics, setMechanics] = useState<Mechanic[]>([]);
@@ -249,7 +249,7 @@ export default function MechanicSupportPage() {
           </div>
         </div>
 
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {activeTab === "findMobile" ? (
             <motion.div
               key="findMobile"
@@ -306,9 +306,7 @@ export default function MechanicSupportPage() {
                 Request a callback from a certified mechanic
               </p>
               <button
-                onClick={() =>
-                  toast("Callback feature coming soon!", { icon: "ℹ️" })
-                }
+                onClick={() => toast.info("Callback feature coming soon!")}
                 className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors mx-auto"
               >
                 <Phone className="h-5 w-5" />

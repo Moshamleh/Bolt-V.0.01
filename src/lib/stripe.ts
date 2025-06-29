@@ -1,4 +1,4 @@
-import { loadStripe } from "@stripe/stripe-js";
+import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { supabase } from "./supabase";
 
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
@@ -7,6 +7,73 @@ if (!stripePublicKey) {
 }
 
 export const stripePromise = loadStripe(stripePublicKey);
+
+// Stripe checkout session types
+export interface CheckoutSessionData {
+  sessionId: string;
+  url: string;
+}
+
+export interface BoostOrderData {
+  part_id: string;
+  user_id: string;
+  amount: number;
+  duration_days: number;
+}
+
+export interface PartPurchaseData {
+  part_id: string;
+  buyer_id: string;
+  seller_id: string;
+  amount: number;
+  shipping_address?: any;
+}
+
+export interface ServicePaymentData {
+  service_id?: string;
+  appointment_id?: string;
+  video_call_id?: string;
+  mechanic_id: string;
+  customer_id: string;
+  amount: number;
+  duration_minutes?: number;
+  service_type: string;
+}
+
+export interface MechanicPayout {
+  id: string;
+  mechanic_id: string;
+  amount: number;
+  stripe_transfer_id: string;
+  status: "pending" | "processing" | "paid" | "failed";
+  invoice_ids: string[];
+  created_at: string;
+  updated_at: string;
+  paid_at?: string;
+}
+
+export interface Invoice {
+  id: string;
+  service_id?: string;
+  appointment_id?: string;
+  video_call_id?: string;
+  mechanic_id: string;
+  customer_id: string;
+  amount: number;
+  platform_fee: number;
+  mechanic_payout_amount: number;
+  service_type: string;
+  stripe_session_id: string;
+  status: "pending" | "completed" | "failed" | "refunded";
+  payout_id?: string;
+  paid_out_at?: string;
+  created_at: string;
+  updated_at: string;
+  description?: string;
+  issued_date: string;
+  paid_date?: string;
+  payment_status: string;
+}
 
 export interface PaymentIntent {
   id: string;
@@ -92,6 +159,194 @@ export class PaymentService {
 
     if (error) throw error;
     return data;
+  }
+
+  // Comprehensive Checkout Session Creation Methods
+  static async createBoostOrderCheckout(
+    boostData: BoostOrderData
+  ): Promise<CheckoutSessionData> {
+    const { data, error } = await supabase.functions.invoke(
+      "create-checkout-session",
+      {
+        body: {
+          order_type: "boost",
+          part_id: boostData.part_id,
+          user_id: boostData.user_id,
+          amount: boostData.amount,
+          duration_days: boostData.duration_days,
+          success_url: `${window.location.origin}/marketplace/boost-success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${window.location.origin}/marketplace/boost-cancelled`,
+        },
+      }
+    );
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async createPartPurchaseCheckout(
+    purchaseData: PartPurchaseData
+  ): Promise<CheckoutSessionData> {
+    const { data, error } = await supabase.functions.invoke(
+      "create-checkout-session",
+      {
+        body: {
+          order_type: "part_purchase",
+          part_id: purchaseData.part_id,
+          buyer_id: purchaseData.buyer_id,
+          seller_id: purchaseData.seller_id,
+          amount: purchaseData.amount,
+          shipping_address: purchaseData.shipping_address,
+          success_url: `${window.location.origin}/marketplace/purchase-success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${window.location.origin}/marketplace/purchase-cancelled`,
+        },
+      }
+    );
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async createServicePaymentCheckout(
+    serviceData: ServicePaymentData
+  ): Promise<CheckoutSessionData> {
+    const { data, error } = await supabase.functions.invoke(
+      "create-checkout-session",
+      {
+        body: {
+          order_type: "service_payment",
+          service_id: serviceData.service_id,
+          appointment_id: serviceData.appointment_id,
+          video_call_id: serviceData.video_call_id,
+          mechanic_id: serviceData.mechanic_id,
+          customer_id: serviceData.customer_id,
+          amount: serviceData.amount,
+          duration_minutes: serviceData.duration_minutes,
+          service_type: serviceData.service_type,
+          success_url: `${window.location.origin}/mechanic/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${window.location.origin}/mechanic/payment-cancelled`,
+        },
+      }
+    );
+
+    if (error) throw error;
+    return data;
+  }
+
+  // Enhanced Payment Processing
+  static async processCheckoutPayment(
+    sessionId: string,
+    orderType: "boost" | "part_purchase" | "service_payment"
+  ): Promise<{ success: boolean; order_id?: string }> {
+    const { data, error } = await supabase.functions.invoke(
+      "process-checkout-payment",
+      {
+        body: { session_id: sessionId, order_type: orderType },
+      }
+    );
+
+    if (error) throw error;
+    return data;
+  }
+
+  // Stripe Connect Account Management
+  static async createConnectAccount(
+    mechanicId: string,
+    mechanicData: {
+      email: string;
+      full_name: string;
+      phone: string;
+      business_type?: "individual" | "company";
+    }
+  ): Promise<{
+    account_id: string;
+    onboard_url: string;
+    dashboard_url?: string;
+  }> {
+    const { data, error } = await supabase.functions.invoke(
+      "create-connect-account",
+      {
+        body: {
+          mechanic_id: mechanicId,
+          email: mechanicData.email,
+          full_name: mechanicData.full_name,
+          phone: mechanicData.phone,
+          business_type: mechanicData.business_type || "individual",
+        },
+      }
+    );
+
+    if (error) throw error;
+    return data;
+  }
+
+  // Mechanic Payout Management
+  static async scheduleMechanicPayout(
+    mechanicId: string,
+    invoiceIds: string[]
+  ): Promise<{
+    transfer_id: string;
+    amount: number;
+    expected_arrival: string;
+  }> {
+    const { data, error } = await supabase.functions.invoke("process-payout", {
+      body: {
+        mechanic_id: mechanicId,
+        invoice_ids: invoiceIds,
+      },
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async getMechanicPayouts(
+    mechanicId: string
+  ): Promise<MechanicPayout[]> {
+    const { data, error } = await supabase
+      .from("mechanic_payouts")
+      .select("*")
+      .eq("mechanic_id", mechanicId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  static async getInvoicesByMechanic(mechanicId: string): Promise<Invoice[]> {
+    const { data, error } = await supabase
+      .from("service_payments")
+      .select("*")
+      .eq("mechanic_id", mechanicId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  // Utility Methods
+  static formatCurrency(
+    amountInCents: number,
+    currency: string = "USD"
+  ): string {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+    }).format(amountInCents / 100);
+  }
+
+  static calculatePlatformFee(
+    amount: number,
+    feePercentage: number = 0.15
+  ): number {
+    return Math.round(amount * feePercentage);
+  }
+
+  static calculateMechanicPayout(
+    amount: number,
+    feePercentage: number = 0.15
+  ): number {
+    return amount - this.calculatePlatformFee(amount, feePercentage);
   }
 
   static async createConnectAccount(

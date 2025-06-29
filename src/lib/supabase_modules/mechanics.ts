@@ -77,7 +77,7 @@ export interface VideoCall {
   started_at?: string;
   ended_at?: string;
   duration?: number; // in seconds
-  call_rate_per_minute: number;
+  call_rate_per_minute?: number;
   total_cost?: number;
   peer_id?: string;
   offer?: string;
@@ -94,7 +94,6 @@ export interface VideoCall {
   longitude?: number;
   stripe_account_id?: string;
   is_available_for_calls?: boolean;
-  call_rate_per_minute?: number;
 }
 
 // New interfaces for enhanced functionality
@@ -262,280 +261,10 @@ export async function getMechanicMessages(
 
   if (error) throw error;
 
-  // Enhanced functions for new features
-
-  export async function createAppointment(
-    appointmentData: Partial<Appointment>
-  ): Promise<Appointment> {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
-
-    const { data, error } = await supabase
-      .from("appointments")
-      .insert({ ...appointmentData, user_id: user.id })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-
-  export async function getUserAppointments(): Promise<Appointment[]> {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
-
-    const { data, error } = await supabase
-      .from("appointments")
-      .select(
-        `
-      *,
-      mechanic:mechanics(*)
-    `
-      )
-      .eq("user_id", user.id)
-      .order("scheduled_date", { ascending: true });
-
-    if (error) throw error;
-    return data || [];
-  }
-
-  export async function getMechanicAppointments(): Promise<Appointment[]> {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
-
-    const { data, error } = await supabase
-      .from("appointments")
-      .select(
-        `
-      *,
-      user:profiles(*)
-    `
-      )
-      .eq("mechanic_id", user.id)
-      .order("scheduled_date", { ascending: true });
-
-    if (error) throw error;
-    return data || [];
-  }
-
-  export async function updateAppointmentStatus(
-    appointmentId: string,
-    status: Appointment["status"]
-  ): Promise<void> {
-    const { error } = await supabase
-      .from("appointments")
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq("id", appointmentId);
-
-    if (error) throw error;
-  }
-
-  export async function getMechanicAvailability(
-    mechanicId: string,
-    date: string
-  ): Promise<TimeSlot[]> {
-    const { data, error } = await supabase
-      .from("mechanics")
-      .select("availability_schedule")
-      .eq("id", mechanicId)
-      .single();
-
-    if (error) throw error;
-
-    // Get day of week from date
-    const dayOfWeek = new Date(date).toLocaleLowerCase("en-US", {
-      weekday: "long",
-    });
-
-    return data?.availability_schedule?.[dayOfWeek] || [];
-  }
-
-  export async function updateMechanicLocation(
-    mechanicId: string,
-    latitude: number,
-    longitude: number
-  ): Promise<void> {
-    const { error } = await supabase
-      .from("mechanics")
-      .update({
-        latitude,
-        longitude,
-        is_online: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", mechanicId);
-
-    if (error) throw error;
-  }
-
-  export async function getNearbyMechanics(
-    latitude: number,
-    longitude: number,
-    radiusMiles: number = 25
-  ): Promise<Mechanic[]> {
-    // Using PostGIS extension if available, otherwise simple distance calculation
-    const { data, error } = await supabase.rpc("get_nearby_mechanics", {
-      lat: latitude,
-      lng: longitude,
-      radius_miles: radiusMiles,
-    });
-
-    if (error) {
-      // Fallback to simple query if RPC doesn't exist
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from("mechanics")
-        .select("*")
-        .eq("status", "approved")
-        .eq("is_mobile", true)
-        .not("latitude", "is", null)
-        .not("longitude", "is", null);
-
-      if (fallbackError) throw fallbackError;
-      return fallbackData || [];
-    }
-
-    return data || [];
-  }
-
-  export async function initiateVideoCall(
-    mechanicId: string,
-    callType: VideoCall["call_type"]
-  ): Promise<VideoCall> {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
-
-    // Get mechanic's call rate
-    const mechanic = await getMechanicById(mechanicId);
-    if (!mechanic?.call_rate_per_minute) {
-      throw new Error("Mechanic call rate not configured");
-    }
-
-    const { data, error } = await supabase
-      .from("video_calls")
-      .insert({
-        mechanic_id: mechanicId,
-        user_id: user.id,
-        call_type: callType,
-        status: "initiating",
-        call_rate_per_minute: mechanic.call_rate_per_minute,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-
-  export async function updateVideoCallStatus(
-    callId: string,
-    status: VideoCall["status"],
-    additionalData?: Partial<VideoCall>
-  ): Promise<void> {
-    const updateData: any = { status };
-
-    if (status === "active" && !additionalData?.started_at) {
-      updateData.started_at = new Date().toISOString();
-    }
-
-    if (status === "ended" && !additionalData?.ended_at) {
-      updateData.ended_at = new Date().toISOString();
-    }
-
-    if (additionalData) {
-      Object.assign(updateData, additionalData);
-    }
-
-    const { error } = await supabase
-      .from("video_calls")
-      .update(updateData)
-      .eq("id", callId);
-
-    if (error) throw error;
-  }
-  return (data || []).map((msg) => ({
-    ...msg,
-    sender: msg.sender || undefined,
-  }));
-}
-
-export async function getMechanicById(
-  mechanicId: string
-): Promise<Mechanic | null> {
-  const { data, error } = await supabase
-    .from("mechanics")
-    .select("*")
-    .eq("id", mechanicId)
-    .single();
-
-  if (error) throw error;
   return data;
 }
 
-export async function getOrCreateMechanicChat(
-  userId: string,
-  mechanicId: string
-): Promise<string> {
-  // Check if a chat already exists between this user and mechanic
-  const { data: existingChat, error: chatError } = await supabase
-    .from("mechanic_chats")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("mechanic_id", mechanicId)
-    .single();
-
-  if (existingChat) {
-    return existingChat.id;
-  }
-
-  // If not, create a new chat
-  const { data: newChat, error: createError } = await supabase
-    .from("mechanic_chats")
-    .insert({
-      user_id: userId,
-      mechanic_id: mechanicId,
-      message: "Hello, I need some assistance with my vehicle.", // Initial message
-      is_from_mechanic: false, // Sent by user
-    })
-    .select("id")
-    .single();
-
-  if (createError) throw createError;
-  return newChat.id;
-}
-
-export async function getPendingMechanicRequests(): Promise<Mechanic[]> {
-  const { data, error } = await supabase
-    .from("mechanics")
-    .select("*")
-    .eq("status", "pending")
-    .order("created_at", { ascending: true });
-
-  if (error) throw error;
-  return data || [];
-}
-
-export async function updateMechanicStatus(
-  mechanicId: string,
-  status: "approved" | "rejected"
-): Promise<void> {
-  const { error } = await supabase
-    .from("mechanics")
-    .update({ status })
-    .eq("id", mechanicId);
-
-  if (error) throw error;
-}
-
 // Enhanced functions for new features
-
 export async function createAppointment(
   appointmentData: Partial<Appointment>
 ): Promise<Appointment> {
@@ -621,9 +350,11 @@ export async function getMechanicAvailability(
   if (error) throw error;
 
   // Get day of week from date
-  const dayOfWeek = new Date(date).toLocaleLowerCase("en-US", {
-    weekday: "long",
-  });
+  const dayOfWeek = new Date(date)
+    .toLocaleDateString("en-US", {
+      weekday: "long",
+    })
+    .toLowerCase();
 
   return data?.availability_schedule?.[dayOfWeek] || [];
 }
@@ -729,6 +460,74 @@ export async function updateVideoCallStatus(
     .from("video_calls")
     .update(updateData)
     .eq("id", callId);
+
+  if (error) throw error;
+}
+
+export async function getMechanicById(
+  mechanicId: string
+): Promise<Mechanic | null> {
+  const { data, error } = await supabase
+    .from("mechanics")
+    .select("*")
+    .eq("id", mechanicId)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getOrCreateMechanicChat(
+  userId: string,
+  mechanicId: string
+): Promise<string> {
+  // Check if a chat already exists between this user and mechanic
+  const { data: existingChat, error: chatError } = await supabase
+    .from("mechanic_chats")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("mechanic_id", mechanicId)
+    .single();
+
+  if (existingChat) {
+    return existingChat.id;
+  }
+
+  // If not, create a new chat
+  const { data: newChat, error: createError } = await supabase
+    .from("mechanic_chats")
+    .insert({
+      user_id: userId,
+      mechanic_id: mechanicId,
+      message: "Hello, I need some assistance with my vehicle.", // Initial message
+      is_from_mechanic: false, // Sent by user
+    })
+    .select("id")
+    .single();
+
+  if (createError) throw createError;
+  return newChat.id;
+}
+
+export async function getPendingMechanicRequests(): Promise<Mechanic[]> {
+  const { data, error } = await supabase
+    .from("mechanics")
+    .select("*")
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function updateMechanicStatus(
+  mechanicId: string,
+  status: "approved" | "rejected"
+): Promise<void> {
+  const { error } = await supabase
+    .from("mechanics")
+    .update({ status })
+    .eq("id", mechanicId);
 
   if (error) throw error;
 }
